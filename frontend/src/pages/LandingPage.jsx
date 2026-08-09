@@ -1,315 +1,112 @@
 import { Link } from "react-router-dom";
 import {
-  Target,
-  Search,
-  MapPin,
-  ShieldCheck,
-  Users,
-  EyeOff,
-  Zap,
+  Activity,
   ArrowRight,
-  MailCheck,
-  UserPlus,
-  LogIn,
+  Check,
   CheckCircle2,
+  ChevronRight,
+  EyeOff,
+  Globe2,
+  Layers3,
+  LogIn,
+  MailCheck,
+  MapPin,
+  MousePointer2,
+  Search,
+  ShieldCheck,
+  Sparkles,
+  Target,
+  UserPlus,
+  Users,
+  Zap,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 const FEATURES = [
-  {
-    icon: Search,
-    title: "Powerful search & filters",
-    text: "Full-text and fuzzy search over names, companies and headlines, backed by GIN indexes so results stay instant at scale.",
-  },
-  {
-    icon: MapPin,
-    title: "Near-me geo search",
-    text: "Find leads around you with radius-based geospatial search across a standardized country, region and city hierarchy.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Security first",
-    text: "JWT access tokens with httpOnly refresh cookies, Argon2id password hashing and Redis-backed rate limiting.",
-  },
-  {
-    icon: Users,
-    title: "Role-based access",
-    text: "Deny-by-default RBAC decides exactly what each account tier can see and do — from free users to admins.",
-  },
-  {
-    icon: EyeOff,
-    title: "Privacy-aware data",
-    text: "Contact details are masked server-side on the free tier, so sensitive data is only ever exposed to unlocked accounts.",
-  },
-  {
-    icon: Zap,
-    title: "Built for 5M+ records",
-    text: "Keyset pagination, index-backed queries and worker-driven imports keep the directory fast as it grows.",
-  },
+  { icon: Search, number: "01", title: "Search with intent", text: "Find the right people fast with flexible filters for role, company, industry and more." },
+  { icon: MapPin, number: "02", title: "Go local or global", text: "Pinpoint ideal prospects by city, region or country with accurate geo search." },
+  { icon: ShieldCheck, number: "03", title: "Privacy built in", text: "Server-side masking keeps personal details protected until you are ready to connect." },
+  { icon: Users, number: "04", title: "Built for teams", text: "Simple role-based access gives every teammate the right level of visibility." },
+  { icon: Zap, number: "05", title: "Move at your speed", text: "Fast, index-backed queries and keyset pagination make every search feel instant." },
+  { icon: Globe2, number: "06", title: "A world of opportunity", text: "Explore profiles across 195 countries and 150+ industries from one place." },
 ];
 
 const STEPS = [
-  {
-    icon: UserPlus,
-    step: "Step 1",
-    title: "Create your free account",
-    text: "Sign up with your email in seconds — no credit card required.",
-  },
-  {
-    icon: MailCheck,
-    step: "Step 2",
-    title: "Verify your email",
-    text: "Enter the 5-digit code we send you to activate your account.",
-  },
-  {
-    icon: Search,
-    step: "Step 3",
-    title: "Search the directory",
-    text: "Browse, filter and open lead profiles across industries and locations.",
-  },
+  { icon: UserPlus, title: "Create your free account", text: "No credit card. Just your email and a few seconds." },
+  { icon: MailCheck, title: "Verify and unlock", text: "Confirm your email to activate your workspace." },
+  { icon: Search, title: "Find your next yes", text: "Search, filter and start meaningful conversations." },
 ];
+
+function LeadRow({ initials, name, role, location, color, score }) {
+  return (
+    <div className="lead-row">
+      <span className="lead-avatar" style={{ background: color }}>{initials}</span>
+      <span className="lead-info"><strong>{name}</strong><small>{role} · {location}</small></span>
+      <span className="lead-score"><Activity size={12} /> {score}%</span>
+      <ChevronRight size={15} className="lead-arrow" />
+    </div>
+  );
+}
 
 export default function LandingPage() {
   const { isAuthenticated, user } = useAuth();
+  const dashboardPath = user?.roles?.some((r) => ["admin", "super_admin"].includes(r)) ? "/admin" : "/app";
 
   return (
     <div className="landing">
-      {/* ---------------- Header ---------------- */}
       <header className="landing-header">
         <div className="landing-container landing-header-inner">
-          <Link to="/" className="brand">
-            <span className="brand-badge">
-              <Target size={18} />
-            </span>
-            <span className="brand-name">Free Leads</span>
-          </Link>
-
-          <nav className="landing-nav">
-            <a href="#features">Features</a>
-            <a href="#how-it-works">How it works</a>
-            <a href="#security">Security</a>
-          </nav>
-
+          <Link to="/" className="brand"><span className="brand-badge"><Target size={18} /></span><span className="brand-name">free<span>leads</span></span></Link>
+          <nav className="landing-nav"><a href="#features">Platform</a><a href="#how-it-works">How it works</a><a href="#security">Security</a></nav>
           <div className="landing-auth-actions">
-            {isAuthenticated ? (
-              <>
-                <span className="landing-user-email">{user?.email}</span>
-                <Link
-                  to={user?.roles?.some((r) => ["admin", "super_admin"].includes(r)) ? "/admin" : "/app"}
-                  className="btn btn-primary"
-                >
-                  Open dashboard <ArrowRight size={16} />
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link to="/login" className="btn btn-ghost">
-                  <LogIn size={16} /> Log in
-                </Link>
-                <Link to="/signup" className="btn btn-primary">
-                  Sign up free
-                </Link>
-              </>
-            )}
+            {isAuthenticated ? <Link to={dashboardPath} className="btn btn-primary">Open workspace <ArrowRight size={15} /></Link> : <><Link to="/login" className="btn btn-ghost"><LogIn size={15} /> Log in</Link><Link to="/signup" className="btn btn-primary">Start for free <ArrowRight size={15} /></Link></>}
           </div>
         </div>
       </header>
 
-      {/* ---------------- Hero ---------------- */}
-      <section className="landing-hero">
-        <div className="landing-container landing-hero-grid">
-          <div className="landing-hero-copy">
-            <span className="hero-badge">
-              <CheckCircle2 size={14} /> Free tier — no credit card required
-            </span>
-            <h1>
-              Discover your next customer in a directory of{" "}
-              <span className="accent">millions of leads</span>
-            </h1>
-            <p className="hero-sub">
-              Free Leads is a searchable directory of professional contact
-              records — profiles, companies, industries and locations. Sign up
-              free, verify your email and start searching in under a minute.
-            </p>
-            <div className="hero-ctas">
-              {!isAuthenticated && (
-                <Link to="/signup" className="btn btn-primary btn-lg">
-                  Get started — it's free <ArrowRight size={18} />
-                </Link>
-              )}
-              <Link
-                to={isAuthenticated ? "/app" : "/login"}
-                className="btn btn-outline btn-lg"
-              >
-                {isAuthenticated ? "Go to my dashboard" : "Log in"}
-              </Link>
-            </div>
-            <div className="hero-stats">
-              <div className="hero-stat">
-                <strong>5M+</strong>
-                <span>lead records target</span>
+      <main>
+        <section className="landing-hero">
+          <div className="hero-grid-bg" />
+          <div className="landing-container landing-hero-grid">
+            <div className="landing-hero-copy">
+              <span className="hero-badge"><span className="pulse-dot" /> The smarter way to prospect</span>
+              <h1>Turn <span className="accent">curiosity</span><br />into connection.</h1>
+              <p className="hero-sub">A beautiful, searchable directory for discovering the people and companies that move your business forward.</p>
+              <div className="hero-ctas">
+                {!isAuthenticated && <Link to="/signup" className="btn btn-primary btn-lg">Explore the directory <ArrowRight size={18} /></Link>}
+                <Link to={isAuthenticated ? dashboardPath : "/login"} className="btn btn-outline btn-lg">{isAuthenticated ? "Go to workspace" : "I have an account"}</Link>
               </div>
-              <div className="hero-stat">
-                <strong>195</strong>
-                <span>countries covered</span>
-              </div>
-              <div className="hero-stat">
-                <strong>150+</strong>
-                <span>industries</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Mock product preview */}
-          <div className="hero-preview" aria-hidden="true">
-            <div className="preview-search">
-              <Search size={16} />
-              <span>Search leads by name, company or industry…</span>
+              <div className="hero-proof"><div className="proof-avatars"><span>AR</span><span>DK</span><span>MS</span><span>+5k</span></div><span>Trusted by the next generation of growth teams</span></div>
             </div>
 
-            {[
-              {
-                initials: "AR",
-                color: "#4f46e5",
-                name: "Amelia Rhodes",
-                meta: "Head of Growth · SaaS · London, UK",
-                masked: "a••••@growthco.io",
-              },
-              {
-                initials: "DK",
-                color: "#0ea5e9",
-                name: "Daniel Kim",
-                meta: "Founder · FinTech · Seoul, KR",
-                masked: "d••••@payflow.app",
-              },
-              {
-                initials: "MS",
-                color: "#f59e0b",
-                name: "Maria Santos",
-                meta: "Marketing Director · Retail · São Paulo, BR",
-                masked: "m••••@retailhub.com",
-              },
-            ].map((lead) => (
-              <div className="preview-row" key={lead.name}>
-                <span className="preview-avatar" style={{ background: lead.color }}>
-                  {lead.initials}
-                </span>
-                <div className="preview-meta">
-                  <strong>{lead.name}</strong>
-                  <span>{lead.meta}</span>
-                </div>
-                <span className="preview-masked">
-                  <EyeOff size={13} /> {lead.masked}
-                </span>
+            <div className="hero-visual" aria-label="Animated preview of the Free Leads directory">
+              <div className="orbit orbit-one" /><div className="orbit orbit-two" />
+              <div className="float-chip chip-top"><Sparkles size={14} /> New match found</div>
+              <div className="float-chip chip-bottom"><span className="mini-green-dot" /> 2,481 live results</div>
+              <div className="directory-card">
+                <div className="directory-top"><div><span className="eyebrow">DISCOVER</span><h3>Find your next lead</h3></div><span className="window-dots"><i /><i /><i /></span></div>
+                <div className="directory-search"><Search size={16} /><span>Search people, companies...</span><kbd>⌘ K</kbd></div>
+                <div className="filter-row"><span className="filter active">All leads</span><span className="filter"><MapPin size={12} /> Near me</span><span className="filter">SaaS</span><span className="filter">Growth</span></div>
+                <div className="results-label"><span>TOP MATCHES</span><span>View all <ArrowRight size={12} /></span></div>
+                <LeadRow initials="AR" name="Amelia Rhodes" role="Head of Growth · SaaS" location="London, UK" color="#d96b4d" score="98" />
+                <LeadRow initials="DK" name="Daniel Kim" role="Founder · FinTech" location="Seoul, KR" color="#4667d8" score="94" />
+                <LeadRow initials="MS" name="Maria Santos" role="Marketing Director" location="São Paulo, BR" color="#b18b40" score="91" />
+                <div className="directory-footer"><span><CheckCircle2 size={13} /> Contacts protected by default</span><span className="footer-arrow"><ArrowRight size={14} /></span></div>
               </div>
-            ))}
-
-            <div className="preview-footer">
-              <span className="preview-count">2,481 results</span>
-              <span className="preview-unlock">Unlock full contact info</span>
+              <span className="cursor"><MousePointer2 size={19} fill="currentColor" /></span>
             </div>
           </div>
-        </div>
-      </section>
+          <div className="landing-container stat-strip"><div><strong>5M<span>+</span></strong><small>lead records target</small></div><div><strong>195</strong><small>countries covered</small></div><div><strong>150<span>+</span></strong><small>industries to explore</small></div><div className="stat-note"><Layers3 size={19} /><span>One calm place<br />for better outreach.</span></div></div>
+        </section>
 
-      {/* ---------------- Features ---------------- */}
-      <section id="features" className="landing-section">
-        <div className="landing-container">
-          <div className="section-heading">
-            <h2>Everything you need to source leads</h2>
-            <p>
-              A production-grade directory platform — search, geo, security and
-              access control included from day one.
-            </p>
-          </div>
-          <div className="features-grid">
-            {FEATURES.map(({ icon: Icon, title, text }) => (
-              <div className="feature-card" key={title}>
-                <span className="feature-icon">
-                  <Icon size={20} />
-                </span>
-                <h3>{title}</h3>
-                <p>{text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+        <section id="features" className="landing-section features-section"><div className="landing-container"><div className="section-heading left"><span className="section-kicker">THE PLATFORM</span><h2>Everything clicks<br /><em>into place.</em></h2><p>Less time hunting. More time building relationships that matter.</p></div><div className="features-grid">{FEATURES.map(({ icon: Icon, title, text, number }) => <article className="feature-card" key={title}><div className="feature-card-top"><span className="feature-icon"><Icon size={19} /></span><span className="feature-number">{number}</span></div><h3>{title}</h3><p>{text}</p><span className="feature-line" /></article>)}</div></div></section>
 
-      {/* ---------------- How it works ---------------- */}
-      <section id="how-it-works" className="landing-section landing-section-alt">
-        <div className="landing-container">
-          <div className="section-heading">
-            <h2>Up and running in three steps</h2>
-            <p>From sign-up to your first lead search in under a minute.</p>
-          </div>
-          <div className="steps-grid">
-            {STEPS.map(({ icon: Icon, step, title, text }) => (
-              <div className="step-card" key={title}>
-                <span className="step-icon">
-                  <Icon size={22} />
-                </span>
-                <span className="step-label">{step}</span>
-                <h3>{title}</h3>
-                <p>{text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+        <section id="how-it-works" className="landing-section landing-section-alt"><div className="landing-container"><div className="section-heading"><span className="section-kicker">A SIMPLE START</span><h2>From zero to<br /><em>your next lead.</em></h2><p>Everything you need to start a conversation, without the busywork.</p></div><div className="steps-grid">{STEPS.map(({ icon: Icon, title, text }, index) => <div className="step-card" key={title}><div className="step-number">0{index + 1}</div><span className="step-icon"><Icon size={21} /></span><h3>{title}</h3><p>{text}</p>{index < 2 && <span className="step-connector"><ArrowRight size={16} /></span>}</div>)}</div></div></section>
 
-      {/* ---------------- Security strip ---------------- */}
-      <section id="security" className="landing-section">
-        <div className="landing-container security-band">
-          <span className="security-icon">
-            <ShieldCheck size={26} />
-          </span>
-          <div>
-            <h3>Enterprise-grade security on every tier</h3>
-            <p>
-              Argon2id password hashing · JWT access + httpOnly refresh cookies ·
-              deny-by-default RBAC · Redis rate limiting · server-side PII masking.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ---------------- Final CTA ---------------- */}
-      <section className="landing-cta">
-        <div className="landing-container landing-cta-inner">
-          <h2>Ready to meet your next lead?</h2>
-          <p>Create a free account and start searching the directory today.</p>
-          <div className="hero-ctas center">
-            {!isAuthenticated ? (
-              <>
-                <Link to="/signup" className="btn btn-light btn-lg">
-                  Sign up free <ArrowRight size={18} />
-                </Link>
-                <Link to="/login" className="btn btn-outline-light btn-lg">
-                  Log in
-                </Link>
-              </>
-            ) : (
-              <Link to="/app" className="btn btn-light btn-lg">
-                Open dashboard <ArrowRight size={18} />
-              </Link>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* ---------------- Footer ---------------- */}
-      <footer className="landing-footer">
-        <div className="landing-container landing-footer-inner">
-          <span className="brand">
-            <span className="brand-badge">
-              <Target size={14} />
-            </span>
-            <span className="brand-name">Free Leads</span>
-          </span>
-          <p>© {new Date().getFullYear()} Free Leads. All rights reserved.</p>
-        </div>
-      </footer>
+        <section id="security" className="landing-section security-section"><div className="landing-container security-band"><span className="security-icon"><ShieldCheck size={25} /></span><div><span className="section-kicker">TRUST, ALWAYS</span><h3>Enterprise-grade security, quietly working in the background.</h3><p>Argon2id password hashing · JWT access + httpOnly refresh cookies · deny-by-default RBAC · Redis rate limiting · server-side PII masking.</p></div><Check size={22} className="security-check" /></div></section>
+        <section className="landing-cta"><div className="landing-container landing-cta-inner"><span className="section-kicker">YOUR NEXT CHAPTER</span><h2>Good leads are<br /><em>closer than you think.</em></h2><p>Join the directory built to make prospecting feel human again.</p><div className="hero-ctas center">{isAuthenticated ? <Link to={dashboardPath} className="btn btn-light btn-lg">Open workspace <ArrowRight size={18} /></Link> : <><Link to="/signup" className="btn btn-light btn-lg">Start exploring free <ArrowRight size={18} /></Link><Link to="/login" className="btn btn-outline-light btn-lg">Log in</Link></>}</div></div></section>
+      </main>
+      <footer className="landing-footer"><div className="landing-container landing-footer-inner"><span className="brand"><span className="brand-badge"><Target size={14} /></span><span className="brand-name">free<span>leads</span></span></span><p>© {new Date().getFullYear()} Free Leads · Find better. Connect sooner.</p></div></footer>
     </div>
   );
 }
