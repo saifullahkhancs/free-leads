@@ -4,3 +4,7 @@ dist/
 build/
 *.log
 .DS_Store
+# ignore the .env file in the backend directory
+/backend/.env
+# ignore the package-lock.json file in the backend directory
+/backend/package-lock.json
