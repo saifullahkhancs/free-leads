@@ -21,7 +21,7 @@ const ROLE_PERMISSIONS = {
   user: ["leads.read"],
 };
 
-async function seed() {
+async function seed({ closePool = false } = {}) {
   await withTransaction(async (client) => {
     const roleIds = {};
     for (const name of ROLES) {
@@ -58,10 +58,17 @@ async function seed() {
   });
 
   console.log("Seed complete: roles, permissions, and role_permissions populated.");
-  await pool.end();
+
+  if (closePool) {
+    await pool.end();
+  }
 }
 
-seed().catch((err) => {
-  console.error("Seed failed", err);
-  process.exit(1);
-});
+module.exports = { seed };
+
+if (require.main === module) {
+  seed({ closePool: true }).catch((err) => {
+    console.error("Seed failed", err);
+    process.exit(1);
+  });
+}
