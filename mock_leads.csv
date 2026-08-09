@@ -1,0 +1,6 @@
+full_name,headline,about,email,linkedin_url,twitter_url,facebook_url,website_url,country,country_code,region,city,industry,company_name,job_title
+John Doe,Software Engineer,Experienced dev,john.doe@example.com,https://linkedin.com/in/johndoe,https://twitter.com/johndoe,https://facebook.com/johndoe,https://johndoe.com,United States,US,California,San Francisco,Software,Tech Corp,Senior Developer
+Jane Smith,Marketing Specialist,SEO expert,jane.smith@example.com,https://linkedin.com/in/janesmith,,,,United Kingdom,GB,Greater London,London,Marketing,Ad Agency,Account Manager
+Bob Brown,Sales Lead,Top closer,bob.brown@example.com,,,,https://bobbrown.com,Canada,CA,Ontario,Toronto,Sales,Sales Force,Sales Director
+Alice White,CEO at Startup,Serial entrepreneur,alice@startup.com,https://linkedin.com/in/alicewhite,,,,United States,US,New York,New York,Venture Capital,Startup Inc,CEO
+Charlie Black,Freelance Designer,Creative mind,charlie@design.com,,https://twitter.com/charlieb,,https://charliedesign.com,Germany,DE,Bavaria,Munich,Design,Freelance,Lead Designer

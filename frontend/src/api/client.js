@@ -147,6 +147,21 @@ export async function logout() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Lead endpoints
+// ---------------------------------------------------------------------------
+export async function getLeads(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) query.append(key, value);
+  });
+  return request(`/api/leads?${query.toString()}`);
+}
+
+export async function getLeadById(id) {
+  return request(`/api/leads/${id}`);
+}
+
 /** Called once on app load to silently restore a session from the refresh cookie. */
 export async function trySilentLogin() {
   const token = await refreshAccessToken();
