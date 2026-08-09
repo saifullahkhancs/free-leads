@@ -20,6 +20,8 @@ the "Leads Directory Web App" dev document (Module 1 — Foundation + Auth).
 - Postgres migrations + a seed script for default roles/permissions
 
 **Frontend** (`frontend/`) — React (Vite)
+- `LandingPage` — public marketing landing page served at `/`, with entry
+  points to log in / sign up (authenticated visitors get a dashboard shortcut)
 - `LoginPage`, `SignupPage` (with inline verification step), `ForgotPasswordPage`,
   `ResetPasswordPage` — ported 1:1 in behavior from the original job-easy pages
 - `AuthContext` — holds the access token in memory, silently refreshes it on
@@ -44,7 +46,7 @@ cp .env.example .env
 # edit .env if needed (DB creds, JWT secrets, SMTP/Resend key, etc.)
 npm install
 npm run setup     # runs migrations, then seeds default roles/permissions
-npm run dev        # http://localhost:8000
+npm run dev        # http://localhost:8004
 ```
 
 ### 3. Frontend
@@ -53,10 +55,10 @@ npm run dev        # http://localhost:8000
 cd frontend
 cp .env.example .env
 npm install
-npm run dev         # http://localhost:5173
+npm run dev         # http://localhost:5178
 ```
 
-The Vite dev server proxies `/api/*` to `http://localhost:8000`, so
+The Vite dev server proxies `/api/*` to `http://localhost:8004`, so
 `VITE_API_URL` can be left blank in dev.
 
 ## Default roles

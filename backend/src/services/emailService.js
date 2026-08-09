@@ -25,6 +25,8 @@ async function sendMail({ to, subject, html }) {
   if (!env.SMTP_PASSWORD) {
     // eslint-disable-next-line no-console
     console.log(`[emailService] (dev, no SMTP_PASSWORD set) would send to ${to}: ${subject}`);
+    // eslint-disable-next-line no-console
+    console.log(`[emailService] dev message body: ${html}`);
     return;
   }
   try {
