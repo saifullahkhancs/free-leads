@@ -1,6 +1,7 @@
 const argon2 = require("argon2");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
+const { v4: uuidv4 } = require("uuid");
 const env = require("../config/env");
 
 // ---------------------------------------------------------------------------
@@ -76,7 +77,8 @@ function verifyPasswordResetToken(token) {
 // Misc token helpers
 // ---------------------------------------------------------------------------
 function generateTokenId() {
-  return crypto.randomBytes(32).toString("base64url");
+  // refresh_tokens.id is a UUID column, so token ids (jti) must be UUIDs.
+  return uuidv4();
 }
 
 function generateVerificationCode(digits = 5) {
