@@ -85,6 +85,7 @@ CREATE TABLE leads (
     company_name    VARCHAR(255),
     job_title       VARCHAR(255),
     source          VARCHAR(100),          -- where the record was ingested from
+    location        GEOGRAPHY(POINT, 4326), -- Geospatial point (Lon, Lat)
     is_verified     BOOLEAN DEFAULT FALSE,
     is_active       BOOLEAN DEFAULT TRUE,
     created_at      TIMESTAMPTZ DEFAULT now(),
@@ -229,6 +230,7 @@ CREATE INDEX idx_leads_city_id       ON leads (city_id);
 CREATE INDEX idx_leads_industry      ON leads (industry);
 CREATE INDEX idx_leads_country_city  ON leads (country_id, city_id);
 CREATE INDEX idx_leads_search_vector ON leads USING GIN (search_vector);
+CREATE INDEX idx_leads_location      ON leads USING GIST (location);
 CREATE INDEX idx_leads_company_trgm  ON leads USING GIN (company_name gin_trgm_ops); -- pg_trgm for partial name search
 CREATE INDEX idx_usage_logs_user_created ON usage_logs (user_id, created_at);
 CREATE INDEX idx_regions_country     ON regions (country_id);
