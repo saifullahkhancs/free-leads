@@ -24,6 +24,7 @@ function makeLimiter({ windowSeconds, max, keyPrefix }) {
 const registerLimiter = makeLimiter({ windowSeconds: 60, max: env.REGISTER_RATE_LIMIT_MAX, keyPrefix: "register" });
 const loginLimiter = makeLimiter({ windowSeconds: 60, max: env.LOGIN_RATE_LIMIT_MAX, keyPrefix: "login" });
 const verifyLimiter = makeLimiter({ windowSeconds: 60, max: 10, keyPrefix: "verify" });
+const resendVerificationLimiter = makeLimiter({ windowSeconds: 60, max: 3, keyPrefix: "resend-verification" });
 const forgotPasswordLimiter = makeLimiter({ windowSeconds: 60, max: 5, keyPrefix: "forgot-password" });
 const resetPasswordLimiter = makeLimiter({ windowSeconds: 60, max: 5, keyPrefix: "reset-password" });
 
@@ -38,6 +39,7 @@ module.exports = {
   registerLimiter,
   loginLimiter,
   verifyLimiter,
+  resendVerificationLimiter,
   forgotPasswordLimiter,
   resetPasswordLimiter,
   globalLimiter,
