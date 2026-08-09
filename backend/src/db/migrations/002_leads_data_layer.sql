@@ -25,6 +25,20 @@ CREATE TABLE IF NOT EXISTS cities (
 );
 
 -- ---------------------------------------------------------------------------
+-- PostGIS (optional) — the `location` column uses GEOGRAPHY when the PostGIS
+-- extension is available. On plain PostgreSQL (e.g. the bundled docker-compose
+-- `postgres:15` image or embedded dev databases) we fall back to a TEXT column
+-- so the rest of the schema still applies. Geo radius searches require PostGIS.
+-- ---------------------------------------------------------------------------
+DO $$
+BEGIN
+    CREATE EXTENSION IF NOT EXISTS postgis;
+EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'PostGIS extension unavailable: falling back to TEXT location column';
+END
+$$;
+
+-- ---------------------------------------------------------------------------
 -- Leads (the core dataset)
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS leads (
@@ -44,13 +58,26 @@ CREATE TABLE IF NOT EXISTS leads (
     company_name    VARCHAR(255),
     job_title       VARCHAR(255),
     source          VARCHAR(100),          -- where the record was ingested from
-    location        GEOGRAPHY(POINT, 4326), -- Geospatial point (Lon, Lat)
+    -- `location` is added below: GEOGRAPHY(POINT, 4326) with PostGIS,
+    -- otherwise a TEXT fallback ("lon lat") so migrations succeed anywhere.
     is_verified     BOOLEAN DEFAULT FALSE,
     is_active       BOOLEAN DEFAULT TRUE,
     created_at      TIMESTAMPTZ DEFAULT now(),
     updated_at      TIMESTAMPTZ DEFAULT now(),
     search_vector   TSVECTOR              -- generated column for full-text search
 );
+
+-- Add the geospatial column: GEOGRAPHY(POINT, 4326) when PostGIS is present,
+-- otherwise a plain TEXT fallback so migrations apply on vanilla PostgreSQL.
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'geography') THEN
+        ALTER TABLE leads ADD COLUMN IF NOT EXISTS location GEOGRAPHY(POINT, 4326);
+    ELSE
+        ALTER TABLE leads ADD COLUMN IF NOT EXISTS location TEXT;
+    END IF;
+END
+$$;
 
 -- ---------------------------------------------------------------------------
 -- Indexing strategy (critical at 5M rows)
@@ -64,8 +91,14 @@ CREATE INDEX IF NOT EXISTS idx_leads_country_city  ON leads (country_id, city_id
 -- GIN index for full-text search
 CREATE INDEX IF NOT EXISTS idx_leads_search_vector ON leads USING GIN (search_vector);
 
--- Geospatial index for "Near Me" searches
-CREATE INDEX IF NOT EXISTS idx_leads_location ON leads USING GIST (location);
+-- Geospatial index for "Near Me" searches (only possible with PostGIS)
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'geography') THEN
+        CREATE INDEX IF NOT EXISTS idx_leads_location ON leads USING GIST (location);
+    END IF;
+END
+$$;
 
 -- pg_trgm for partial name/company search
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
