@@ -1,7 +1,7 @@
 const { Country, State } = require("country-state-city");
 const { pool } = require("../config/db");
 
-async function seedGeo() {
+async function seedGeo({ closePool = false } = {}) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -19,18 +19,18 @@ async function seedGeo() {
 
     // Get country mapping to resolve IDs for states
     const { rows: countryRows } = await client.query("SELECT id, code FROM countries");
-    const countryMap = new Map(countryRows.map(r => [r.code, r.id]));
+    const countryMap = new Map(countryRows.map((r) => [r.code, r.id]));
 
     console.log("Seeding regions (states)... This may take a moment.");
     const allStates = State.getAllStates();
-    
+
     // Batch insert states for performance
     const BATCH_SIZE = 500;
     for (let i = 0; i < allStates.length; i += BATCH_SIZE) {
       const batch = allStates.slice(i, i + BATCH_SIZE);
       const values = [];
       const params = [];
-      
+
       batch.forEach((s, index) => {
         const countryId = countryMap.get(s.countryCode);
         if (countryId) {
@@ -55,10 +55,20 @@ async function seedGeo() {
   } catch (err) {
     await client.query("ROLLBACK");
     console.error("Geo seeding failed", err);
+    throw err;
   } finally {
     client.release();
-    await pool.end();
+    if (closePool) {
+      await pool.end();
+    }
   }
 }
 
-seedGeo();
+module.exports = { seedGeo };
+
+if (require.main === module) {
+  seedGeo({ closePool: true }).catch((err) => {
+    console.error("Geo seeding failed", err);
+    process.exit(1);
+  });
+}

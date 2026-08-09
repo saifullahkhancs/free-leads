@@ -16,7 +16,13 @@ async function getAppliedMigrations() {
   return new Set(rows.map((r) => r.filename));
 }
 
-async function runMigrations() {
+/**
+ * Run all pending SQL migrations.
+ * @param {{ closePool?: boolean }} options
+ *  - closePool: if true, ends the pg pool after migrations finish (useful for CLI).
+ *               When used from server startup we keep the pool alive.
+ */
+async function runMigrations({ closePool = false } = {}) {
   const migrationsDir = path.join(__dirname, "migrations");
   const files = fs
     .readdirSync(migrationsDir)
@@ -39,17 +45,29 @@ async function runMigrations() {
       await client.query(sql);
       await client.query("INSERT INTO schema_migrations (filename) VALUES ($1)", [file]);
       await client.query("COMMIT");
+      console.log(`Applied migration: ${file}`);
     } catch (err) {
       await client.query("ROLLBACK");
       console.error(`Migration failed: ${file}`, err);
-      process.exit(1);
+      throw err;
     } finally {
       client.release();
     }
   }
 
   console.log("Migrations complete.");
-  await pool.end();
+
+  if (closePool) {
+    await pool.end();
+  }
 }
 
-runMigrations();
+module.exports = { runMigrations };
+
+// Allow direct CLI usage: `node src/db/migrate.js` or `npm run migrate`
+if (require.main === module) {
+  runMigrations({ closePool: true }).catch((err) => {
+    console.error("Migration runner failed", err);
+    process.exit(1);
+  });
+}
