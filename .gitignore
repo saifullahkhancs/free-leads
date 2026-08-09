@@ -8,3 +8,5 @@ build/
 /backend/.env
 # ignore the package-lock.json file in the backend directory
 /backend/package-lock.json
+frontend/package-lock.json
+/backend/node_modules/
