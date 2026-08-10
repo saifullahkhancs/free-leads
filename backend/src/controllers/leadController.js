@@ -1,5 +1,6 @@
 const leadService = require("../services/leadService");
 const asyncHandler = require("../utils/asyncHandler");
+const ApiError = require("../utils/ApiError");
 
 const getLeads = asyncHandler(async (req, res) => {
   const { q, country_id, region_id, city_id, industry, cursor, limit, lat, lon, radius } = req.query;
@@ -51,8 +52,51 @@ const exportLeads = asyncHandler(async (req, res) => {
   res.status(200).send(csv);
 });
 
+/**
+ * POST /api/leads — create a single lead manually (editor/admin/super_admin).
+ */
+const createLead = asyncHandler(async (req, res) => {
+  const lead = await leadService.createLead(req.body);
+  res.status(201).json({
+    status: "success",
+    data: lead,
+  });
+});
+
+/**
+ * POST /api/leads/import — bulk import leads from raw CSV text (editor/admin/super_admin).
+ */
+const importLeads = asyncHandler(async (req, res) => {
+  const { csv, source } = req.body || {};
+
+  if (!csv || typeof csv !== "string" || !csv.trim()) {
+    throw new ApiError(400, "CSV content is required (send { csv: '<text>' })");
+  }
+
+  const result = await leadService.importLeadsCsv(csv, source || "csv_upload");
+
+  res.json({
+    status: "success",
+    data: result,
+  });
+});
+
+/**
+ * GET /api/leads/stats — dashboard overview numbers.
+ */
+const getStats = asyncHandler(async (req, res) => {
+  const stats = await leadService.getStats();
+  res.json({
+    status: "success",
+    data: stats,
+  });
+});
+
 module.exports = {
   getLeads,
   getLeadById,
   exportLeads,
+  createLead,
+  importLeads,
+  getStats,
 };

@@ -8,7 +8,9 @@ import {
   EyeOff,
   Globe2,
   Layers3,
+  LayoutDashboard,
   LogIn,
+  LogOut,
   MailCheck,
   MapPin,
   MousePointer2,
@@ -21,6 +23,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { initialsOf } from "../utils/format";
 
 const FEATURES = [
   { icon: Search, number: "01", title: "Search with intent", text: "Find the right people fast with flexible filters for role, company, industry and more." },
@@ -49,8 +52,12 @@ function LeadRow({ initials, name, role, location, color, score }) {
 }
 
 export default function LandingPage() {
-  const { isAuthenticated, user } = useAuth();
-  const dashboardPath = user?.roles?.some((r) => ["admin", "super_admin"].includes(r)) ? "/admin" : "/app";
+  const { isAuthenticated, user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    window.location.href = "/";
+  };
 
   return (
     <div className="landing">
@@ -59,7 +66,25 @@ export default function LandingPage() {
           <Link to="/" className="brand"><span className="brand-badge"><Target size={18} /></span><span className="brand-name">free<span>leads</span></span></Link>
           <nav className="landing-nav"><a href="#features">Platform</a><a href="#how-it-works">How it works</a><a href="#security">Security</a></nav>
           <div className="landing-auth-actions">
-            {isAuthenticated ? <Link to={dashboardPath} className="btn btn-primary">Open workspace <ArrowRight size={15} /></Link> : <><Link to="/login" className="btn btn-ghost"><LogIn size={15} /> Log in</Link><Link to="/signup" className="btn btn-primary">Start for free <ArrowRight size={15} /></Link></>}
+            {isAuthenticated ? (
+              <>
+                <div className="landing-user">
+                  <span className="landing-avatar">{initialsOf(user)}</span>
+                  <span className="landing-user-meta">
+                    <strong>{[user?.firstName, user?.lastName].filter(Boolean).join(" ") || "User"}</strong>
+                    <small>{user?.email}</small>
+                  </span>
+                </div>
+                <Link to="/admin" className="btn btn-outline"><LayoutDashboard size={15} /> <span className="btn-text">Dashboard</span></Link>
+                <Link to="/app" className="btn btn-primary"><span className="btn-text">App</span> <ArrowRight size={15} /></Link>
+                <button onClick={handleLogout} className="btn btn-logout" title="Log out"><LogOut size={15} /> <span className="logout-text">Log out</span></button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="btn btn-ghost"><LogIn size={15} /> Log in</Link>
+                <Link to="/signup" className="btn btn-primary">Start for free <ArrowRight size={15} /></Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -73,8 +98,17 @@ export default function LandingPage() {
               <h1>Turn <span className="accent">curiosity</span><br />into connection.</h1>
               <p className="hero-sub">A beautiful, searchable directory for discovering the people and companies that move your business forward.</p>
               <div className="hero-ctas">
-                {!isAuthenticated && <Link to="/signup" className="btn btn-primary btn-lg">Explore the directory <ArrowRight size={18} /></Link>}
-                <Link to={isAuthenticated ? dashboardPath : "/login"} className="btn btn-outline btn-lg">{isAuthenticated ? "Go to workspace" : "I have an account"}</Link>
+                {!isAuthenticated ? (
+                  <>
+                    <Link to="/signup" className="btn btn-primary btn-lg">Explore the directory <ArrowRight size={18} /></Link>
+                    <Link to="/login" className="btn btn-outline btn-lg">I have an account</Link>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/admin" className="btn btn-primary btn-lg"><LayoutDashboard size={17} /> Open Dashboard <ArrowRight size={18} /></Link>
+                    <Link to="/app" className="btn btn-outline btn-lg">Open App</Link>
+                  </>
+                )}
               </div>
               <div className="hero-proof"><div className="proof-avatars"><span>AR</span><span>DK</span><span>MS</span><span>+5k</span></div><span>Trusted by the next generation of growth teams</span></div>
             </div>
@@ -104,7 +138,7 @@ export default function LandingPage() {
         <section id="how-it-works" className="landing-section landing-section-alt"><div className="landing-container"><div className="section-heading"><span className="section-kicker">A SIMPLE START</span><h2>From zero to<br /><em>your next lead.</em></h2><p>Everything you need to start a conversation, without the busywork.</p></div><div className="steps-grid">{STEPS.map(({ icon: Icon, title, text }, index) => <div className="step-card" key={title}><div className="step-number">0{index + 1}</div><span className="step-icon"><Icon size={21} /></span><h3>{title}</h3><p>{text}</p>{index < 2 && <span className="step-connector"><ArrowRight size={16} /></span>}</div>)}</div></div></section>
 
         <section id="security" className="landing-section security-section"><div className="landing-container security-band"><span className="security-icon"><ShieldCheck size={25} /></span><div><span className="section-kicker">TRUST, ALWAYS</span><h3>Enterprise-grade security, quietly working in the background.</h3><p>Argon2id password hashing · JWT access + httpOnly refresh cookies · deny-by-default RBAC · Redis rate limiting · server-side PII masking.</p></div><Check size={22} className="security-check" /></div></section>
-        <section className="landing-cta"><div className="landing-container landing-cta-inner"><span className="section-kicker">YOUR NEXT CHAPTER</span><h2>Good leads are<br /><em>closer than you think.</em></h2><p>Join the directory built to make prospecting feel human again.</p><div className="hero-ctas center">{isAuthenticated ? <Link to={dashboardPath} className="btn btn-light btn-lg">Open workspace <ArrowRight size={18} /></Link> : <><Link to="/signup" className="btn btn-light btn-lg">Start exploring free <ArrowRight size={18} /></Link><Link to="/login" className="btn btn-outline-light btn-lg">Log in</Link></>}</div></div></section>
+        <section className="landing-cta"><div className="landing-container landing-cta-inner"><span className="section-kicker">YOUR NEXT CHAPTER</span><h2>Good leads are<br /><em>closer than you think.</em></h2><p>Join the directory built to make prospecting feel human again.</p><div className="hero-ctas center">{isAuthenticated ? <><Link to="/admin" className="btn btn-light btn-lg">Open Dashboard <ArrowRight size={18} /></Link><Link to="/app" className="btn btn-outline-light btn-lg">Open App</Link></> : <><Link to="/signup" className="btn btn-light btn-lg">Start exploring free <ArrowRight size={18} /></Link><Link to="/login" className="btn btn-outline-light btn-lg">Log in</Link></>}</div></div></section>
       </main>
       <footer className="landing-footer"><div className="landing-container landing-footer-inner"><span className="brand"><span className="brand-badge"><Target size={14} /></span><span className="brand-name">free<span>leads</span></span></span><p>© {new Date().getFullYear()} Free Leads · Find better. Connect sooner.</p></div></footer>
     </div>

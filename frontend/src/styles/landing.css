@@ -13,3 +13,28 @@
 .security-section{padding:65px 0}.security-band{display:flex;align-items:center;gap:20px;padding:26px 30px;border:1px solid #d5e1d2;border-radius:12px;background:#eaf4d9}.security-icon{width:52px;height:52px;display:grid;place-items:center;flex:none;border-radius:14px;background:var(--green);color:var(--lime)}.security-band h3{font-size:17px;margin:7px 0}.security-band p{font-size:11px;line-height:1.7;color:#63776b;margin:0}.security-check{margin-left:auto;color:#75a13b;flex:none}.landing-cta{padding:110px 0;background:var(--green);color:#fff}.landing-cta-inner{text-align:center}.landing-cta h2{font-size:clamp(40px,5vw,62px);line-height:1.03;letter-spacing:-3px;margin:14px 0}.landing-cta p{color:#c4d5ca;font-size:14px;margin:0 0 28px}.center{justify-content:center}.landing-footer{background:#163a31;color:#adc4b6;padding:24px 0;border-top:1px solid #35604e}.landing-footer-inner{display:flex;align-items:center;justify-content:space-between;gap:15px}.landing-footer .brand-badge{width:27px;height:27px;border-radius:8px}.landing-footer .brand-name{font-size:14px}.landing-footer p{font-size:10px;margin:0;color:#91ada0}
 @media(max-width:960px){.landing-hero-grid{grid-template-columns:1fr}.landing-hero-copy{padding-bottom:0;max-width:650px}.hero-visual{min-height:470px}.features-grid{grid-template-columns:repeat(2,1fr)}.stat-strip{grid-template-columns:repeat(3,1fr)}.stat-note{display:none}}@media(max-width:640px){.landing-container{padding:0 20px}.landing-header{height:64px}.landing-header-inner{gap:15px}.landing-nav{display:none}.landing .landing-auth-actions .btn-ghost{display:none}.landing-hero{padding-top:55px}.landing-hero h1{letter-spacing:-2.5px}.hero-visual{min-height:390px;transform:scale(.84);margin:-25px -35px}.directory-card{transform:none}.orbit,.cursor{display:none}.float-chip{font-size:9px}.chip-top{right:0}.chip-bottom{left:10px}.stat-strip{gap:10px;padding-top:20px}.stat-strip div{display:block}.stat-strip strong{display:block;font-size:20px}.stat-strip small{font-size:8px}.features-grid,.steps-grid{grid-template-columns:1fr}.landing-section{padding:75px 0}.section-heading.left{margin-bottom:35px}.step-connector{display:none}.security-band{align-items:flex-start;flex-wrap:wrap;padding:22px}.security-check{display:none}.landing-footer-inner{align-items:flex-start;flex-direction:column}.landing-cta{padding:80px 0}}
 @media(prefers-reduced-motion:reduce){.directory-card,.orbit,.float-chip{animation:none}}
+
+/* ---------- Authenticated header: user info + Dashboard/App buttons + logout ---------- */
+.landing-user{display:flex;align-items:center;gap:9px;padding:4px 10px 4px 4px;border:1px solid #d7e2d4;border-radius:99px;background:#eef4e9}
+.landing-avatar{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#3fae8a,#1d6f55);color:#fff;font-size:11px;font-weight:800;box-shadow:inset 0 0 0 2px rgba(255,255,255,.35)}
+.landing-user-meta{display:flex;flex-direction:column;line-height:1.2;min-width:0}
+.landing-user-meta strong{font-size:11.5px;color:var(--green);max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.landing-user-meta small{font-size:10px;color:#789080;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.landing .btn-logout{background:transparent;border-color:#d7e2d4;color:#687671;border-radius:99px;padding:9px 13px}
+.landing .btn-logout:hover{background:#fbecec;border-color:#e7b8b8;color:#b34040;transform:none}
+@media(max-width:960px){.landing-user-meta{display:none}.landing .btn-logout{padding:9px 11px}}
+@media(max-width:640px){
+  .landing-user{display:none}
+  .landing .landing-auth-actions .btn-outline{padding:9px 12px;font-size:11px}
+  .landing .landing-auth-actions .btn-primary{padding:9px 12px;font-size:11px}
+  .landing .btn-logout .logout-text{display:none}
+  .landing .btn-logout{padding:9px;border-radius:50%}
+}
+@media(max-width:420px){
+}
+@media(max-width:420px){
+  .landing .landing-auth-actions .btn .btn-text{display:none}
+  .landing .landing-auth-actions .btn-outline{padding:9px 11px}
+  .landing .landing-auth-actions .btn-primary{padding:9px 11px}
+  .landing .landing-auth-actions .btn{font-size:11px;gap:6px}
+}
