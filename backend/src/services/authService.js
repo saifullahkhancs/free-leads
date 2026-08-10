@@ -75,6 +75,14 @@ function sanitizeUser(user, roles = []) {
     lastName: user.last_name,
     isActive: user.is_active,
     isEmailVerified: user.is_email_verified,
+    location: {
+      lat: user.location_lat ?? null,
+      lng: user.location_lng ?? null,
+      city: user.location_city ?? null,
+      region: user.location_region ?? null,
+      country: user.location_country ?? null,
+      label: user.location_label ?? null,
+    },
     roles,
     createdAt: user.created_at,
   };
@@ -441,6 +449,55 @@ async function getCurrentUser(userId) {
   return { ...sanitizeUser(user, roles), permissions };
 }
 
+// ---------------------------------------------------------------------------
+// Update profile (name + map-picked location)
+// ---------------------------------------------------------------------------
+async function updateProfile(userId, { firstName, lastName, location }) {
+  const sets = [];
+  const values = [userId];
+
+  if (firstName !== undefined) {
+    values.push(firstName.trim());
+    sets.push(`first_name = $${values.length}`);
+  }
+  if (lastName !== undefined) {
+    values.push(lastName.trim());
+    sets.push(`last_name = $${values.length}`);
+  }
+  if (location !== undefined) {
+    values.push(
+      location.lat ?? null,
+      location.lng ?? null,
+      location.city ?? null,
+      location.region ?? null,
+      location.country ?? null,
+      location.label ?? null
+    );
+    sets.push(
+      `location_lat = $${values.length - 5}`,
+      `location_lng = $${values.length - 4}`,
+      `location_city = $${values.length - 3}`,
+      `location_region = $${values.length - 2}`,
+      `location_country = $${values.length - 1}`,
+      `location_label = $${values.length}`
+    );
+  }
+
+  if (sets.length === 0) {
+    return getCurrentUser(userId); // nothing to update
+  }
+  sets.push("updated_at = now()");
+
+  const { rows } = await query(
+    `UPDATE users SET ${sets.join(", ")} WHERE id = $1 RETURNING *`,
+    values
+  );
+  if (!rows[0]) throw new ApiError(404, "User not found");
+
+  const roles = await getUserRoles(rows[0].id);
+  return sanitizeUser(rows[0], roles);
+}
+
 module.exports = {
   register,
   verifyEmail,
@@ -451,6 +508,7 @@ module.exports = {
   forgotPassword,
   resetPassword,
   getCurrentUser,
+  updateProfile,
   getUserRoles,
   getUserPermissions,
   findUserByEmail,

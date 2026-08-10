@@ -139,12 +139,29 @@ export async function getCurrentUser() {
   return request("/api/auth/me", { method: "GET" });
 }
 
+/** Update own profile: first/last name + map-picked location. */
+export async function updateProfile(payload) {
+  return request("/api/auth/me", { method: "PATCH", body: payload });
+}
+
 export async function logout() {
   try {
     await request("/api/auth/logout", { method: "POST", skipAuth: true });
   } finally {
     clearAccessToken();
   }
+}
+
+// ---------------------------------------------------------------------------
+// Geocoding (free map location picker) — proxied through the backend so the
+// browser never calls the geocoding provider directly.
+// ---------------------------------------------------------------------------
+export async function geoSearch(q) {
+  return request(`/api/geo/search?q=${encodeURIComponent(q)}`, { skipAuth: true });
+}
+
+export async function geoReverse(lat, lng) {
+  return request(`/api/geo/reverse?lat=${lat}&lng=${lng}`, { skipAuth: true });
 }
 
 // ---------------------------------------------------------------------------

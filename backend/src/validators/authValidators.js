@@ -30,6 +30,23 @@ const resetPasswordSchema = z.object({
   password: z.string().min(8).max(128),
 });
 
+const updateProfileSchema = z.object({
+  firstName: z.string().trim().min(1).max(150).optional(),
+  lastName: z.string().trim().min(1).max(150).optional(),
+  // `location` is optional; pass lat/lng as null to clear the saved location.
+  // When a location is set, the map picker sends all six fields together.
+  location: z
+    .object({
+      lat: z.number().min(-90).max(90).nullable(),
+      lng: z.number().min(-180).max(180).nullable(),
+      city: z.string().trim().max(150).nullable().optional(),
+      region: z.string().trim().max(150).nullable().optional(),
+      country: z.string().trim().max(150).nullable().optional(),
+      label: z.string().trim().max(300).nullable().optional(),
+    })
+    .optional(),
+});
+
 module.exports = {
   registerSchema,
   loginSchema,
@@ -37,4 +54,5 @@ module.exports = {
   resendVerificationSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  updateProfileSchema,
 };

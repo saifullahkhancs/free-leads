@@ -61,6 +61,14 @@ const env = {
   RATE_LIMIT_MAX_REQUESTS: int("RATE_LIMIT_MAX_REQUESTS", 100),
   LOGIN_RATE_LIMIT_MAX: int("LOGIN_RATE_LIMIT_MAX", 10),
   REGISTER_RATE_LIMIT_MAX: int("REGISTER_RATE_LIMIT_MAX", 5),
+
+  // ---- Geocoding (free map location picker) ----
+  // Geoapify is used when a key is provided; otherwise the public Nominatim
+  // (OpenStreetMap) endpoint is used — no key needed, ~1 req/sec is fine for
+  // interactive picking.
+  GEOAPIFY_API_KEY: process.env.GEOAPIFY_API_KEY || "",
+  NOMINATIM_USER_AGENT:
+    process.env.NOMINATIM_USER_AGENT || "freeleads-app/1.0 (leads-directory-web-app)",
 };
 
 // Fail fast in production if secrets were left at their insecure defaults —
