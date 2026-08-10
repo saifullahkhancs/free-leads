@@ -374,7 +374,7 @@ const importLeadsCsv = async (csvText, source = "csv_upload") => {
  * industries (for filter dropdowns) and a few recent leads.
  */
 const getStats = async () => {
-  const [{ rows: counts }] = await Promise.all([
+  const [countsRes, industriesRes, recentRes] = await Promise.all([
     pool.query(`
       SELECT
         (SELECT COUNT(*) FROM leads WHERE is_active = TRUE)                  AS total_leads,
@@ -406,9 +406,9 @@ const getStats = async () => {
   ]);
 
   return {
-    counts: counts[0],
-    industries: rows[1].rows.map((r) => r.industry).filter(Boolean),
-    recentLeads: rows[2].rows,
+    counts: countsRes.rows[0],
+    industries: industriesRes.rows.map((r) => r.industry).filter(Boolean),
+    recentLeads: recentRes.rows,
   };
 };
 
