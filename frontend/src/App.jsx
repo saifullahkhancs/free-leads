@@ -34,13 +34,13 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-          <Route element={<AuthGuard />}>
-            {/* App view — the leads directory */}
-            <Route path="/app" element={<AppShell />}>
-              <Route index element={<DirectoryPage />} />
-            </Route>
+          {/* App view — the modern leads directory */}
+          <Route path="/app" element={<AppShell />}>
+            <Route index element={<DirectoryPage />} />
+          </Route>
 
-            {/* Dashboard — CMS workspace with sidebar */}
+          {/* Dashboard — CMS workspace with sidebar (requires authentication) */}
+          <Route element={<AuthGuard />}>
             <Route path="/admin" element={<DashboardLayout />}>
               <Route index element={<AdminOverviewPage />} />
               <Route path="leads" element={<LeadsPage />} />
