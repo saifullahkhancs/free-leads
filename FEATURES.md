@@ -39,6 +39,9 @@
   Geoapify's Places API free tier (3,000 credits/day) — both are legal, free,
   and return name/address/category/lat-lng that map directly onto the existing
   `leads` + PostGIS schema.
+- **Full design notes, example queries, schema mapping and implementation
+  plan: see [`MAP_SCRAPING.md`](MAP_SCRAPING.md)** — read it before building
+  the scraper.
 
 ---
 
