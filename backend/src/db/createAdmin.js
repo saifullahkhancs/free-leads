@@ -6,35 +6,51 @@
  *   node src/db/createAdmin.js --email superadmin@example.com --role super_admin
  *   node src/db/createAdmin.js --email admin@example.com --role admin --password MySecurePass123
  *
- * If the user doesn't exist, it will be created.
- * If the user already exists, it will add the role to them.
+ * If the user doesn't exist, it will be created (password required).
+ * If the user already exists, it will add the role to them (promote them).
+ * For an existing user, --password is optional: if given, the password is
+ * reset and the email marked verified; if omitted, the password is left
+ * untouched.
  */
 
 const { hashPassword } = require("../utils/security");
 const { query, withTransaction, pool } = require("../config/db");
 
-const ROLES = {
-  user: 1,
-  editor: 2,
-  admin: 3,
-  super_admin: 4
-};
+// Role ids are NOT hardcoded here: roles.id is a SERIAL column, so the
+// actual ids depend on insertion order. We resolve the id by role name at
+// runtime (same approach as authService.assignDefaultRole / adminController).
+const VALID_ROLES = ["super_admin", "admin", "editor", "user"];
+
+async function resolveRoleId(client, roleName) {
+  const { rows } = await client.query(
+    "SELECT id FROM roles WHERE name = $1",
+    [roleName]
+  );
+  return rows.length > 0 ? rows[0].id : null;
+}
 
 async function createAdmin({ email, password, role = "admin" }) {
-  const roleId = ROLES[role];
-  if (!roleId) {
-    console.error(`Invalid role: ${role}. Valid roles: ${Object.keys(ROLES).join(", ")}`);
+  if (!VALID_ROLES.includes(role)) {
+    console.error(`Invalid role: ${role}. Valid roles: ${VALID_ROLES.join(", ")}`);
     process.exit(1);
   }
 
-  if (!password) {
-    console.error("Password is required for new users");
-    process.exit(1);
-  }
-
-  const passwordHash = await hashPassword(password);
+  // Only hash the password if one was supplied; for an existing user the
+  // password is optional (omit --password to promote without resetting it).
+  const passwordHash = password ? await hashPassword(password) : null;
 
   await withTransaction(async (client) => {
+    // Resolve the role id from the DB (ids depend on insertion order)
+    const roleId = await resolveRoleId(client, role);
+    if (!roleId) {
+      console.error(`\n❌ Role "${role}" does not exist in the roles table.`);
+      console.error(`   The default roles are created by the seed script. Run this first:\n`);
+      console.error(`     npm run seed        (seeds roles + permissions)`);
+      console.error(`     npm run setup       (migrations + seed, if starting fresh)\n`);
+      console.error(`   Then re-run this script.\n`);
+      process.exit(1);
+    }
+
     // Check if user exists
     const { rows: existingUsers } = await client.query(
       "SELECT id FROM users WHERE email = $1",
@@ -45,14 +61,25 @@ async function createAdmin({ email, password, role = "admin" }) {
     if (existingUsers.length > 0) {
       userId = existingUsers[0].id;
       console.log(`User ${email} already exists (ID: ${userId})`);
-      
-      // Update password if provided
-      await client.query(
-        "UPDATE users SET password_hash = $1, is_email_verified = true WHERE id = $2",
-        [passwordHash, userId]
-      );
-      console.log("Password updated and email verified");
+
+      // Update password only if one was provided
+      if (passwordHash) {
+        await client.query(
+          "UPDATE users SET password_hash = $1, is_email_verified = true WHERE id = $2",
+          [passwordHash, userId]
+        );
+        console.log("Password updated and email verified");
+      } else {
+        console.log("Keeping existing password");
+      }
     } else {
+      // Creating a brand-new user always requires a password
+      if (!passwordHash) {
+        console.error(`\n❌ User ${email} does not exist, so a password is required.`);
+        console.error(`   Re-run with: --password <password>\n`);
+        process.exit(1);
+      }
+
       // Create new user
       const { rows: newUsers } = await client.query(
         `INSERT INTO users (email, password_hash, first_name, last_name, is_email_verified, is_active)
@@ -91,7 +118,7 @@ async function createAdmin({ email, password, role = "admin" }) {
     console.log(`\n${email} now has roles: ${userRoles.map(r => r.name).join(", ")}`);
   });
 
-  console.log("\n✅ Admin creation complete!");
+  console.log("\n✅ Done!");
   console.log(`   Email: ${email}`);
   console.log(`   Role: ${role}`);
   
@@ -125,23 +152,31 @@ if (!options.email) {
 ║                                                              ║
 ║  Usage:                                                      ║
 ║    node src/db/createAdmin.js --email <email> --role <role>  ║
-║                           --password <password>              ║
+║                           [--password <password>]            ║
 ║                                                              ║
 ║  Options:                                                    ║
 ║    --email     Required. Admin email address                 ║
 ║    --role      admin or super_admin (default: admin)         ║
-║    --password  Password for new users (required)            ║
+║    --password  Required for NEW users. For an existing user  ║
+║                it's optional: given = reset password,        ║
+║                omitted = keep their current password.        ║
 ║                                                              ║
 ║  Examples:                                                   ║
+║    # Create a new admin user                                 ║
 ║    node src/db/createAdmin.js \\                             ║
 ║      --email admin@example.com \\                             ║
 ║      --role admin \\                                         ║
 ║      --password MySecurePass123                             ║
 ║                                                              ║
+║    # Promote an EXISTING user to admin (password untouched) ║
+║    node src/db/createAdmin.js \\                             ║
+║      --email saifullah2019@namal.edu.pk \\                    ║
+║      --role admin                                            ║
+║                                                              ║
+║    # Promote an existing user to super_admin                 ║
 ║    node src/db/createAdmin.js \\                             ║
 ║      --email super@example.com \\                             ║
-║      --role super_admin \\                                     ║
-║      --password SuperSecret123                               ║
+║      --role super_admin                                      ║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
   `);
