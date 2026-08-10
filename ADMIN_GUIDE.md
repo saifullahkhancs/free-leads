@@ -2,18 +2,31 @@
 
 ## Dashboard Locations
 
-### User Dashboard
+### App view (leads directory)
 - **URL**: `/app` (after login)
-- **File**: `frontend/src/pages/DashboardPage.jsx`
-- Shows logged-in user info (name, email, roles, permissions, verification status)
-- Features: Lead search, "Near Me" location search, pagination
+- **Shell**: `frontend/src/components/AppShell.jsx`
+- **Page**: `frontend/src/pages/app/DirectoryPage.jsx`
+- The product-facing directory: search, industry filter, "Near Me" geo search,
+  card grid of leads, detail modal, load-more pagination.
 
-### Admin Dashboard
-- **URL**: `/admin` (requires `admin` or `super_admin` role)
-- **File**: `frontend/src/pages/AdminDashboardPage.jsx`
-- Features:
-  - User Management (view all users, create users, assign/remove roles, toggle active status)
-  - Roles & Permissions viewer (shows all roles and their permissions)
+### Dashboard (CMS workspace)
+- **URL**: `/admin`
+- **Shell**: `frontend/src/components/DashboardLayout.jsx` (responsive sidebar +
+  topbar + user card + logout, shared by every dashboard section)
+- **Pages** (`frontend/src/pages/admin/`):
+  - `AdminOverviewPage.jsx` — stat cards (total/verified leads, industries,
+    countries/regions/cities), recent leads, quick actions
+  - `LeadsPage.jsx` — full lead table with search, industry filter,
+    "Near Me", verification badges, detail modal
+  - `AddLeadPage.jsx` — manually create a single lead (editor+)
+  - `ImportLeadsPage.jsx` — bulk CSV import with drag & drop, downloadable
+    template, and per-row error report (editor+)
+  - `UsersPage.jsx` — user management (admin+)
+  - `RolesPage.jsx` — roles & permissions viewer (admin+)
+
+All authenticated users can open the dashboard; lead management actions
+(Add Lead / Import CSV) are shown only to `editor`, `admin`, `super_admin`
+and enforced server-side with `requireRole()`.
 
 ---
 

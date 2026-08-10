@@ -2,13 +2,25 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import AuthGuard from "./components/AuthGuard";
 import RoleGuard from "./components/RoleGuard";
+import DashboardLayout from "./components/DashboardLayout";
+import AppShell from "./components/AppShell";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
-import DashboardPage from "./pages/DashboardPage";
-import AdminDashboardPage from "./pages/AdminDashboardPage";
+
+// App view (leads directory)
+import DirectoryPage from "./pages/app/DirectoryPage";
+
+// Dashboard (admin workspace)
+import AdminOverviewPage from "./pages/admin/AdminOverviewPage";
+import LeadsPage from "./pages/admin/LeadsPage";
+import AddLeadPage from "./pages/admin/AddLeadPage";
+import ImportLeadsPage from "./pages/admin/ImportLeadsPage";
+import UsersPage from "./pages/admin/UsersPage";
+import RolesPage from "./pages/admin/RolesPage";
+
 import "./styles/auth.css";
 
 export default function App() {
@@ -23,10 +35,22 @@ export default function App() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           <Route element={<AuthGuard />}>
-            <Route path="/app" element={<DashboardPage />} />
+            {/* App view — the leads directory */}
+            <Route path="/app" element={<AppShell />}>
+              <Route index element={<DirectoryPage />} />
+            </Route>
 
-            <Route element={<RoleGuard roles={["admin", "super_admin"]} />}>
-              <Route path="/admin" element={<AdminDashboardPage />} />
+            {/* Dashboard — CMS workspace with sidebar */}
+            <Route path="/admin" element={<DashboardLayout />}>
+              <Route index element={<AdminOverviewPage />} />
+              <Route path="leads" element={<LeadsPage />} />
+              <Route path="add-lead" element={<AddLeadPage />} />
+              <Route path="import" element={<ImportLeadsPage />} />
+
+              <Route element={<RoleGuard roles={["admin", "super_admin"]} />}>
+                <Route path="users" element={<UsersPage />} />
+                <Route path="roles" element={<RolesPage />} />
+              </Route>
             </Route>
           </Route>
 

@@ -17,11 +17,26 @@ the "Leads Directory Web App" dev document (Module 1 — Foundation + Auth).
   `requireRole()` and `requirePermission()` middleware, deny-by-default
 - Redis-backed rate limiting on register/login/verify/forgot-password
 - Forgot / reset password flow, `/api/auth/me` profile endpoint
+- Leads API:
+  - `GET /api/leads` — search/filter/keyset-paginated listing (PII masked for
+    non-paid tiers)
+  - `GET /api/leads/stats` — dashboard overview numbers + industry list
+  - `POST /api/leads` — create a single lead manually (editor/admin/super_admin)
+  - `POST /api/leads/import` — bulk import leads from raw CSV text
+    (editor/admin/super_admin); rows are geo-mapped and inserted in UNNEST
+    batches, with a per-row error report
+  - `GET /api/leads/:id`, `POST /api/leads/export`
 - Postgres migrations + a seed script for default roles/permissions
 
 **Frontend** (`frontend/`) — React (Vite)
-- `LandingPage` — public marketing landing page served at `/`, with entry
-  points to log in / sign up (authenticated visitors get a dashboard shortcut)
+- `LandingPage` — public marketing landing page served at `/`. Authenticated
+  visitors see their name/email, a **Log out** button, and two entry buttons:
+  **Dashboard** (`/admin`) and **App** (`/app`)
+- `App view` (`/app`) — the leads directory: search, industry filter,
+  "Near Me" geo search, responsive card grid, and lead detail modal
+- `Dashboard` (`/admin`) — a responsive CMS-style workspace with a sidebar
+  (Overview, Leads, Add Lead, Import CSV, Users, Roles), stat cards, and a
+  topbar with the logged-in user's info and logout
 - `LoginPage`, `SignupPage` (with inline verification step), `ForgotPasswordPage`,
   `ResetPasswordPage` — ported 1:1 in behavior from the original job-easy pages
 - `AuthContext` — holds the access token in memory, silently refreshes it on

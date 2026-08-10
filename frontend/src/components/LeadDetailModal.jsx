@@ -1,100 +1,92 @@
-import React from "react";
+import { BadgeCheck, Link2, Lock, MapPin, X } from "lucide-react";
+import { avatarColor, initialsOf, locationString } from "../utils/format";
 
 export default function LeadDetailModal({ lead, onClose }) {
   if (!lead) return null;
 
   return (
-    <div style={{
-      position: "fixed",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: "rgba(0,0,0,0.5)",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      zIndex: 1000
-    }}>
-      <div style={{
-        backgroundColor: "white",
-        padding: "30px",
-        borderRadius: "8px",
-        maxWidth: "600px",
-        width: "90%",
-        maxHeight: "90vh",
-        overflowY: "auto",
-        position: "relative"
-      }}>
-        <button 
-          onClick={onClose}
-          style={{
-            position: "absolute",
-            top: "10px",
-            right: "10px",
-            border: "none",
-            background: "none",
-            fontSize: "20px",
-            cursor: "pointer"
-          }}
-        >
-          ×
-        </button>
-
-        <h2 style={{ marginBottom: "5px" }}>{lead.full_name}</h2>
-        <div style={{ color: "#666", marginBottom: "20px" }}>{lead.headline}</div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
-          <div>
-            <strong>Company:</strong>
-            <div>{lead.company_name}</div>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-head">
+          <div style={{ display: "flex", gap: 14, alignItems: "center", minWidth: 0 }}>
+            <span className="dash-avatar" style={{ width: 48, height: 48, fontSize: 16, background: avatarColor(lead.full_name) }}>
+              {initialsOf(lead)}
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <h2>{lead.full_name}</h2>
+              <p>{lead.headline || lead.job_title || "Lead profile"}</p>
+            </div>
           </div>
-          <div>
-            <strong>Job Title:</strong>
-            <div>{lead.job_title}</div>
-          </div>
-          <div>
-            <strong>Industry:</strong>
-            <div>{lead.industry}</div>
-          </div>
-          <div>
-            <strong>Location:</strong>
-            <div>{[lead.city_name, lead.region_name, lead.country_name].filter(Boolean).join(", ")}</div>
-          </div>
+          <button className="modal-close" onClick={onClose} aria-label="Close">
+            <X size={17} />
+          </button>
         </div>
 
-        <div style={{ marginBottom: "20px", padding: "15px", backgroundColor: "#f9f9f9", borderRadius: "4px" }}>
-          <h4 style={{ marginTop: 0 }}>Contact Information</h4>
-          <div style={{ marginBottom: "10px" }}>
-            <strong>Email:</strong> {lead.email || <span style={{ color: "#999" }}>Masked (Upgrade to view)</span>}
+        <div className="modal-body">
+          <div className="modal-grid">
+            <div className="modal-field">
+              <label>Company</label>
+              <div>{lead.company_name || "—"}</div>
+            </div>
+            <div className="modal-field">
+              <label>Job title</label>
+              <div>{lead.job_title || "—"}</div>
+            </div>
+            <div className="modal-field">
+              <label>Industry</label>
+              <div>{lead.industry || "—"}</div>
+            </div>
+            <div className="modal-field">
+              <label>Location</label>
+              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <MapPin size={13} /> {locationString(lead) || "Unknown"}
+              </div>
+            </div>
+            <div className="modal-field">
+              <label>Email</label>
+              <div>{lead.email || "—"}</div>
+            </div>
+            <div className="modal-field">
+              <label>Status</label>
+              <div>
+                {lead.is_verified ? (
+                  <span className="dash-badge badge-green"><BadgeCheck size={11} /> Verified</span>
+                ) : (
+                  <span className="dash-badge badge-gray">Unverified</span>
+                )}
+              </div>
+            </div>
           </div>
-          <div>
-            <strong>Social Links:</strong>
-            <div style={{ display: "flex", gap: "10px", marginTop: "5px" }}>
-              {lead.linkedin_url ? <a href={lead.linkedin_url} target="_blank" rel="noreferrer">LinkedIn</a> : <span style={{ color: "#999" }}>LinkedIn (Locked)</span>}
-              {lead.website_url ? <a href={lead.website_url} target="_blank" rel="noreferrer">Website</a> : <span style={{ color: "#999" }}>Website (Locked)</span>}
+
+          {lead.about && (
+            <div style={{ marginTop: 20 }}>
+              <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: .6, color: "var(--dash-faint)", marginBottom: 6 }}>
+                About
+              </div>
+              <p style={{ margin: 0, lineHeight: 1.65, fontSize: 13.5, color: "var(--dash-ink)" }}>{lead.about}</p>
+            </div>
+          )}
+
+          <div className="modal-note">
+            {lead.linkedin_url || lead.website_url ? <Link2 size={16} /> : <Lock size={16} />}
+            <div>
+              {lead.linkedin_url || lead.website_url ? (
+                <>
+                  <strong>Links:</strong>{" "}
+                  {lead.linkedin_url && (
+                    <a href={lead.linkedin_url} target="_blank" rel="noreferrer" style={{ textDecoration: "underline" }}>LinkedIn</a>
+                  )}
+                  {lead.linkedin_url && lead.website_url && " · "}
+                  {lead.website_url && (
+                    <a href={lead.website_url} target="_blank" rel="noreferrer" style={{ textDecoration: "underline" }}>Website</a>
+                  )}
+                </>
+              ) : (
+                "Social links are masked on the free tier. Admin and Pro accounts see the full profile."
+              )}
             </div>
           </div>
         </div>
-
-        {lead.about && (
-          <div>
-            <strong>About:</strong>
-            <p style={{ lineHeight: "1.5" }}>{lead.about}</p>
-          </div>
-        )}
-
-        {!lead.about && !lead.linkedin_url && (
-          <div style={{ 
-            marginTop: "20px", 
-            padding: "15px", 
-            border: "1px dashed #ccc", 
-            textAlign: "center",
-            color: "#666"
-          }}>
-            Unlock full profile, social links, and direct email with a Pro plan.
-          </div>
-        )}
       </div>
     </div>
   );

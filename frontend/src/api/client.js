@@ -162,6 +162,26 @@ export async function getLeadById(id) {
   return request(`/api/leads/${id}`);
 }
 
+export async function getLeadStats() {
+  return request("/api/leads/stats", { method: "GET" });
+}
+
+/** Create a single lead manually (requires editor/admin role server-side). */
+export async function createLead(payload) {
+  return request("/api/leads", {
+    method: "POST",
+    body: payload,
+  });
+}
+
+/** Bulk-import leads from raw CSV text (requires editor/admin role server-side). */
+export async function importLeadsCsv(csv, source = "csv_upload") {
+  return request("/api/leads/import", {
+    method: "POST",
+    body: { csv, source },
+  });
+}
+
 /** Called once on app load to silently restore a session from the refresh cookie. */
 export async function trySilentLogin() {
   const token = await refreshAccessToken();
