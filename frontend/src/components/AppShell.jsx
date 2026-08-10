@@ -155,6 +155,15 @@ export default function AppShell() {
                         <span>Explore Directory</span>
                       </Link>
 
+                      <Link
+                        to="/app/profile"
+                        className="app-dropdown-item"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        <User size={15} />
+                        <span>My Profile</span>
+                      </Link>
+
                       {isAdmin && (
                         <Link
                           to="/admin"
@@ -254,6 +263,14 @@ export default function AppShell() {
                   onClick={() => setMobileDrawerOpen(false)}
                 >
                   <Compass size={16} /> Directory
+                </Link>
+
+                <Link
+                  to="/app/profile"
+                  className="app-header-btn"
+                  onClick={() => setMobileDrawerOpen(false)}
+                >
+                  <User size={16} /> My Profile
                 </Link>
 
                 {isAdmin && (

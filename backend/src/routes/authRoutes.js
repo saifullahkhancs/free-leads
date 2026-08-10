@@ -9,6 +9,7 @@ const {
   resendVerificationSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  updateProfileSchema,
 } = require("../validators/authValidators");
 const {
   registerLimiter,
@@ -45,5 +46,6 @@ router.post(
   controller.resetPassword
 );
 router.get("/me", authenticate, controller.getMe);
+router.patch("/me", authenticate, validate(updateProfileSchema), controller.updateMe);
 
 module.exports = router;

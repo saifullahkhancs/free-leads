@@ -20,6 +20,26 @@
 - **Verified Leads**: Badge system for leads with confirmed contact info.
 - **Standardized Locations**: Prevents duplicate entries through a strict ISO-based geo-taxonomy.
 
+### 5. Map Location Picker (Free, No API Key)
+- **Exact-location selection**: Users pick their spot on a free
+  **Leaflet + OpenStreetMap** map — click anywhere, drag the pin, search a
+  city/area, or use the browser's current location.
+- **Auto-filled area info**: Reverse geocoding (free **Nominatim**, or
+  **Geoapify** with a free key for higher limits) fills in **city, province /
+  state and country** automatically when a location is selected.
+- **User profile management**: `PATCH /api/auth/me` lets an existing user
+  update their first/last name and location anytime (`/app/profile`).
+
+### 6. Google Maps lead scraping (planned)
+- The app is built around the idea of harvesting leads (businesses) per
+  selected city/region. Note: **scraping Google Maps directly violates Google's
+  Terms of Service** and breaks often. Recommended free approach instead:
+  query businesses from **OpenStreetMap via the Overpass API**
+  (`node <osm-script>`, category + bounding-box/radius queries), or use
+  Geoapify's Places API free tier (3,000 credits/day) — both are legal, free,
+  and return name/address/category/lat-lng that map directly onto the existing
+  `leads` + PostGIS schema.
+
 ---
 
 ## 🛠 How Geospatial Search Works

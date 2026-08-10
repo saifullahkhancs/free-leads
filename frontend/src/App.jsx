@@ -12,6 +12,7 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 // App view (leads directory)
 import DirectoryPage from "./pages/app/DirectoryPage";
+import ProfilePage from "./pages/app/ProfilePage";
 
 // Dashboard (admin workspace)
 import AdminOverviewPage from "./pages/admin/AdminOverviewPage";
@@ -37,6 +38,7 @@ export default function App() {
           {/* App view — the modern leads directory */}
           <Route path="/app" element={<AppShell />}>
             <Route index element={<DirectoryPage />} />
+            <Route path="profile" element={<ProfilePage />} />
           </Route>
 
           {/* Dashboard — CMS workspace with sidebar (requires authentication) */}

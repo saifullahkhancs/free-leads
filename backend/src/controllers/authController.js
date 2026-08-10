@@ -75,6 +75,11 @@ const getMe = asyncHandler(async (req, res) => {
   res.status(200).json(profile);
 });
 
+const updateMe = asyncHandler(async (req, res) => {
+  const profile = await authService.updateProfile(req.user.id, req.body);
+  res.status(200).json(profile);
+});
+
 module.exports = {
   register,
   verifyEmail,
@@ -85,4 +90,5 @@ module.exports = {
   forgotPassword,
   resetPassword,
   getMe,
+  updateMe,
 };

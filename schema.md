@@ -7,8 +7,14 @@ Core user accounts.
 - `id`: UUID (Primary Key)
 - `email`: Unique string
 - `password_hash`: Argon2id hash
+- `first_name` / `last_name`: Strings (editable by the user via `PATCH /api/auth/me`)
 - `is_email_verified`: Boolean
 - `is_active`: Boolean
+- `location_lat` / `location_lng`: Double precision — exact spot picked on the
+  free Leaflet/OSM map picker
+- `location_city` / `location_region` / `location_country`: Strings auto-filled
+  by reverse geocoding when the user selects a location
+- `location_label`: Human-readable address string (e.g. `Gulberg, Lahore, Punjab, Pakistan`)
 
 ### `leads`
 The central lead database.

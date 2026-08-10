@@ -17,6 +17,14 @@ the "Leads Directory Web App" dev document (Module 1 — Foundation + Auth).
   `requireRole()` and `requirePermission()` middleware, deny-by-default
 - Redis-backed rate limiting on register/login/verify/forgot-password
 - Forgot / reset password flow, `/api/auth/me` profile endpoint
+- **User profile management**: `PATCH /api/auth/me` — users can update their
+  first/last name and their location, picked on a **free Leaflet/OpenStreetMap
+  map picker** (`/app/profile`). City, province/state and country are
+  auto-filled via **reverse geocoding** (free Nominatim — no API key; or
+  Geoapify, 3,000 free credits/day, when `GEOAPIFY_API_KEY` is set).
+- Free geocoding proxy endpoints: `GET /api/geo/search?q=...` (place
+  autocomplete) and `GET /api/geo/reverse?lat=..&lng=..` (coordinates →
+  city/region/country). The browser never calls the provider directly.
 - Leads API:
   - `GET /api/leads` — search/filter/keyset-paginated listing (PII masked for
     non-paid tiers)
@@ -41,6 +49,10 @@ the "Leads Directory Web App" dev document (Module 1 — Foundation + Auth).
   `ResetPasswordPage` — ported 1:1 in behavior from the original job-easy pages
 - `AuthContext` — holds the access token in memory, silently refreshes it on
   page load using the httpOnly cookie
+- `ProfilePage` (`/app/profile`) — edit name + pick your exact location on a
+  free Leaflet/OpenStreetMap map: click or drag the pin, search any city/area,
+  or use the browser's current location; city, province and country are
+  auto-filled by reverse geocoding
 - `AuthGuard` (must be logged in) and `RoleGuard` (must have a given role)
   route wrappers
 - API client with automatic single-retry-after-refresh on 401s

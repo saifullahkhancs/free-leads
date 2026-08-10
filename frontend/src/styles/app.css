@@ -1755,3 +1755,331 @@
     display: none;
   }
 }
+
+/* ==========================================================================
+   Profile page — account details + free map location picker (Leaflet/OSM)
+   ========================================================================== */
+.profile-page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 40px 20px 60px;
+}
+
+.profile-heading h1 {
+  font-size: 26px;
+  margin: 0 0 6px;
+  color: var(--app-ink);
+}
+
+.profile-heading p {
+  margin: 0 0 24px;
+  color: var(--app-ink-muted);
+  font-size: 14px;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .profile-grid { grid-template-columns: 1fr; }
+}
+
+.profile-card {
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-lg);
+  padding: 24px;
+  box-shadow: var(--app-shadow-sm);
+}
+
+.profile-card h2 {
+  font-size: 17px;
+  margin: 0 0 18px;
+  color: var(--app-ink);
+}
+
+.profile-login-prompt {
+  text-align: center;
+  padding: 48px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-login-prompt p { color: var(--app-ink-muted); margin: 0 0 8px; }
+
+.profile-toast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--app-green-light);
+  border: 1px solid #b8d9b4;
+  color: var(--app-green-dark);
+  padding: 10px 14px;
+  border-radius: var(--app-radius-md);
+  font-size: 14px;
+  margin-bottom: 18px;
+}
+
+.profile-toast.error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+/* --- form fields --- */
+.fl-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.fl-field > span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--app-ink-muted);
+}
+
+.fl-field input {
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-sm);
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--app-ink);
+  background: var(--app-surface);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  font-family: inherit;
+}
+
+.fl-field input:focus {
+  border-color: var(--app-border-focus);
+  box-shadow: 0 0 0 3px var(--app-green-glow);
+}
+
+.fl-field input:disabled {
+  background: var(--app-surface-subtle);
+  color: var(--app-ink-faint);
+}
+
+/* --- saved location summary --- */
+.fl-location-summary {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: var(--app-surface-subtle);
+  border: 1px dashed var(--app-border);
+  border-radius: var(--app-radius-md);
+  padding: 12px;
+  margin: 6px 0 18px;
+  color: var(--app-green);
+}
+
+.fl-location-summary > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+.fl-location-summary-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--app-ink-faint);
+  font-weight: 700;
+}
+
+.fl-location-summary strong { font-size: 14px; color: var(--app-ink); }
+.fl-location-summary small { font-size: 12px; color: var(--app-ink-muted); word-break: break-word; }
+.fl-location-summary .fl-location-label { color: var(--app-ink-faint); }
+
+.fl-save-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--app-green);
+  color: #fff;
+  border: none;
+  border-radius: var(--app-radius-md);
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.05s;
+}
+
+.fl-save-btn:hover { background: var(--app-green-hover); }
+.fl-save-btn:active { transform: translateY(1px); }
+.fl-save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* --- map picker --- */
+.fl-search-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.fl-search-box {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-sm);
+  padding: 0 12px;
+  background: var(--app-surface);
+  color: var(--app-ink-faint);
+}
+
+.fl-search-box:focus-within {
+  border-color: var(--app-border-focus);
+  box-shadow: 0 0 0 3px var(--app-green-glow);
+}
+
+.fl-search-box input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 10px 0;
+  font-size: 14px;
+  color: var(--app-ink);
+  background: transparent;
+  font-family: inherit;
+}
+
+.fl-search-results {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 500;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-md);
+  box-shadow: var(--app-shadow-lg);
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.fl-search-result {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: var(--app-radius-sm);
+  padding: 8px 10px;
+  font-size: 13px;
+  color: var(--app-ink);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.fl-search-result:hover { background: var(--app-surface-hover); }
+.fl-search-result svg { flex-shrink: 0; margin-top: 2px; color: var(--app-green); }
+
+.fl-locate-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  border-radius: var(--app-radius-sm);
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--app-green);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.fl-locate-btn:hover { background: var(--app-green-light); border-color: var(--app-border-focus); }
+
+.fl-map {
+  position: relative;
+  z-index: 0; /* contain Leaflet's internal z-indexes below the header/search */
+  height: 380px;
+  border-radius: var(--app-radius-md);
+  border: 1px solid var(--app-border);
+  overflow: hidden;
+}
+
+.fl-map .leaflet-container { height: 100%; width: 100%; font-family: inherit; }
+
+.fl-pin { background: transparent; border: none; }
+
+.fl-map-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 12.5px;
+  color: var(--app-ink-muted);
+}
+
+.fl-map-hint svg { color: var(--app-green); flex-shrink: 0; }
+
+.fl-map-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.fl-map-detected {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--app-ink);
+  background: var(--app-green-light);
+  border-radius: var(--app-radius-full);
+  padding: 7px 14px;
+  max-width: 100%;
+}
+
+.fl-map-detected svg { color: var(--app-green); flex-shrink: 0; }
+.fl-map-detected span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.fl-clear-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  border-radius: var(--app-radius-full);
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.fl-clear-btn:hover { background: #fef2f2; }
+
+.fl-attribution {
+  margin: 18px 0 0;
+  font-size: 12px;
+  color: var(--app-ink-faint);
+}
+
+.fl-attribution a { color: var(--app-green); }
+
+.spin { animation: fl-spin 0.9s linear infinite; }
+.spin.inline { display: inline-block; vertical-align: -2px; }
+@keyframes fl-spin { to { transform: rotate(360deg); } }
