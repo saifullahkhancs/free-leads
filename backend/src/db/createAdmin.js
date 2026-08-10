@@ -13,17 +13,22 @@
 const { hashPassword } = require("../utils/security");
 const { query, withTransaction, pool } = require("../config/db");
 
-const ROLES = {
-  user: 1,
-  editor: 2,
-  admin: 3,
-  super_admin: 4
-};
+// Role ids are NOT hardcoded here: roles.id is a SERIAL column, so the
+// actual ids depend on insertion order. We resolve the id by role name at
+// runtime (same approach as authService.assignDefaultRole / adminController).
+const VALID_ROLES = ["super_admin", "admin", "editor", "user"];
+
+async function resolveRoleId(client, roleName) {
+  const { rows } = await client.query(
+    "SELECT id FROM roles WHERE name = $1",
+    [roleName]
+  );
+  return rows.length > 0 ? rows[0].id : null;
+}
 
 async function createAdmin({ email, password, role = "admin" }) {
-  const roleId = ROLES[role];
-  if (!roleId) {
-    console.error(`Invalid role: ${role}. Valid roles: ${Object.keys(ROLES).join(", ")}`);
+  if (!VALID_ROLES.includes(role)) {
+    console.error(`Invalid role: ${role}. Valid roles: ${VALID_ROLES.join(", ")}`);
     process.exit(1);
   }
 
@@ -35,6 +40,17 @@ async function createAdmin({ email, password, role = "admin" }) {
   const passwordHash = await hashPassword(password);
 
   await withTransaction(async (client) => {
+    // Resolve the role id from the DB (ids depend on insertion order)
+    const roleId = await resolveRoleId(client, role);
+    if (!roleId) {
+      console.error(`\n❌ Role "${role}" does not exist in the roles table.`);
+      console.error(`   The default roles are created by the seed script. Run this first:\n`);
+      console.error(`     npm run seed        (seeds roles + permissions)`);
+      console.error(`     npm run setup       (migrations + seed, if starting fresh)\n`);
+      console.error(`   Then re-run this script.\n`);
+      process.exit(1);
+    }
+
     // Check if user exists
     const { rows: existingUsers } = await client.query(
       "SELECT id FROM users WHERE email = $1",
