@@ -85,7 +85,41 @@ export default function DashboardPage() {
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px" }}>
         <div>
           <h1>Leads Directory</h1>
-          <p>Logged in as {user?.firstName} ({user?.roles?.join(", ")})</p>
+          <div style={{ display: "flex", gap: "20px", alignItems: "center", marginTop: "10px" }}>
+            <span style={{ 
+              background: "#007bff", 
+              color: "white", 
+              padding: "4px 12px", 
+              borderRadius: "12px",
+              fontSize: "14px"
+            }}>
+              {user?.firstName} {user?.lastName}
+            </span>
+            <span style={{ 
+              background: user?.roles?.includes("super_admin") ? "#dc3545" : 
+                         user?.roles?.includes("admin") ? "#fd7e14" : "#28a745", 
+              color: "white", 
+              padding: "4px 12px", 
+              borderRadius: "12px",
+              fontSize: "12px",
+              fontWeight: "bold"
+            }}>
+              {user?.roles?.map(r => r.replace("_", " ").toUpperCase()).join(", ")}
+            </span>
+            <span style={{ color: "#666", fontSize: "14px" }}>
+              {user?.email}
+            </span>
+            {user?.isEmailVerified ? (
+              <span style={{ color: "#28a745", fontSize: "12px" }}>✓ Verified</span>
+            ) : (
+              <span style={{ color: "#dc3545", fontSize: "12px" }}>✗ Not Verified</span>
+            )}
+          </div>
+          {user?.permissions && user.permissions.length > 0 && (
+            <div style={{ marginTop: "8px", fontSize: "12px", color: "#666" }}>
+              <strong>Permissions:</strong> {user.permissions.join(", ")}
+            </div>
+          )}
         </div>
         <button onClick={logout} className="auth-submit-btn" style={{ maxWidth: 150 }}>
           Log out

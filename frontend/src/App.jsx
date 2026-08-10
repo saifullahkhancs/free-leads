@@ -8,6 +8,7 @@ import SignupPage from "./pages/SignupPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import DashboardPage from "./pages/DashboardPage";
+import AdminDashboardPage from "./pages/AdminDashboardPage";
 import "./styles/auth.css";
 
 export default function App() {
@@ -25,7 +26,7 @@ export default function App() {
             <Route path="/app" element={<DashboardPage />} />
 
             <Route element={<RoleGuard roles={["admin", "super_admin"]} />}>
-              <Route path="/admin" element={<DashboardPage />} />
+              <Route path="/admin" element={<AdminDashboardPage />} />
             </Route>
           </Route>
 

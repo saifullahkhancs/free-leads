@@ -173,3 +173,39 @@ export async function trySilentLogin() {
     return null;
   }
 }
+
+// -----------------------------------------------------------------------
+// Admin endpoints (requires admin/super_admin role)
+// -----------------------------------------------------------------------
+export async function getAllUsers() {
+  return request("/api/admin/users", { method: "GET" });
+}
+
+export async function getUserById(id) {
+  return request(`/api/admin/users/${id}`, { method: "GET" });
+}
+
+export async function createUser({ email, password, firstName, lastName, role }) {
+  return request("/api/admin/users", {
+    method: "POST",
+    body: { email, password, firstName, lastName, role },
+  });
+}
+
+export async function updateUserRole(userId, role, action = "assign") {
+  return request(`/api/admin/users/${userId}/role`, {
+    method: "PATCH",
+    body: { role, action },
+  });
+}
+
+export async function toggleUserActive(userId, is_active) {
+  return request(`/api/admin/users/${userId}/active`, {
+    method: "PATCH",
+    body: { is_active },
+  });
+}
+
+export async function getRoles() {
+  return request("/api/admin/roles", { method: "GET" });
+}
