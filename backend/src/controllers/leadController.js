@@ -1,4 +1,5 @@
 const leadService = require("../services/leadService");
+const authService = require("../services/authService");
 const quotaService = require("../services/quotaService");
 const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/ApiError");
@@ -7,8 +8,36 @@ function isRolePaid(user) {
   return user && (user.roles || []).some((r) => ["admin", "super_admin"].includes(r));
 }
 
+/** Query params are strings — normalize "true"/"1"/"" into a real boolean. */
+function toBool(value) {
+  if (value === undefined || value === null || value === "") return false;
+  return ["1", "true", "yes", "on"].includes(String(value).toLowerCase());
+}
+
+function toInt(value) {
+  const n = parseInt(value, 10);
+  return Number.isFinite(n) ? n : null;
+}
+
 const getLeads = asyncHandler(async (req, res) => {
-  const { q, country_id, region_id, city_id, industry, cursor, limit, lat, lon, radius } = req.query;
+  const {
+    q,
+    category,
+    country_id,
+    region_id,
+    city_id,
+    country_code,
+    region,
+    city,
+    industry,
+    verified,
+    cursor,
+    limit,
+    sort,
+    lat,
+    lon,
+    radius,
+  } = req.query;
 
   // Paid access = active paid subscription OR an admin/super_admin role.
   // Admins bypass quotas; regular users are checked by the requireQuota middleware.
@@ -22,12 +51,18 @@ const getLeads = asyncHandler(async (req, res) => {
 
   const result = await leadService.getLeads({
     q,
-    country_id: country_id ? parseInt(country_id, 10) : null,
-    region_id: region_id ? parseInt(region_id, 10) : null,
-    city_id: city_id ? parseInt(city_id, 10) : null,
-    industry,
-    cursor: cursor ? parseInt(cursor, 10) : null,
-    limit: limit ? parseInt(limit, 10) : 50,
+    category: category || null,
+    country_id: toInt(country_id),
+    region_id: toInt(region_id),
+    city_id: toInt(city_id),
+    country_code: country_code || null,
+    region: region || null,
+    city: city || null,
+    industry: industry || null,
+    verified: toBool(verified),
+    cursor: toInt(cursor),
+    limit: Math.min(Math.max(toInt(limit) || 50, 1), 200),
+    sort: sort || "recent",
     lat: lat ? parseFloat(lat) : null,
     lon: lon ? parseFloat(lon) : null,
     radius: radius ? parseFloat(radius) : 50000,
@@ -37,6 +72,49 @@ const getLeads = asyncHandler(async (req, res) => {
   res.json({
     status: "success",
     data: { ...result, quota: quotaStatus },
+  });
+});
+
+/**
+ * GET /api/leads/facets — filter options (category, industry, country, state,
+ * city) with per-option result counts, scoped to whatever filters are already
+ * applied so the dropdowns cascade. Cheap + not quota-gated: it only returns
+ * aggregate counts, never lead contact data.
+ */
+const getFacets = asyncHandler(async (req, res) => {
+  const facets = await leadService.getFacets({
+    q: req.query.q || null,
+    category: req.query.category || null,
+    industry: req.query.industry || null,
+    country_id: toInt(req.query.country_id),
+    region_id: toInt(req.query.region_id),
+    verified: toBool(req.query.verified),
+  });
+
+  // Suggest the signed-in user's own country/state/city (set on their profile)
+  // so the UI can offer a one-click "leads in <your country>" filter.
+  const profile = req.user ? await authService.getProfileLocation(req.user.id) : null;
+  const suggestion = {
+    country: profile?.country || null,
+    region: profile?.region || null,
+    city: profile?.city || null,
+  };
+  const matchedCountry = suggestion.country
+    ? facets.countries.find(
+        (c) => String(c.value).toLowerCase() === String(suggestion.country).toLowerCase()
+      )
+    : null;
+
+  res.json({
+    status: "success",
+    data: {
+      ...facets,
+      suggestion: {
+        ...suggestion,
+        country_id: matchedCountry?.id || null,
+        count: matchedCountry?.count || 0,
+      },
+    },
   });
 });
 
@@ -64,11 +142,20 @@ const exportLeads = asyncHandler(async (req, res) => {
   const format = String(req.query.format || req.body?.format || "csv").toLowerCase();
   const filters = {
     q: req.query.q,
-    country_id: req.query.country_id ? parseInt(req.query.country_id, 10) : null,
-    region_id: req.query.region_id ? parseInt(req.query.region_id, 10) : null,
-    city_id: req.query.city_id ? parseInt(req.query.city_id, 10) : null,
-    industry: req.query.industry,
-    limit: req.query.limit ? parseInt(req.query.limit, 10) : undefined,
+    category: req.query.category || null,
+    country_id: toInt(req.query.country_id),
+    region_id: toInt(req.query.region_id),
+    city_id: toInt(req.query.city_id),
+    country_code: req.query.country_code || null,
+    region: req.query.region || null,
+    city: req.query.city || null,
+    industry: req.query.industry || null,
+    verified: toBool(req.query.verified),
+    sort: req.query.sort || "recent",
+    lat: req.query.lat ? parseFloat(req.query.lat) : null,
+    lon: req.query.lon ? parseFloat(req.query.lon) : null,
+    radius: req.query.radius ? parseFloat(req.query.radius) : 50000,
+    limit: toInt(req.query.limit) || undefined,
   };
 
   const result = await leadService.exportLeads({
@@ -135,6 +222,7 @@ const getStats = asyncHandler(async (req, res) => {
 
 module.exports = {
   getLeads,
+  getFacets,
   getLeadById,
   exportLeads,
   createLead,

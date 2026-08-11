@@ -43,6 +43,16 @@ router.get(
   leadController.getStats
 );
 
+// Filter facets (category / industry / country / state / city + counts).
+// Aggregate counts only — no contact data — so it is throttled but not
+// charged against the daily search quota.
+router.get(
+  "/facets",
+  authenticate,
+  throttle("facets", env.SEARCH_THROTTLE_PER_MINUTE * 2),
+  leadController.getFacets
+);
+
 // Export: server-side, gated. Quota check happens inside leadService.exportLeads
 // (it depends on the actual row count), but we still throttle per user here.
 router.post(
