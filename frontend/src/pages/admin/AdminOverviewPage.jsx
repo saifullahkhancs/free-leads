@@ -74,10 +74,12 @@ export default function AdminOverviewPage() {
         <div className="dash-page-actions">
           {canManage && (
             <>
-              <Link to="/admin/add-lead" className="dash-btn dash-btn-lime">
+              {/* Plain .dash-btn = the same white surface and lift-on-hover
+                  animation as the Open app button next to them. */}
+              <Link to="/admin/add-lead" className="dash-btn">
                 <FilePlus2 size={16} /> Add Lead
               </Link>
-              <Link to="/admin/import" className="dash-btn dash-btn-primary">
+              <Link to="/admin/import" className="dash-btn">
                 <UploadCloud size={16} /> Import CSV
               </Link>
             </>
