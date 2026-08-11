@@ -102,6 +102,9 @@
 }
 .dash-nav-item svg { flex: none; opacity: .85; }
 .dash-nav-item:hover { background: var(--dash-green-soft); color: var(--dash-green); border-color: var(--dash-green); }
+/* Sidebar actions use the same white button surface and lift-on-hover treatment as Open app. */
+.dash-nav-item-action { background: #fff; }
+.dash-nav-item-action:hover { background: var(--dash-green-soft); border-color: var(--dash-green); color: var(--dash-green); transform: translateY(-1px); }
 .dash-nav-item.active {
   background: var(--dash-green);
   color: #fff;
