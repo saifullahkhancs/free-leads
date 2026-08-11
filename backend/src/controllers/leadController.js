@@ -1,13 +1,24 @@
 const leadService = require("../services/leadService");
+const quotaService = require("../services/quotaService");
 const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/ApiError");
 
+function isRolePaid(user) {
+  return user && (user.roles || []).some((r) => ["admin", "super_admin"].includes(r));
+}
+
 const getLeads = asyncHandler(async (req, res) => {
   const { q, country_id, region_id, city_id, industry, cursor, limit, lat, lon, radius } = req.query;
-  
-  // Simple check for paid access: admins/super_admins get full access.
-  // In Module 3, this will also check the user's active subscription.
-  const is_paid = req.user && (req.user.roles.includes("admin") || req.user.roles.includes("super_admin"));
+
+  // Paid access = active paid subscription OR an admin/super_admin role.
+  // Admins bypass quotas; regular users are checked by the requireQuota middleware.
+  const [hasPaid, quotaStatus] = await Promise.all([
+    req.user && !isRolePaid(req.user)
+      ? quotaService.hasActivePaidPlan(req.user.id)
+      : Promise.resolve(isRolePaid(req.user)),
+    quotaService.getQuotaStatus(req.user.id),
+  ]);
+  const is_paid = !!hasPaid;
 
   const result = await leadService.getLeads({
     q,
@@ -25,14 +36,16 @@ const getLeads = asyncHandler(async (req, res) => {
 
   res.json({
     status: "success",
-    data: result,
+    data: { ...result, quota: quotaStatus },
   });
 });
 
 const getLeadById = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  
-  const is_paid = req.user && (req.user.roles.includes("admin") || req.user.roles.includes("super_admin"));
+
+  const is_paid = isRolePaid(req.user)
+    ? true
+    : await quotaService.hasActivePaidPlan(req.user.id);
 
   const lead = await leadService.getLeadById(parseInt(id, 10), is_paid);
 
@@ -42,14 +55,42 @@ const getLeadById = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * POST /api/leads/export — server-side, gated export.
+ * Enforces login + format whitelist + plan row cap + daily export quota + audit.
+ * Admins/super_admins bypass the quota (usage still tracked).
+ */
 const exportLeads = asyncHandler(async (req, res) => {
-  const is_paid = req.user && (req.user.roles.includes("admin") || req.user.roles.includes("super_admin"));
+  const format = String(req.query.format || req.body?.format || "csv").toLowerCase();
+  const filters = {
+    q: req.query.q,
+    country_id: req.query.country_id ? parseInt(req.query.country_id, 10) : null,
+    region_id: req.query.region_id ? parseInt(req.query.region_id, 10) : null,
+    city_id: req.query.city_id ? parseInt(req.query.city_id, 10) : null,
+    industry: req.query.industry,
+    limit: req.query.limit ? parseInt(req.query.limit, 10) : undefined,
+  };
 
-  const csv = await leadService.exportLeads(req.query, is_paid);
+  const result = await leadService.exportLeads({
+    userId: req.user.id,
+    isAdmin: isRolePaid(req.user),
+    filters,
+    format,
+    ip: req.ip,
+  });
 
-  res.setHeader("Content-Type", "text/csv");
-  res.setHeader("Content-Disposition", "attachment; filename=leads.csv");
-  res.status(200).send(csv);
+  res.setHeader("Content-Type", result.contentType);
+  res.setHeader("Content-Disposition", `attachment; filename="${result.filename}"`);
+  res.status(200).send(result.content);
+});
+
+/**
+ * POST /api/leads/ingest — external machine-to-machine ingest.
+ * Auth handled by requireIngestAuth middleware (Bearer + timestamp + nonce + HMAC).
+ */
+const ingestLeads = asyncHandler(async (req, res) => {
+  const result = await leadService.ingestLeads(req.body?.data ?? req.body, "ingest");
+  res.status(201).json({ status: "success", data: result });
 });
 
 /**
@@ -98,5 +139,6 @@ module.exports = {
   exportLeads,
   createLead,
   importLeads,
+  ingestLeads,
   getStats,
 };

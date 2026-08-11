@@ -1,5 +1,6 @@
 const asyncHandler = require("../utils/asyncHandler");
 const authService = require("../services/authService");
+const googleService = require("../services/googleService");
 const env = require("../config/env");
 const ApiError = require("../utils/ApiError");
 
@@ -24,7 +25,7 @@ function requestMeta(req) {
 }
 
 const register = asyncHandler(async (req, res) => {
-  const result = await authService.register(req.body);
+  const result = await authService.register(req.body, requestMeta(req));
   res.status(201).json(result);
 });
 
@@ -61,13 +62,46 @@ const logout = asyncHandler(async (req, res) => {
 });
 
 const forgotPassword = asyncHandler(async (req, res) => {
-  const result = await authService.forgotPassword(req.body);
+  const result = await authService.forgotPassword(req.body, requestMeta(req));
   res.status(200).json(result);
 });
 
 const resetPassword = asyncHandler(async (req, res) => {
   const result = await authService.resetPassword(req.body);
   res.status(200).json(result);
+});
+
+const googleUrl = asyncHandler(async (req, res) => {
+  if (!googleService.isConfigured()) {
+    throw new ApiError(503, "Google Sign-In is not configured");
+  }
+  const url = await googleService.getAuthUrl();
+  res.status(200).json({ url });
+});
+
+const googleCallback = asyncHandler(async (req, res) => {
+  const { code, state } = req.query;
+  if (!code || !state) throw new ApiError(400, "Missing code or state");
+
+  // CSRF defense: the state nonce must match one we issued.
+  const stateOk = await googleService.verifyState(state);
+  if (!stateOk) throw new ApiError(400, "Invalid OAuth state");
+
+  const tokens = await googleService.exchangeCode(code);
+  const profile = await googleService.getUserInfo(tokens.access_token);
+
+  const { user, accessToken, refreshToken } = await authService.googleLogin(
+    {
+      googleId: profile.sub,
+      email: profile.email,
+      firstName: profile.given_name,
+      lastName: profile.family_name,
+    },
+    requestMeta(req)
+  );
+
+  setRefreshCookie(res, refreshToken);
+  res.status(200).json({ access_token: accessToken, token_type: "bearer", user });
 });
 
 const getMe = asyncHandler(async (req, res) => {
@@ -89,6 +123,8 @@ module.exports = {
   logout,
   forgotPassword,
   resetPassword,
+  googleUrl,
+  googleCallback,
   getMe,
   updateMe,
 };

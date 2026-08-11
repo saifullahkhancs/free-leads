@@ -33,6 +33,8 @@ router.post(
 router.post("/login", loginLimiter, validate(loginSchema), controller.login);
 router.post("/refresh", controller.refresh);
 router.post("/logout", controller.logout);
+router.get("/google/url", controller.googleUrl);
+router.get("/google/callback", controller.googleCallback);
 router.post(
   "/forgot-password",
   forgotPasswordLimiter,

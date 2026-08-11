@@ -1,5 +1,7 @@
 const asyncHandler = require("../utils/asyncHandler");
 const authService = require("../services/authService");
+const auditService = require("../services/auditService");
+const dedupService = require("../services/dedupService");
 const { query, withTransaction } = require("../config/db");
 const ApiError = require("../utils/ApiError");
 
@@ -150,6 +152,45 @@ const toggleUserActive = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * GET /api/admin/audit-logs — read the security audit trail (admin only).
+ */
+const getAuditLogs = asyncHandler(async (req, res) => {
+  const rows = await auditService.getAuditLogs({
+    limit: req.query.limit ? parseInt(req.query.limit, 10) : 100,
+    action: req.query.action || null,
+    actorId: req.query.actor_id || null,
+  });
+  res.status(200).json({ logs: rows });
+});
+
+/**
+ * POST /api/admin/leads/dedup — pure-SQL duplicate finder (admin only).
+ * body: { fields: ['email','phone','website','biz'], mode: 'preview'|'mark'|'delete' }
+ */
+const runDedup = asyncHandler(async (req, res) => {
+  const ALLOWED_FIELDS = ["email", "phone", "website", "biz"];
+  const fields = (req.body?.fields || ["email"])
+    .filter((f) => ALLOWED_FIELDS.includes(f));
+  if (fields.length === 0) throw new ApiError(400, "No valid dedup fields");
+
+  const mode = ["preview", "mark", "delete"].includes(req.body?.mode)
+    ? req.body.mode
+    : "preview";
+
+  const result = await dedupService.runDedup(fields, mode);
+
+  await auditService.log({
+    actorId: req.user.id,
+    action: "dedup",
+    entityType: "lead",
+    metadata: { fields, mode, ...result },
+    ip: req.ip,
+  });
+
+  res.status(200).json({ status: "success", data: result });
+});
+
 // Get all roles (admin only)
 const getRoles = asyncHandler(async (req, res) => {
   const { rows: roles } = await query(`
@@ -216,4 +257,6 @@ module.exports = {
   toggleUserActive,
   getRoles,
   createUser,
+  getAuditLogs,
+  runDedup,
 };

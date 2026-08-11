@@ -17,4 +17,8 @@ router.patch("/users/:id/active", adminController.toggleUserActive);
 // Roles
 router.get("/roles", adminController.getRoles);
 
+// Audit log + dedup
+router.get("/audit-logs", adminController.getAuditLogs);
+router.post("/leads/dedup", adminController.runDedup);
+
 module.exports = router;
