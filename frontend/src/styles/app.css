@@ -3,7 +3,7 @@
    ========================================================================== */
 
 :root {
-  --app-bg: #f5f7f3;
+  --app-bg: #ffffff;
   --app-surface: #ffffff;
   --app-surface-subtle: #f9faf7;
   --app-surface-hover: #f1f5ee;
@@ -125,28 +125,29 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 14px;
+  padding: 8px 16px;
   border-radius: var(--app-radius-md);
   font-size: 13.5px;
-  font-weight: 700;
-  color: var(--app-ink-muted);
+  font-weight: 600;
+  color: var(--app-ink);
   text-decoration: none;
   transition: all 0.15s ease;
-  border: 1px solid transparent;
+  border: 1px solid var(--app-border);
   cursor: pointer;
-  background: transparent;
+  background: var(--app-surface);
 }
 
 .app-nav-link:hover {
   color: var(--app-green);
+  border-color: var(--app-green);
   background: var(--app-surface-hover);
 }
 
 .app-nav-link.active {
-  color: var(--app-green);
-  background: var(--app-green-light);
-  border-color: #d1e5d4;
-  box-shadow: var(--app-shadow-xs);
+  color: #ffffff;
+  background: var(--app-green);
+  border-color: var(--app-green);
+  box-shadow: var(--app-shadow-sm);
 }
 
 .app-nav-pill-badge {
@@ -163,39 +164,6 @@
   line-height: 1.4;
 }
 
-/* Quick Search Trigger in Header */
-.app-header-search-trigger {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 7px 14px;
-  background: var(--app-surface-subtle);
-  border: 1px solid var(--app-border);
-  border-radius: var(--app-radius-full);
-  font-size: 13px;
-  color: var(--app-ink-faint);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  margin-left: 8px;
-  max-width: 240px;
-}
-
-.app-header-search-trigger:hover {
-  border-color: #b7c7b4;
-  background: #ffffff;
-  color: var(--app-ink-muted);
-}
-
-.app-header-search-trigger kbd {
-  font-family: 'DM Mono', monospace;
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: #ffffff;
-  border: 1px solid var(--app-border);
-  color: var(--app-ink-muted);
-  margin-left: auto;
-}
 
 /* Header Right Actions */
 .app-header-right {

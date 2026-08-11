@@ -288,9 +288,9 @@ export default function ContactPage() {
           <div className="footer-links">
             <Link to="/#features">Platform</Link>
             <Link to="/#how-it-works">How it works</Link>
-            <Link to="/plans">Pricing &amp; Plans</Link>
-            <Link to="/blog">Blog</Link>
-            <Link to="/contact">Contact</Link>
+            <Link to="/app/plans">Pricing &amp; Plans</Link>
+            <Link to="/app/blog">Blog</Link>
+            <Link to="/app/contact">Contact</Link>
           </div>
           <p>© {new Date().getFullYear()} Free Leads · Find better. Connect sooner.</p>
         </div>
@@ -304,9 +304,9 @@ function TopNav({ active }) {
     <nav className="landing-nav">
       <Link to="/#features" className={active === "platform" ? "active" : ""}>Platform</Link>
       <Link to="/#how-it-works" className={active === "how" ? "active" : ""}>How it works</Link>
-      <Link to="/plans" className={active === "plans" ? "active" : ""}>Pricing &amp; Plans</Link>
-      <Link to="/blog" className={active === "blog" ? "active" : ""}>Blog</Link>
-      <Link to="/contact" className={active === "contact" ? "active" : ""}>Contact</Link>
+      <Link to="/app/plans" className={active === "plans" ? "active" : ""}>Pricing &amp; Plans</Link>
+      <Link to="/app/blog" className={active === "blog" ? "active" : ""}>Blog</Link>
+      <Link to="/app/contact" className={active === "contact" ? "active" : ""}>Contact</Link>
     </nav>
   );
 }

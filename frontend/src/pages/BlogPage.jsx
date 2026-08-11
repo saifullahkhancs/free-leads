@@ -147,12 +147,12 @@ export default function BlogPage() {
                     ? "No posts match your search. Try another keyword."
                     : "The team is writing their first posts. Check back soon — or get in touch if there's a topic you'd like us to cover."}
                 </p>
-                <Link to="/contact" className="btn btn-primary"><Mail size={15} /> Suggest a topic</Link>
+                <Link to="/app/contact" className="btn btn-primary"><Mail size={15} /> Suggest a topic</Link>
               </div>
             ) : (
               <>
                 {featured && (
-                  <Link to={`/blog/${featured.slug}`} className="blog-feature">
+                  <Link to={`/app/blog/${featured.slug}`} className="blog-feature">
                     <div
                       className="blog-feature-cover"
                       style={featured.cover_image_url ? { backgroundImage: `url(${featured.cover_image_url})` } : {}}
@@ -179,7 +179,7 @@ export default function BlogPage() {
                 {rest.length > 0 && (
                   <div className="blog-grid">
                     {rest.map((post) => (
-                      <Link to={`/blog/${post.slug}`} key={post.id} className="blog-card">
+                      <Link to={`/app/blog/${post.slug}`} key={post.id} className="blog-card">
                         <div
                           className="blog-card-cover"
                           style={post.cover_image_url ? { backgroundImage: `url(${post.cover_image_url})` } : {}}
@@ -213,7 +213,7 @@ export default function BlogPage() {
             <p>5M+ profiles across 195 countries, ready in seconds.</p>
             <div className="hero-ctas center">
               <Link to="/app" className="btn btn-light btn-lg"><Compass size={17} /> Open directory <ArrowRight size={18} /></Link>
-              <Link to="/plans" className="btn btn-outline-light btn-lg">View plans</Link>
+              <Link to="/app/plans" className="btn btn-outline-light btn-lg">View plans</Link>
             </div>
           </div>
         </section>
@@ -228,9 +228,9 @@ export default function BlogPage() {
           <div className="footer-links">
             <Link to="/#features">Platform</Link>
             <Link to="/#how-it-works">How it works</Link>
-            <Link to="/plans">Pricing &amp; Plans</Link>
-            <Link to="/blog">Blog</Link>
-            <Link to="/contact">Contact</Link>
+            <Link to="/app/plans">Pricing &amp; Plans</Link>
+            <Link to="/app/blog">Blog</Link>
+            <Link to="/app/contact">Contact</Link>
           </div>
           <p>© {new Date().getFullYear()} Free Leads · Find better. Connect sooner.</p>
         </div>
@@ -244,9 +244,9 @@ function TopNav({ active }) {
     <nav className="landing-nav">
       <Link to="/#features" className={active === "platform" ? "active" : ""}>Platform</Link>
       <Link to="/#how-it-works" className={active === "how" ? "active" : ""}>How it works</Link>
-      <Link to="/plans" className={active === "plans" ? "active" : ""}>Pricing &amp; Plans</Link>
-      <Link to="/blog" className={active === "blog" ? "active" : ""}>Blog</Link>
-      <Link to="/contact" className={active === "contact" ? "active" : ""}>Contact</Link>
+      <Link to="/app/plans" className={active === "plans" ? "active" : ""}>Pricing &amp; Plans</Link>
+      <Link to="/app/blog" className={active === "blog" ? "active" : ""}>Blog</Link>
+      <Link to="/app/contact" className={active === "contact" ? "active" : ""}>Contact</Link>
     </nav>
   );
 }

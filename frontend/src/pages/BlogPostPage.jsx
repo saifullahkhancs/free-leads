@@ -88,7 +88,7 @@ export default function BlogPostPage() {
       <main>
         <article className="blog-article">
           <div className="landing-container blog-article-inner">
-            <Link to="/blog" className="blog-back-link">
+            <Link to="/app/blog" className="blog-back-link">
               <ArrowLeft size={14} /> Back to blog
             </Link>
 
@@ -102,12 +102,12 @@ export default function BlogPostPage() {
             ) : error ? (
               <div className="app-empty-state">
                 <h3>{error}</h3>
-                <Link to="/blog" className="btn btn-primary">Back to blog</Link>
+                <Link to="/app/blog" className="btn btn-primary">Back to blog</Link>
               </div>
             ) : !post ? (
               <div className="app-empty-state">
                 <h3>Post not found</h3>
-                <Link to="/blog" className="btn btn-primary">Back to blog</Link>
+                <Link to="/app/blog" className="btn btn-primary">Back to blog</Link>
               </div>
             ) : (
               <>
@@ -160,8 +160,8 @@ export default function BlogPostPage() {
           <div className="footer-links">
             <Link to="/#features">Platform</Link>
             <Link to="/#how-it-works">How it works</Link>
-            <Link to="/plans">Pricing &amp; Plans</Link>
-            <Link to="/blog">Blog</Link>
+            <Link to="/app/plans">Pricing &amp; Plans</Link>
+            <Link to="/app/blog">Blog</Link>
             <Link to="/contact">Contact</Link>
           </div>
           <p>© {new Date().getFullYear()} Free Leads · Find better. Connect sooner.</p>
@@ -176,9 +176,9 @@ function TopNav({ active }) {
     <nav className="landing-nav">
       <Link to="/#features" className={active === "platform" ? "active" : ""}>Platform</Link>
       <Link to="/#how-it-works" className={active === "how" ? "active" : ""}>How it works</Link>
-      <Link to="/plans" className={active === "plans" ? "active" : ""}>Pricing &amp; Plans</Link>
-      <Link to="/blog" className={active === "blog" ? "active" : ""}>Blog</Link>
-      <Link to="/contact" className={active === "contact" ? "active" : ""}>Contact</Link>
+      <Link to="/app/plans" className={active === "plans" ? "active" : ""}>Pricing &amp; Plans</Link>
+      <Link to="/app/blog" className={active === "blog" ? "active" : ""}>Blog</Link>
+      <Link to="/app/contact" className={active === "contact" ? "active" : ""}>Contact</Link>
     </nav>
   );
 }

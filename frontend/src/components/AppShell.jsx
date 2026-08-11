@@ -10,7 +10,6 @@ import {
   LogOut,
   Mail,
   Menu,
-  Search,
   Sparkles,
   Target,
   User,
@@ -67,14 +66,6 @@ export default function AppShell() {
     navigate("/");
   };
 
-  const handleFocusSearch = () => {
-    const searchInput = document.querySelector(".app-search-input");
-    if (searchInput) {
-      searchInput.focus();
-      searchInput.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-  };
-
   const roleText =
     user?.roles?.some((r) => r === "super_admin") ? "Super Admin" :
     user?.roles?.some((r) => r === "admin") ? "Admin" :
@@ -99,38 +90,27 @@ export default function AppShell() {
               <span>Search Leads</span>
             </NavLink>
             <NavLink
-              to="/plans"
+              to="/app/plans"
               className={({ isActive }) => `app-nav-link${isActive ? " active" : ""}`}
             >
               <Sparkles size={16} />
               <span>Pricing &amp; Plans</span>
             </NavLink>
             <NavLink
-              to="/blog"
+              to="/app/blog"
               className={({ isActive }) => `app-nav-link${isActive ? " active" : ""}`}
             >
               <FileText size={16} />
               <span>Blog</span>
             </NavLink>
             <NavLink
-              to="/contact"
+              to="/app/contact"
               className={({ isActive }) => `app-nav-link${isActive ? " active" : ""}`}
             >
               <Mail size={16} />
               <span>Contact Us</span>
             </NavLink>
           </nav>
-
-          <button
-            type="button"
-            className="app-header-search-trigger"
-            onClick={handleFocusSearch}
-            title="Search leads (⌘K or /)"
-          >
-            <Search size={14} />
-            <span>Search prospects...</span>
-            <kbd>⌘K</kbd>
-          </button>
 
           <div className="app-header-right">
             {isAuthenticated ? (

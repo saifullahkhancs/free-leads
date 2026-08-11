@@ -409,9 +409,7 @@ export default function DirectoryPage() {
   };
 
   // ---------------------------------------------------------------------------
-  // Profile-derived default filters — sourced only from `user.location`
-  // and `user.interests`. They appear only when the user has actual profile
-  // data set.
+  // Profile-derived default filters — sourced only from `user.location` and `user.interests`. They appear only when the user has actual profile data set.
   // ---------------------------------------------------------------------------
   const profileLocation = user?.location || {};
   const profileCountry = profileLocation.country || "";
@@ -942,10 +940,7 @@ export default function DirectoryPage() {
           </div>
         </div>
 
-        {/* Div 2: default quick filters row — Verified Only + Near Me / radius
-            geospatial search + profile-derived Current Country / Current City /
-            Interested Industry / Interested Category chips. Clean flex wrap,
-            with a top border separator from the search row above. */}
+        {/* Div 2: default quick filters row — Verified Only + Country/City/Industry/Category chips + Near Me */}
         <div className="app-filter-extras-div">
           <label className={`app-filter-verify-toggle${filters.verifiedOnly ? " active" : ""}`}>
             <input
@@ -964,6 +959,31 @@ export default function DirectoryPage() {
               )}
             </span>
           </label>
+
+          {profileChips.map((chip) => {
+            const Icon = chip.icon;
+            return (
+              <button
+                key={chip.id}
+                type="button"
+                className={`app-filter-profile-chip${chip.active ? " active" : ""}`}
+                onClick={chip.onClick}
+                title={
+                  chip.active
+                    ? `Clear ${chip.label} filter`
+                    : `Filter by ${chip.label}`
+                }
+              >
+                <Icon size={13} />
+                <span>{chip.label}</span>
+                {chip.count != null && (
+                  <em className="app-filter-profile-chip-count">
+                    {formatCount(chip.count)}
+                  </em>
+                )}
+              </button>
+            );
+          })}
 
           <div className="app-filter-geo-group">
             <button
@@ -994,36 +1014,6 @@ export default function DirectoryPage() {
               </div>
             )}
           </div>
-
-          {profileChips.length > 0 && (
-            <div className="app-filter-profile-chips">
-              <span className="app-filter-profile-chips-label">From your profile</span>
-              {profileChips.map((chip) => {
-                const Icon = chip.icon;
-                return (
-                  <button
-                    key={chip.id}
-                    type="button"
-                    className={`app-filter-profile-chip${chip.active ? " active" : ""}`}
-                    onClick={chip.onClick}
-                    title={
-                      chip.active
-                        ? `Clear ${chip.label} filter`
-                        : `Filter by ${chip.label}`
-                    }
-                  >
-                    <Icon size={13} />
-                    <span>{chip.label}</span>
-                    {chip.count != null && (
-                      <em className="app-filter-profile-chip-count">
-                        {formatCount(chip.count)}
-                      </em>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
         </div>
 
         {/* Div 3: dropdown filters (Category, Industry, Country, State, City) in

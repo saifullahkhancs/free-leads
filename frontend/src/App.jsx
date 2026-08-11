@@ -43,22 +43,22 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/plans" element={<PlansPage />} />
-          <Route path="/pricing" element={<PlansPage />} />
-          <Route path="/blog" element={<BlogPage />} />
-          <Route path="/blog/:slug" element={<BlogPostPage />} />
-          <Route path="/contact" element={<ContactPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
 
-          {/* App view — the modern leads directory */}
+          {/* App view — all main pages with consistent navigation */}
           <Route path="/app" element={<AppShell />}>
             <Route index element={<DirectoryPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="billing" element={<BillingPage />} />
+            <Route path="plans" element={<PlansPage />} />
+            <Route path="pricing" element={<PlansPage />} />
+            <Route path="blog" element={<BlogPage />} />
+            <Route path="blog/:slug" element={<BlogPostPage />} />
+            <Route path="contact" element={<ContactPage />} />
           </Route>
 
           {/* Dashboard — CMS workspace with sidebar (requires authentication) */}

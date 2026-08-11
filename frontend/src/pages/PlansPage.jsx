@@ -66,7 +66,7 @@ export default function PlansPage() {
           </Link>
           <nav className="landing-nav">
             <Link to="/app">Search Leads</Link>
-            <Link to="/plans" className="active">Pricing &amp; Plans</Link>
+            <Link to="/app/plans" className="active">Pricing &amp; Plans</Link>
             <Link to="/blog">Blog</Link>
             <Link to="/contact">Contact Us</Link>
           </nav>
@@ -254,7 +254,7 @@ export default function PlansPage() {
           </Link>
           <div className="footer-links">
             <Link to="/app">Search Leads</Link>
-            <Link to="/plans">Pricing &amp; Plans</Link>
+            <Link to="/app/plans">Pricing &amp; Plans</Link>
             <Link to="/blog">Blog</Link>
             <Link to="/contact">Contact Us</Link>
           </div>
