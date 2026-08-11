@@ -69,7 +69,7 @@ async function search(q) {
   if (env.GEOAPIFY_API_KEY) {
     const url =
       `${GEOAPIFY_URL}/search?text=${encodeURIComponent(query)}` +
-      `&apiKey=${encodeURIComponent(env.GEOAPIFY_API_KEY)}&limit=6&lang=en`;
+      `&apiKey=${encodeURIComponent(env.GEOAPIFY_API_KEY)}&limit=6&lang=${encodeURIComponent(env.GEO_RESULTS_LANGUAGE)}`;
     const data = await fetchJson(url);
     return (data.features || []).map(normalizeGeoapify).filter((r) => r.lat != null);
   }
@@ -79,6 +79,11 @@ async function search(q) {
     `&format=jsonv2&addressdetails=1&limit=6`;
   const data = await fetchJson(url, {
     "User-Agent": env.NOMINATIM_USER_AGENT,
+    // Without an explicit accept-language, Nominatim returns names in the
+    // *local* language of the place (Urdu for Pakistan). We force the
+    // configured language (default "en") so city/region/label come back
+    // in English where OSM has an English name.
+    "Accept-Language": env.GEO_RESULTS_LANGUAGE,
     Accept: "application/json",
   });
   return (Array.isArray(data) ? data : []).map(normalizeNominatim);
@@ -97,7 +102,7 @@ async function reverse(lat, lng) {
   if (env.GEOAPIFY_API_KEY) {
     const url =
       `${GEOAPIFY_URL}/reverse?lat=${lat}&lon=${lng}` +
-      `&apiKey=${encodeURIComponent(env.GEOAPIFY_API_KEY)}&lang=en`;
+      `&apiKey=${encodeURIComponent(env.GEOAPIFY_API_KEY)}&lang=${encodeURIComponent(env.GEO_RESULTS_LANGUAGE)}`;
     const data = await fetchJson(url);
     const feature = (data.features || [])[0];
     if (!feature) return { label: null, lat, lng, city: null, region: null, country: null, countryCode: null };
@@ -109,6 +114,9 @@ async function reverse(lat, lng) {
     `&format=jsonv2&addressdetails=1&zoom=12`;
   const data = await fetchJson(url, {
     "User-Agent": env.NOMINATIM_USER_AGENT,
+    // Same as search: force English (or configured language) instead of the
+    // place's local language.
+    "Accept-Language": env.GEO_RESULTS_LANGUAGE,
     Accept: "application/json",
   });
   if (!data || data.error) {

@@ -69,6 +69,7 @@ const getLeads = async ({
   limit = 50,
   sort = "recent",
   is_paid = false,
+  visibility = null, // per-plan field visibility flags from resolveVisibility()
 }) => {
   const values = [];
   let paramIndex = 1;

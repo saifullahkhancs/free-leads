@@ -75,6 +75,10 @@ const env = {
   GEOAPIFY_API_KEY: process.env.GEOAPIFY_API_KEY || "",
   NOMINATIM_USER_AGENT:
     process.env.NOMINATIM_USER_AGENT || "freeleads-app/1.0 (leads-directory-web-app)",
+  // Language for geocoding results (city/region/country/label). Defaults to
+  // English. Nominatim returns the *local* language of the place (e.g. Urdu in
+  // Pakistan) unless an explicit accept-language is sent — see geoService.js.
+  GEO_RESULTS_LANGUAGE: process.env.GEO_RESULTS_LANGUAGE || "en",
 
   // ---- Quota / plans ----
   // Default free-tier limits used when no plans are seeded yet.
