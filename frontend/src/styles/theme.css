@@ -65,8 +65,8 @@
      Content is fluid and only stops growing on very large monitors, so at
      100% browser zoom the app fills the viewport instead of sitting in a
      narrow 1180-1260px column. */
-  --fl-container-max: 1720px;
-  --fl-container-pad: 28px;
+  --fl-container-max: 1480px;
+  --fl-container-pad: 32px;
   --fl-font: Manrope, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
   /* ---------- Legacy aliases ----------
