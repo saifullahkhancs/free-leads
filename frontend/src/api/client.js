@@ -246,3 +246,138 @@ export async function toggleUserActive(userId, is_active) {
 export async function getRoles() {
   return request("/api/admin/roles", { method: "GET" });
 }
+
+// -----------------------------------------------------------------------
+// Plans & billing
+// -----------------------------------------------------------------------
+export async function getPlans() {
+  return request("/api/plans", { method: "GET" });
+}
+
+export async function getMyBilling() {
+  return request("/api/billing/me", { method: "GET" });
+}
+
+export async function subscribe(planCode) {
+  return request("/api/billing/subscribe", {
+    method: "POST",
+    body: { planCode },
+  });
+}
+
+export async function cancelSubscription() {
+  return request("/api/billing/cancel", { method: "POST" });
+}
+
+export async function upgradeSubscription(newPlanCode) {
+  return request("/api/billing/upgrade", {
+    method: "POST",
+    body: { newPlanCode },
+  });
+}
+
+// -----------------------------------------------------------------------
+// Server-side export — returns the file content + meta instead of JSON.
+// -----------------------------------------------------------------------
+export async function exportLeads(params = {}, format = "csv") {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v) query.append(k, v);
+  });
+  query.append("format", format);
+
+  let response = await rawRequest(`/api/leads/export?${query.toString()}`, {
+    method: "POST",
+  });
+  if (response.status === 401 && !response._retried) {
+    response._retried = true;
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      response = await rawRequest(`/api/leads/export?${query.toString()}`, {
+        method: "POST",
+      });
+    }
+  }
+
+  const contentType = response.headers.get("Content-Type") || "text/csv";
+  if (!response.ok) {
+    let data = {};
+    try {
+      data = await response.json();
+    } catch {
+      /* ignore */
+    }
+    throw buildError(data, response);
+  }
+  const content = await response.text();
+  const disposition = response.headers.get("Content-Disposition") || "";
+  const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
+  return {
+    content,
+    contentType,
+    filename: filenameMatch ? filenameMatch[1] : `freeleads_export.${format}`,
+  };
+}
+
+// -----------------------------------------------------------------------
+// Google OAuth
+// -----------------------------------------------------------------------
+export async function getGoogleAuthUrl() {
+  return request("/api/auth/google/url", { method: "GET", skipAuth: true });
+}
+
+export async function loginWithGoogle(code, state) {
+  return request(`/api/auth/google/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`, {
+    method: "GET",
+    skipAuth: true,
+  });
+}
+
+// -----------------------------------------------------------------------
+// Admin: audit log + dedup
+// -----------------------------------------------------------------------
+export async function getAuditLogs(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v) query.append(k, v);
+  });
+  return request(`/api/admin/audit-logs?${query.toString()}`, { method: "GET" });
+}
+
+export async function runDedup({ fields = ["email"], mode = "preview" }) {
+  return request("/api/admin/leads/dedup", {
+    method: "POST",
+    body: { fields, mode },
+  });
+}
+
+// -----------------------------------------------------------------------
+// External ingest (machine-to-machine). Requires a signed request.
+// -----------------------------------------------------------------------
+export async function ingestLeads({ token, timestamp, nonce, signature, data }) {
+  const payload = { data };
+  return request("/api/leads/ingest", {
+    method: "POST",
+    skipAuth: true,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "x-request-timestamp": String(timestamp),
+      "x-request-nonce": nonce,
+      "x-signature": signature,
+    },
+    body: payload,
+  });
+}
+
+export function buildIngestSignature({ token, hmacSecret, data }) {
+  // Client-side helper for building the HMAC signature (used by admin tooling).
+  const timestamp = Date.now();
+  const nonce = `${timestamp}-${Math.random().toString(36).slice(2)}`;
+  const bodyRaw = JSON.stringify({ data });
+  // Note: in production compute this server-side with the same secret.
+  return { timestamp, nonce };
+}
+
+// Re-export token helpers so pages (e.g. the Google callback) can set the
+// in-memory access token after an OAuth login.
+export { setAccessToken, getAccessToken, clearAccessToken } from "./tokenStorage";

@@ -13,6 +13,10 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 // App view (leads directory)
 import DirectoryPage from "./pages/app/DirectoryPage";
 import ProfilePage from "./pages/app/ProfilePage";
+import BillingPage from "./pages/app/BillingPage";
+
+// Google OAuth callback
+import GoogleCallbackPage from "./pages/auth/GoogleCallbackPage";
 
 // Dashboard (admin workspace)
 import AdminOverviewPage from "./pages/admin/AdminOverviewPage";
@@ -34,11 +38,13 @@ export default function App() {
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
 
           {/* App view — the modern leads directory */}
           <Route path="/app" element={<AppShell />}>
             <Route index element={<DirectoryPage />} />
             <Route path="profile" element={<ProfilePage />} />
+            <Route path="billing" element={<BillingPage />} />
           </Route>
 
           {/* Dashboard — CMS workspace with sidebar (requires authentication) */}

@@ -1,3 +1,4 @@
+const crypto = require("crypto");
 const { query, withTransaction } = require("../config/db");
 const redis = require("../config/redis");
 const env = require("../config/env");
@@ -19,6 +20,8 @@ const {
   sendPasswordResetEmail,
   EmailDeliveryError,
 } = require("./emailService");
+const lockoutService = require("./lockoutService");
+const auditService = require("./auditService");
 
 const VERIFICATION_CODE_TTL_MS = env.VERIFICATION_CODE_TTL_MINUTES * 60 * 1000;
 const VERIFICATION_ATTEMPT_WINDOW_MS = env.VERIFICATION_ATTEMPT_WINDOW_MINUTES * 60 * 1000;
@@ -91,7 +94,17 @@ function sanitizeUser(user, roles = []) {
 // ---------------------------------------------------------------------------
 // Register
 // ---------------------------------------------------------------------------
-async function register({ firstName, lastName, email, password }) {
+async function register({ firstName, lastName, email, password }, meta = {}) {
+  const ip = meta.ip || null;
+
+  const locked = await lockoutService.checkLockout("register", ip || "unknown");
+  if (locked) {
+    throw new ApiError(429, `Too many attempts. Try again in ${Math.ceil(locked.retryAfterSeconds / 60)} min.`, {
+      code: "LOCKOUT",
+      retryAfterSeconds: locked.retryAfterSeconds,
+    });
+  }
+
   const existing = await findUserByEmail(email);
   if (existing) {
     // Same behavior as job-easy: don't leak whether the email exists via a
@@ -136,6 +149,15 @@ async function register({ firstName, lastName, email, password }) {
     }
     throw err;
   }
+
+  await lockoutService.clearFailures("register", ip || "unknown");
+  await auditService.log({
+    actorId: user.id,
+    action: "register_ok",
+    entityType: "user",
+    entityId: user.id,
+    ip,
+  });
 
   return { message: "Verification code sent to email" };
 }
@@ -196,6 +218,13 @@ async function verifyEmail({ email, code }) {
     [user.id]
   );
 
+  await auditService.log({
+    actorId: user.id,
+    action: "verify_email",
+    entityType: "user",
+    entityId: user.id,
+  });
+
   return { message: "Account verified successfully" };
 }
 
@@ -204,7 +233,8 @@ async function verifyEmail({ email, code }) {
 // ---------------------------------------------------------------------------
 async function resendVerification({ email }) {
   const user = await findUserByEmail(email);
-  if (!user) throw new ApiError(404, "User not found");
+  // No user-existence leak: respond identically whether or not the account exists.
+  if (!user) return { message: "Verification code sent to email" };
   if (user.is_email_verified) return { message: "Account already verified" };
 
   const verificationCode = generateVerificationCode();
@@ -252,10 +282,25 @@ async function issueTokens(user, roles, meta = {}) {
 // Login
 // ---------------------------------------------------------------------------
 async function login({ email, password }, meta = {}) {
+  const ip = meta.ip || null;
+
+  // Per-IP escalating lockout on the login action.
+  const locked = await lockoutService.checkLockout("login", ip || "unknown");
+  if (locked) {
+    throw new ApiError(429, `Too many login attempts. Try again in ${Math.ceil(locked.retryAfterSeconds / 60)} min.`, {
+      code: "LOCKOUT",
+      retryAfterSeconds: locked.retryAfterSeconds,
+    });
+  }
+
   const user = await findUserByEmail(email);
   if (!user || !(await verifyPassword(user.password_hash, password))) {
+    await lockoutService.recordFailure("login", ip || "unknown");
+    await auditService.log({ action: "login_fail", metadata: { email }, ip });
     throw new ApiError(401, "Invalid credentials");
   }
+
+  await lockoutService.clearFailures("login", ip || "unknown");
 
   if (!user.is_active) {
     throw new ApiError(403, "This account has been deactivated");
@@ -282,6 +327,14 @@ async function login({ email, password }, meta = {}) {
 
   const roles = await getUserRoles(user.id);
   const { accessToken, refreshToken } = await issueTokens(user, roles, meta);
+
+  await auditService.log({
+    actorId: user.id,
+    action: "login_ok",
+    entityType: "user",
+    entityId: user.id,
+    ip,
+  });
 
   return { user: sanitizeUser(user, roles), accessToken, refreshToken };
 }
@@ -363,7 +416,23 @@ async function logout({ refreshToken }) {
 const PASSWORD_RESET_MESSAGE =
   "If an account exists for this email, a password reset link has been sent";
 
-async function forgotPassword({ email }) {
+async function forgotPassword({ email }, meta = {}) {
+  const ip = meta.ip || null;
+
+  // Lockout on the forgot flow (it can be used to hammer the email service).
+  const locked = await lockoutService.checkLockout("forgot", ip || "unknown");
+  if (locked) {
+    throw new ApiError(429, `Too many attempts. Try again in ${Math.ceil(locked.retryAfterSeconds / 60)} min.`, {
+      code: "LOCKOUT",
+      retryAfterSeconds: locked.retryAfterSeconds,
+    });
+  }
+
+  // Record a failure for EVERY attempt regardless of whether the account
+  // exists — deliberate, so an attacker can't time/enumerate accounts.
+  await lockoutService.recordFailure("forgot", ip || "unknown");
+  await auditService.log({ action: "forgot_password", metadata: { email }, ip });
+
   const user = await findUserByEmail(email);
   if (!user) return { message: PASSWORD_RESET_MESSAGE };
 
@@ -420,6 +489,12 @@ async function resetPassword({ token, password }) {
   if (!user) throw new ApiError(401, "Invalid or expired reset token");
 
   const passwordHash = await hashPassword(password);
+  await auditService.log({
+    actorId: user.id,
+    action: "reset_password",
+    entityType: "user",
+    entityId: user.id,
+  });
   await withTransaction(async (client) => {
     await client.query("UPDATE users SET password_hash = $1 WHERE id = $2", [
       passwordHash,
@@ -436,6 +511,65 @@ async function resetPassword({ token, password }) {
   });
 
   return { message: "Password reset successfully" };
+}
+
+// ---------------------------------------------------------------------------
+// Google OAuth login — finds or auto-provisions a user from a Google profile.
+// ---------------------------------------------------------------------------
+async function googleLogin({ googleId, email, firstName, lastName }, meta = {}) {
+  const ip = meta.ip || null;
+  if (!googleId || !email) throw new ApiError(400, "Missing Google profile");
+
+  // 1. Match by linked google_id, else by email.
+  let user = await query("SELECT * FROM users WHERE google_id = $1 LIMIT 1", [googleId]).then(
+    (r) => r.rows[0] || null
+  );
+  if (!user) {
+    user = await findUserByEmail(email);
+  }
+
+  if (user) {
+    // Link the google_id if it isn't linked yet (first Google login).
+    if (!user.google_id) {
+      user = await query(
+        "UPDATE users SET google_id = $1, google_email = $2 WHERE id = $3 RETURNING *",
+        [googleId, email, user.id]
+      ).then((r) => r.rows[0]);
+    }
+  } else {
+    // Auto-provision: random password they never know; always log in via Google.
+    const randomPassword = crypto.randomBytes(24).toString("base64url");
+    const passwordHash = await hashPassword(randomPassword);
+    user = await withTransaction(async (client) => {
+      const { rows } = await client.query(
+        `INSERT INTO users
+           (email, password_hash, first_name, last_name, is_email_verified,
+            google_id, google_email)
+         VALUES ($1,$2,$3,$4,true,$5,$6)
+         ON CONFLICT (email) DO UPDATE SET google_id = EXCLUDED.google_id
+         RETURNING *`,
+        [email, passwordHash, firstName || "", lastName || "", googleId, email]
+      );
+      const created = rows[0];
+      await assignDefaultRole(client, created.id);
+      return created;
+    });
+  }
+
+  if (!user.is_active) throw new ApiError(403, "This account has been deactivated");
+
+  const roles = await getUserRoles(user.id);
+  const { accessToken, refreshToken } = await issueTokens(user, roles, meta);
+
+  await auditService.log({
+    actorId: user.id,
+    action: "google_login_ok",
+    entityType: "user",
+    entityId: user.id,
+    ip,
+  });
+
+  return { user: sanitizeUser(user, roles), accessToken, refreshToken };
 }
 
 // ---------------------------------------------------------------------------
@@ -507,6 +641,7 @@ module.exports = {
   logout,
   forgotPassword,
   resetPassword,
+  googleLogin,
   getCurrentUser,
   updateProfile,
   getUserRoles,
