@@ -129,7 +129,7 @@ export default function DashboardLayout() {
                   key={item.to}
                   to={item.to}
                   end={item.end}
-                  className={({ isActive }) => `dash-nav-item${isActive ? " active" : ""}`}
+                  className={({ isActive }) => `dash-nav-item${["Add Lead", "Import CSV"].includes(item.label) ? " dash-nav-item-action" : ""}${isActive ? " active" : ""}`}
                 >
                   <item.icon size={17} />
                   {item.label}
