@@ -52,8 +52,8 @@ const env = {
   SMTP_PORT: int("SMTP_PORT", 587),
   SMTP_USERNAME: process.env.SMTP_USERNAME || "resend",
   SMTP_PASSWORD: process.env.SMTP_PASSWORD || "",
-  SMTP_FROM_EMAIL: process.env.SMTP_FROM_EMAIL || "info@yourapp.com",
-  SMTP_FROM_NAME: process.env.SMTP_FROM_NAME || "Auth System",
+  SMTP_FROM_EMAIL: process.env.SMTP_FROM_EMAIL ,
+  SMTP_FROM_NAME: process.env.SMTP_FROM_NAME ,
   SMTP_USE_TLS: bool("SMTP_USE_TLS", true),
 
   RATE_LIMIT_ENABLED: bool("RATE_LIMIT_ENABLED", true),
