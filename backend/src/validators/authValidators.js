@@ -45,6 +45,12 @@ const updateProfileSchema = z.object({
       label: z.string().trim().max(300).nullable().optional(),
     })
     .optional(),
+  // Default directory filters picked on the profile page. Free-text (max 150,
+  // matching leads.category / leads.industry) because the picker also allows a
+  // custom value when the facet list doesn't cover the user's niche. An empty
+  // string clears the saved choice.
+  interestCategory: z.string().trim().max(150).nullable().optional(),
+  interestIndustry: z.string().trim().max(150).nullable().optional(),
 });
 
 module.exports = {

@@ -121,8 +121,15 @@ const getFacets = asyncHandler(async (req, res) => {
   });
 
   // Suggest the signed-in user's own country/state/city (set on their profile)
-  // so the UI can offer a one-click "leads in <your country>" filter.
-  const profile = req.user ? await authService.getProfileLocation(req.user.id) : null;
+  // so the UI can offer a one-click "leads in <your country>" filter, plus the
+  // category/industry they picked as their interests so the directory can
+  // pre-seed those two default filters as well.
+  const [profile, interests] = req.user
+    ? await Promise.all([
+        authService.getProfileLocation(req.user.id),
+        authService.getProfileInterests(req.user.id),
+      ])
+    : [null, null];
   const suggestion = {
     country: profile?.country || null,
     region: profile?.region || null,
@@ -134,6 +141,11 @@ const getFacets = asyncHandler(async (req, res) => {
       )
     : null;
 
+  const matchCount = (list, value) =>
+    value
+      ? list.find((x) => String(x.value).toLowerCase() === String(value).toLowerCase())?.count ?? null
+      : null;
+
   res.json({
     status: "success",
     data: {
@@ -142,6 +154,12 @@ const getFacets = asyncHandler(async (req, res) => {
         ...suggestion,
         country_id: matchedCountry?.id || null,
         count: matchedCountry?.count || 0,
+      },
+      interests: {
+        category: interests?.category || null,
+        industry: interests?.industry || null,
+        categoryCount: matchCount(facets.categories, interests?.category),
+        industryCount: matchCount(facets.industries, interests?.industry),
       },
     },
   });

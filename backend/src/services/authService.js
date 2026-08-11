@@ -86,6 +86,12 @@ function sanitizeUser(user, roles = []) {
       country: user.location_country ?? null,
       label: user.location_label ?? null,
     },
+    // Profile-picked default directory filters (category of interest + the
+    // industry the user works in). `interests` stays as a flat list because the
+    // directory's chip matcher accepts an array of free-text values.
+    interestCategory: user.interest_category ?? null,
+    interestIndustry: user.interest_industry ?? null,
+    interests: [user.interest_category, user.interest_industry].filter(Boolean),
     roles,
     createdAt: user.created_at,
   };
@@ -607,10 +613,31 @@ async function getProfileLocation(userId) {
   };
 }
 
+/**
+ * Lightweight lookup of the user's chosen category / industry of interest —
+ * used by the leads directory to pre-seed the default Category and Industry
+ * filters without loading the whole user row.
+ */
+async function getProfileInterests(userId) {
+  const { rows } = await query(
+    "SELECT interest_category, interest_industry FROM users WHERE id = $1",
+    [userId]
+  );
+  const row = rows[0];
+  if (!row) return null;
+  return {
+    category: row.interest_category ?? null,
+    industry: row.interest_industry ?? null,
+  };
+}
+
 // ---------------------------------------------------------------------------
-// Update profile (name + map-picked location)
+// Update profile (name + map-picked location + directory interests)
 // ---------------------------------------------------------------------------
-async function updateProfile(userId, { firstName, lastName, location }) {
+async function updateProfile(
+  userId,
+  { firstName, lastName, location, interestCategory, interestIndustry }
+) {
   const sets = [];
   const values = [userId];
 
@@ -640,6 +667,17 @@ async function updateProfile(userId, { firstName, lastName, location }) {
       `location_label = $${values.length}`
     );
   }
+  // Interests are sent as "" (or null) to clear the saved choice.
+  if (interestCategory !== undefined) {
+    const clean = interestCategory ? String(interestCategory).trim() : null;
+    values.push(clean || null);
+    sets.push(`interest_category = $${values.length}`);
+  }
+  if (interestIndustry !== undefined) {
+    const clean = interestIndustry ? String(interestIndustry).trim() : null;
+    values.push(clean || null);
+    sets.push(`interest_industry = $${values.length}`);
+  }
 
   if (sets.length === 0) {
     return getCurrentUser(userId); // nothing to update
@@ -668,6 +706,7 @@ module.exports = {
   googleLogin,
   getCurrentUser,
   getProfileLocation,
+  getProfileInterests,
   updateProfile,
   getUserRoles,
   getUserPermissions,

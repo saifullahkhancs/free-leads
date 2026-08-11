@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
+  Briefcase,
   Crosshair,
+  Layers,
   Loader2,
   LogIn,
   MapPin,
@@ -14,6 +16,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import * as api from "../../api/client";
+import { buildLocalFacets, deriveCategory } from "../../utils/leadFilters";
+import { DEFAULT_MOCK_LEADS } from "../../utils/mockLeads";
 
 // Custom pin so we don't depend on Leaflet's default image assets.
 const PIN_ICON = L.divIcon({
@@ -36,8 +40,20 @@ export default function ProfilePage() {
   const markerRef = useRef(null);
   const searchTimerRef = useRef(null);
 
-  const [form, setForm] = useState({ firstName: "", lastName: "" });
+  const [form, setForm] = useState({
+    firstName: "",
+    lastName: "",
+    // Default directory filters: the category of leads the user cares about and
+    // the industry they work in. Both are picked from the *same* facet lists
+    // that power the Category / Industry dropdowns on the search page.
+    interestCategory: "",
+    interestIndustry: "",
+  });
   const [location, setLocation] = useState(null); // { lat, lng, city, region, country, label }
+
+  // Category / industry options pulled from the live lead database.
+  const [facets, setFacets] = useState({ categories: [], industries: [] });
+  const [facetsLoading, setFacetsLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -50,11 +66,67 @@ export default function ProfilePage() {
   // Sync form + saved location from the auth context once it's loaded
   useEffect(() => {
     if (!user) return;
-    setForm({ firstName: user.firstName || "", lastName: user.lastName || "" });
+    setForm({
+      firstName: user.firstName || "",
+      lastName: user.lastName || "",
+      interestCategory: user.interestCategory || "",
+      interestIndustry: user.interestIndustry || "",
+    });
     if (user.location && user.location.lat != null && user.location.lng != null) {
       setLocation(user.location);
     }
   }, [user]);
+
+  // Load the real category + industry facets so the profile picker offers the
+  // exact same options (with counts) as the directory's default filters.
+  // Re-runs when the category changes so the industry list cascades server-side,
+  // exactly like the Category → Industry dropdowns on the search page. Falls
+  // back to the bundled demo dataset when the API isn't reachable.
+  const selectedCategory = form.interestCategory;
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      setFacetsLoading(true);
+      try {
+        const res = await api.getLeadFacets(
+          selectedCategory ? { category: selectedCategory } : {}
+        );
+        const data = res?.data;
+        const hasOptions =
+          (data?.categories?.length || 0) + (data?.industries?.length || 0) > 0;
+        if (cancelled) return;
+        if (hasOptions) {
+          setFacets({ categories: data.categories || [], industries: data.industries || [] });
+          return;
+        }
+        throw new Error("empty facets");
+      } catch {
+        if (cancelled) return;
+        const local = buildLocalFacets(DEFAULT_MOCK_LEADS, { category: selectedCategory || "" });
+        // The local builder scopes industries to the category the same way.
+        setFacets({
+          categories: buildLocalFacets(DEFAULT_MOCK_LEADS).categories,
+          industries: local.industries,
+        });
+      } finally {
+        if (!cancelled) setFacetsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, selectedCategory]);
+
+  const industryOptions = facets.industries || [];
+
+  // A previously-saved value that isn't in the current facet list (dataset
+  // changed, or it came from an older category) is kept as an extra option so
+  // re-saving the form never silently wipes the user's choice.
+  const withCustom = (options, value) =>
+    value && !options.some((o) => String(o.value) === String(value))
+      ? [{ value, count: null, custom: true }, ...options]
+      : options;
 
   const setMarker = useCallback((lat, lng) => {
     if (!mapRef.current) return;
@@ -204,6 +276,9 @@ export default function ProfilePage() {
       const payload = {
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
+        // "" clears the saved interest server-side.
+        interestCategory: form.interestCategory.trim(),
+        interestIndustry: form.interestIndustry.trim(),
         // If no location was picked, explicitly clear any saved one.
         location: location
           ? {
@@ -301,6 +376,88 @@ export default function ProfilePage() {
             <span>Email (cannot be changed)</span>
             <input type="email" value={user.email} disabled />
           </label>
+
+          {/* ---- Default directory filters ------------------------------------
+              Both dropdowns are populated from the live lead facets, i.e. the
+              same option lists as the Category / Industry filters on the search
+              page — so whatever is picked here always matches a real filter. */}
+          <div className="fl-interests">
+            <div className="fl-interests-head">
+              <Layers size={15} />
+              <div>
+                <span className="fl-interests-title">Your default filters</span>
+                <small>
+                  Pick the category you&apos;re interested in and the industry you work in — the
+                  search page will pre-select them for you.
+                </small>
+              </div>
+            </div>
+
+            <label className="fl-field">
+              <span>
+                <Layers size={13} /> Category of interest
+              </span>
+              <select
+                value={form.interestCategory}
+                disabled={facetsLoading}
+                onChange={(e) => {
+                  const category = e.target.value;
+                  setForm((f) => ({
+                    ...f,
+                    interestCategory: category,
+                    // The industry list re-cascades under the new category, so a
+                    // previously-picked industry from another bucket is dropped.
+                    interestIndustry:
+                      category && deriveCategory(f.interestIndustry) !== category
+                        ? ""
+                        : f.interestIndustry,
+                  }));
+                  setSaved(false);
+                }}
+              >
+                <option value="">
+                  {facetsLoading ? "Loading categories…" : "No preference — show all"}
+                </option>
+                {withCustom(facets.categories, form.interestCategory).map((cat) => (
+                  <option key={cat.value} value={cat.value}>
+                    {cat.value}
+                    {cat.count != null ? ` (${cat.count})` : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="fl-field">
+              <span>
+                <Briefcase size={13} /> Industry you work in
+              </span>
+              <select
+                value={form.interestIndustry}
+                disabled={facetsLoading}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, interestIndustry: e.target.value }));
+                  setSaved(false);
+                }}
+              >
+                <option value="">
+                  {facetsLoading ? "Loading industries…" : "No preference — show all"}
+                </option>
+                {withCustom(industryOptions, form.interestIndustry).map((ind) => (
+                  <option key={ind.value} value={ind.value}>
+                    {ind.value}
+                    {ind.count != null ? ` (${ind.count})` : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {form.interestCategory && !facetsLoading && (
+              <p className="fl-interests-hint">
+                Showing the {industryOptions.length} industries inside{" "}
+                <strong>{form.interestCategory}</strong>.
+              </p>
+            )}
+          </div>
 
           <div className="fl-location-summary">
             <MapPin size={16} />

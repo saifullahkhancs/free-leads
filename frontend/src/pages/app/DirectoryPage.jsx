@@ -36,6 +36,7 @@ import {
   applyLocalFilters,
   buildLocalFacets,
   categoryOf,
+  deriveCategory,
   formatDistance,
   sortLeads,
 } from "../../utils/leadFilters";
@@ -447,37 +448,40 @@ export default function DirectoryPage() {
     return null;
   };
 
-  const profileIndustryMatch = firstMatch(facets?.industries || [], profileInterests);
+  // Explicit picks from the profile page always win — the user chose these from
+  // the very same facet lists these filters use, so no guessing is needed. The
+  // fuzzy `profileInterests` matching below stays only as a fallback for
+  // accounts that predate the profile picker.
+  const explicitCategory = user?.interestCategory || facets?.interests?.category || "";
+  const explicitIndustry = user?.interestIndustry || facets?.interests?.industry || "";
+
+  const withFacetCount = (list, value, fallbackCount) => {
+    if (!value) return null;
+    const hit = (list || []).find(
+      (x) => String(x.value).toLowerCase() === String(value).toLowerCase()
+    );
+    return hit || { value, count: fallbackCount ?? undefined };
+  };
+
+  const profileIndustryMatch =
+    withFacetCount(facets?.industries, explicitIndustry, facets?.interests?.industryCount) ||
+    firstMatch(facets?.industries || [], profileInterests);
+
   const profileCategoryMatch = (() => {
-    // Try the facet list first (so we can show a count), otherwise map the
-    // raw interest text into the standard category buckets via deriveCategory.
+    const explicit = withFacetCount(
+      facets?.categories,
+      explicitCategory,
+      facets?.interests?.categoryCount
+    );
+    if (explicit) return explicit;
+    // Legacy fallback: try the facet list first (so we can show a count),
+    // otherwise map the raw interest text into a standard category bucket.
     const match = firstMatch(facets?.categories || [], profileInterests);
     if (match) return match;
     const text = profileInterests[0];
     if (!text) return null;
-    try {
-      // Lazy import via dynamic require is awkward in ESM; instead, replicate
-      // the same CATEGORY_RULES fallthrough inline so the chip works offline
-      // even if the leadFilters module isn't available.
-      const value = String(text).trim();
-      const rules = [
-        [/travel|hospitalit|hotel|restaurant|\bfood\b|beverage|tourism|catering/i, "Hospitality & Food"],
-        [/health|biotech|medical|pharma|clinic|hospital\b|hospitals|wellness|dental|care\b/i, "Healthcare"],
-        [/software|saas|cloud|devtool|information tech|\btech\b|artificial intelligence|machine learning|\bai\b|\bdata\b|cyber|telecom|semiconductor/i, "Technology"],
-        [/fintech|bank|financ|capital|equity|insur|invest|accounting|venture/i, "Finance"],
-        [/market|\bmedia\b|advertis|publish|broadcast|public relations|\bpr\b/i, "Marketing & Media"],
-        [/design|creative|\bagency\b|\barts\b|photograph|architect|entertainment|music|film/i, "Design & Creative"],
-        [/retail|commerce|consumer|\bshop\b|\bstore\b|fashion|apparel|grocer/i, "Retail & E-commerce"],
-        [/real estate|property|construct|realty|building/i, "Real Estate & Construction"],
-        [/education|edtech|school|universit|training|academ|\bcollege\b/i, "Education"],
-        [/manufact|industrial|logistic|transport|energy|mining|automotive|agricultur|shipping|aerospace/i, "Industrial & Logistics"],
-        [/legal|\blaw\b|attorney|government|public sector|nonprofit|\bngo\b|defense/i, "Legal & Government"],
-      ];
-      for (const [re, cat] of rules) if (re.test(value)) return { value: cat, count: undefined };
-      return { value, count: undefined };
-    } catch {
-      return null;
-    }
+    const derived = deriveCategory(text);
+    return derived ? { value: derived, count: undefined } : null;
   })();
 
   // Toggle the Country filter from the user's profile (used by the chip).

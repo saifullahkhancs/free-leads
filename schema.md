@@ -15,6 +15,11 @@ Core user accounts.
 - `location_city` / `location_region` / `location_country`: Strings auto-filled
   by reverse geocoding when the user selects a location
 - `location_label`: Human-readable address string (e.g. `Gulberg, Lahore, Punjab, Pakistan`)
+- `interest_category`: String — the lead **category** the user is interested in,
+  picked on the profile page from the same facet list that powers the directory's
+  Category filter. Used to pre-select that filter for the signed-in user.
+- `interest_industry`: String — the **industry** the user works in / sells into,
+  picked from the directory's Industry facet list and used the same way.
 
 ### `leads`
 The central lead database.
