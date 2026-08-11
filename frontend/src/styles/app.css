@@ -2700,7 +2700,7 @@
 }
 
 /* ==========================================================================
-   Main App Page Dark Filter Hub & Full Width Layout
+   Main App Page Filter Hub & Full Width Layout
    ========================================================================== */
 
 .app-search-layout.no-sidebar {
@@ -2709,12 +2709,12 @@
 }
 
 .app-main-filter-panel {
-  background: #141619;
-  border: 1px solid #27272a;
+  background: linear-gradient(145deg, #ffffff 0%, #f6f9f5 100%);
+  border: 1px solid var(--app-border);
   border-radius: 16px;
   padding: 24px 28px;
   margin-bottom: 24px;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--app-shadow-sm);
   display: flex;
   flex-direction: column;
   gap: 22px;
@@ -2731,21 +2731,22 @@
   flex: 1;
   min-width: 280px;
   height: 48px;
-  background: #1c1e22;
-  border: 1px solid #2e323b;
+  background: #ffffff;
+  border: 1px solid var(--app-border);
   border-radius: 10px;
   padding: 0 16px;
   display: flex;
   align-items: center;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .app-filter-input-wrapper:focus-within {
-  border-color: #ffb703;
+  border-color: var(--app-green);
+  box-shadow: 0 0 0 3px rgba(29, 75, 63, 0.1);
 }
 
 .app-filter-search-icon {
-  color: #71717a;
+  color: var(--app-ink-faint);
   margin-right: 12px;
   flex-shrink: 0;
 }
@@ -2754,19 +2755,20 @@
   flex: 1;
   background: transparent;
   border: none;
-  color: #f4f4f5;
+  color: var(--app-ink);
   font-size: 14.5px;
   outline: none;
+  font-family: inherit;
 }
 
 .app-filter-search-input::placeholder {
-  color: #71717a;
+  color: var(--app-ink-faint);
 }
 
 .app-filter-search-clear {
   background: transparent;
   border: none;
-  color: #71717a;
+  color: var(--app-ink-faint);
   cursor: pointer;
   padding: 4px;
   display: grid;
@@ -2774,7 +2776,7 @@
 }
 
 .app-filter-search-clear:hover {
-  color: #f4f4f5;
+  color: var(--app-ink);
 }
 
 .app-filter-search-actions {
@@ -2784,8 +2786,8 @@
 }
 
 .app-filter-btn-search {
-  background: #ffb703;
-  color: #141619;
+  background: var(--app-green);
+  color: #ffffff;
   font-weight: 700;
   font-size: 14px;
   border: none;
@@ -2793,29 +2795,34 @@
   height: 48px;
   padding: 0 26px;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.1s ease;
+  transition: background 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+  font-family: inherit;
+  box-shadow: 0 4px 12px rgba(29, 75, 63, 0.18);
 }
 
 .app-filter-btn-search:hover {
-  background: #f59e0b;
+  background: var(--app-green-hover);
+  box-shadow: 0 6px 16px rgba(29, 75, 63, 0.24);
 }
 
 .app-filter-btn-reset {
-  background: #272a33;
-  color: #d1d5db;
-  border: 1px solid #3f4452;
+  background: #ffffff;
+  color: var(--app-ink);
+  border: 1px solid var(--app-border);
   font-weight: 600;
   font-size: 14px;
   border-radius: 10px;
   height: 48px;
   padding: 0 22px;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  font-family: inherit;
 }
 
 .app-filter-btn-reset:hover {
-  background: #323642;
-  color: #fff;
+  background: var(--app-surface-hover);
+  border-color: #b7cbb4;
+  color: var(--app-green);
 }
 
 .app-filter-dropdowns-div {
@@ -2834,45 +2841,52 @@
 .app-filter-dropdown-label {
   font-size: 11px;
   font-weight: 700;
-  color: #ffb703;
+  color: var(--app-green);
   letter-spacing: 0.8px;
   text-transform: uppercase;
 }
 
 .app-filter-dropdown-select {
-  background: #1c1e22;
-  border: 1px solid #2e323b;
+  background: #ffffff;
+  border: 1px solid var(--app-border);
   border-radius: 10px;
-  color: #e4e4e7;
+  color: var(--app-ink);
   font-size: 13.5px;
+  font-weight: 600;
+  font-family: inherit;
   height: 44px;
   padding: 0 34px 0 14px;
   outline: none;
   cursor: pointer;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235e6f67' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .app-filter-dropdown-select:focus {
-  border-color: #ffb703;
+  border-color: var(--app-green);
+  box-shadow: 0 0 0 3px rgba(29, 75, 63, 0.1);
 }
 
 .app-filter-dropdown-select:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  background-color: var(--app-surface-subtle);
 }
 
-/* Div 3: extra filters row — Verified Only + Near Me / radius geospatial search */
+/* Div 2: extra filters row — Verified Only + Near Me / radius geospatial
+   search + profile-derived Current Country / Current City / Interested
+   Industry / Interested Category chips. Clean flex wrap, with a top
+   border separator from the search row above. */
 .app-filter-extras-div {
   display: flex;
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
   padding-top: 18px;
-  border-top: 1px solid #27272a;
+  border-top: 1px solid var(--app-border-subtle);
 }
 
 .app-filter-verify-toggle {
@@ -2880,22 +2894,25 @@
   align-items: center;
   gap: 10px;
   padding: 9px 14px 9px 11px;
-  border: 1px solid #2e323b;
+  border: 1px solid var(--app-border);
   border-radius: 10px;
-  background: #1c1e22;
+  background: #ffffff;
+  color: var(--app-ink);
   cursor: pointer;
   transition: all 0.15s ease;
   user-select: none;
+  font-family: inherit;
+  position: relative;
 }
 
 .app-filter-verify-toggle:hover {
-  border-color: #3f4452;
-  background: #23252b;
+  border-color: #b7cbb4;
+  background: var(--app-surface-hover);
 }
 
 .app-filter-verify-toggle.active {
-  background: rgba(255, 183, 3, 0.12);
-  border-color: #ffb703;
+  background: var(--app-green-light);
+  border-color: #b9d6bd;
 }
 
 .app-filter-verify-toggle input {
@@ -2909,13 +2926,13 @@
   width: 32px;
   height: 18px;
   border-radius: 9999px;
-  background: #2e323b;
+  background: #d5ded6;
   flex: none;
   transition: background 0.18s ease;
 }
 
 .app-filter-verify-toggle.active .app-filter-verify-track {
-  background: #ffb703;
+  background: var(--app-green);
 }
 
 .app-filter-verify-thumb {
@@ -2926,7 +2943,7 @@
   height: 14px;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 1px 3px rgba(20, 32, 28, 0.25);
   transition: transform 0.18s ease;
 }
 
@@ -2940,16 +2957,16 @@
   gap: 7px;
   font-size: 13px;
   font-weight: 700;
-  color: #e4e4e7;
+  color: var(--app-ink);
 }
 
 .app-filter-verify-text svg {
-  color: #ffb703;
+  color: var(--app-green);
   flex: none;
 }
 
 .app-filter-verify-toggle.active .app-filter-verify-text {
-  color: #fff;
+  color: var(--app-green-dark);
 }
 
 .app-filter-verify-count {
@@ -2958,15 +2975,15 @@
   font-style: normal;
   font-size: 11px;
   font-weight: 700;
-  color: #a1a1aa;
-  background: #27272a;
+  color: var(--app-ink-muted);
+  background: var(--app-surface-subtle);
   padding: 1px 6px;
   border-radius: 9999px;
 }
 
 .app-filter-verify-toggle.active .app-filter-verify-count {
-  background: #ffb703;
-  color: #141619;
+  background: var(--app-green);
+  color: #ffffff;
 }
 
 .app-filter-geo-group {
@@ -2974,7 +2991,6 @@
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  margin-left: auto;
 }
 
 .app-filter-geo-btn {
@@ -2983,9 +2999,9 @@
   gap: 7px;
   padding: 9px 14px;
   border-radius: 10px;
-  border: 1px solid #2e323b;
-  background: #1c1e22;
-  color: #e4e4e7;
+  border: 1px solid var(--app-border);
+  background: #ffffff;
+  color: var(--app-ink);
   font-family: inherit;
   font-size: 13px;
   font-weight: 700;
@@ -2995,16 +3011,16 @@
 }
 
 .app-filter-geo-btn:hover {
-  background: #23252b;
-  border-color: #3f4452;
-  color: #fff;
+  background: var(--app-surface-hover);
+  border-color: #b7cbb4;
+  color: var(--app-green);
 }
 
 .app-filter-geo-btn.active {
-  background: #ffb703;
-  border-color: #ffb703;
-  color: #141619;
-  box-shadow: 0 2px 8px rgba(255, 183, 3, 0.35);
+  background: var(--app-green);
+  border-color: var(--app-green);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(29, 75, 63, 0.25);
 }
 
 .app-filter-radius-group {
@@ -3017,7 +3033,7 @@
 .app-filter-radius-label {
   font-size: 11px;
   font-weight: 700;
-  color: #ffb703;
+  color: var(--app-green);
   letter-spacing: 0.7px;
   text-transform: uppercase;
   margin-right: 2px;
@@ -3025,27 +3041,105 @@
 
 .app-filter-radius-pill {
   padding: 5px 10px;
-  border: 1px solid #2e323b;
+  border: 1px solid var(--app-border);
   border-radius: 9999px;
-  background: #1c1e22;
+  background: #ffffff;
   font-family: inherit;
   font-size: 11.5px;
   font-weight: 700;
-  color: #a1a1aa;
+  color: var(--app-ink-muted);
   cursor: pointer;
   transition: all 0.13s ease;
 }
 
 .app-filter-radius-pill:hover {
-  border-color: #3f4452;
-  color: #e4e4e7;
-  background: #23252b;
+  border-color: #b7cbb4;
+  color: var(--app-green);
+  background: var(--app-surface-hover);
 }
 
 .app-filter-radius-pill.active {
-  background: #ffb703;
-  border-color: #ffb703;
-  color: #141619;
+  background: var(--app-lime);
+  border-color: var(--app-lime);
+  color: var(--app-lime-dark);
+}
+
+/* ---- Profile-derived quick chips (Current Country, Current City,
+        Interested Industry, Interested Category) ------------------- */
+.app-filter-profile-chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+  padding-top: 4px;
+  border-top: 1px dashed var(--app-border-subtle);
+  margin-top: 2px;
+}
+
+.app-filter-profile-chips-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--app-ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  margin-right: 4px;
+}
+
+.app-filter-profile-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  border: 1px solid #d1e5d4;
+  background: var(--app-green-light);
+  color: var(--app-green);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.14s ease;
+}
+
+.app-filter-profile-chip svg {
+  flex: none;
+  color: var(--app-green);
+}
+
+.app-filter-profile-chip:hover {
+  border-color: var(--app-green);
+  background: #d8ecda;
+  transform: translateY(-1px);
+}
+
+.app-filter-profile-chip.active {
+  background: var(--app-green);
+  border-color: var(--app-green);
+  color: #ffffff;
+  box-shadow: 0 3px 10px rgba(29, 75, 63, 0.2);
+}
+
+.app-filter-profile-chip.active svg {
+  color: var(--app-lime);
+}
+
+.app-filter-profile-chip-count {
+  font-family: 'DM Mono', monospace;
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  background: rgba(29, 75, 63, 0.1);
+  color: var(--app-green-dark);
+}
+
+.app-filter-profile-chip.active .app-filter-profile-chip-count {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
 }
 
 @media (max-width: 960px) {
@@ -3053,7 +3147,6 @@
     grid-template-columns: repeat(3, 1fr);
   }
   .app-filter-geo-group {
-    margin-left: 0;
     width: 100%;
   }
 }
@@ -3080,6 +3173,10 @@
   }
   .app-filter-radius-group {
     justify-content: flex-start;
+  }
+  .app-filter-profile-chips {
+    border-top: none;
+    padding-top: 0;
   }
 }
 

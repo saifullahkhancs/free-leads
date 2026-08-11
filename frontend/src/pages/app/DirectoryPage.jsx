@@ -409,6 +409,225 @@ export default function DirectoryPage() {
   };
 
   // ---------------------------------------------------------------------------
+  // Profile-derived default filters — sourced from `user.location` and
+  // `user.interests` (set at sign-up / on the profile page). Used as quick
+  // chips inside the default-filters row. Falls back to the API `suggestion`
+  // when the user's profile hasn't been filled in yet.
+  // ---------------------------------------------------------------------------
+  const profileLocation = user?.location || {};
+  const profileCountry = suggestion?.country || profileLocation.country || "";
+  const profileCity = suggestion?.city || profileLocation.city || "";
+  // interests may be an array of strings, an array of objects, or a comma string.
+  const rawInterests = user?.interests;
+  const profileInterests = Array.isArray(rawInterests)
+    ? rawInterests
+        .map((i) => (typeof i === "string" ? i : i?.value || i?.name || ""))
+        .map((s) => String(s).trim())
+        .filter(Boolean)
+    : typeof rawInterests === "string"
+    ? rawInterests.split(",").map((s) => s.trim()).filter(Boolean)
+    : [];
+
+  // Pick the first "interested industry" and "interested category" from the
+  // user's profile, preferring facets that actually exist in the current
+  // dataset so the chip can filter something real.
+  const firstMatch = (list, candidates) => {
+    if (!Array.isArray(list) || !candidates.length) return null;
+    const norm = (v) => String(v || "").trim().toLowerCase();
+    const lower = list.map((x) => ({ ...x, _value: norm(x.value) }));
+    for (const c of candidates) {
+      const n = norm(c);
+      if (!n) continue;
+      const hit = lower.find((x) => x._value === n);
+      if (hit) return hit;
+    }
+    for (const c of candidates) {
+      const n = norm(c);
+      if (!n) continue;
+      const hit = lower.find((x) => x._value.includes(n) || n.includes(x._value));
+      if (hit) return hit;
+    }
+    return null;
+  };
+
+  const profileIndustryMatch = firstMatch(facets?.industries || [], profileInterests);
+  const profileCategoryMatch = (() => {
+    // Try the facet list first (so we can show a count), otherwise map the
+    // raw interest text into the standard category buckets via deriveCategory.
+    const match = firstMatch(facets?.categories || [], profileInterests);
+    if (match) return match;
+    const text = profileInterests[0];
+    if (!text) return null;
+    try {
+      // Lazy import via dynamic require is awkward in ESM; instead, replicate
+      // the same CATEGORY_RULES fallthrough inline so the chip works offline
+      // even if the leadFilters module isn't available.
+      const value = String(text).trim();
+      const rules = [
+        [/travel|hospitalit|hotel|restaurant|\bfood\b|beverage|tourism|catering/i, "Hospitality & Food"],
+        [/health|biotech|medical|pharma|clinic|hospital\b|hospitals|wellness|dental|care\b/i, "Healthcare"],
+        [/software|saas|cloud|devtool|information tech|\btech\b|artificial intelligence|machine learning|\bai\b|\bdata\b|cyber|telecom|semiconductor/i, "Technology"],
+        [/fintech|bank|financ|capital|equity|insur|invest|accounting|venture/i, "Finance"],
+        [/market|\bmedia\b|advertis|publish|broadcast|public relations|\bpr\b/i, "Marketing & Media"],
+        [/design|creative|\bagency\b|\barts\b|photograph|architect|entertainment|music|film/i, "Design & Creative"],
+        [/retail|commerce|consumer|\bshop\b|\bstore\b|fashion|apparel|grocer/i, "Retail & E-commerce"],
+        [/real estate|property|construct|realty|building/i, "Real Estate & Construction"],
+        [/education|edtech|school|universit|training|academ|\bcollege\b/i, "Education"],
+        [/manufact|industrial|logistic|transport|energy|mining|automotive|agricultur|shipping|aerospace/i, "Industrial & Logistics"],
+        [/legal|\blaw\b|attorney|government|public sector|nonprofit|\bngo\b|defense/i, "Legal & Government"],
+      ];
+      for (const [re, cat] of rules) if (re.test(value)) return { value: cat, count: undefined };
+      return { value, count: undefined };
+    } catch {
+      return null;
+    }
+  })();
+
+  // Toggle the Country filter from the user's profile (used by the chip).
+  const applyProfileCountry = () => {
+    if (!profileCountry) return;
+    const isActive =
+      String(filters.country?.value || "").toLowerCase() ===
+      String(profileCountry).toLowerCase();
+    if (isActive) {
+      updateFilters({ country: null, region: null, city: null });
+      showToast("Country filter cleared");
+      return;
+    }
+    const match = facets?.countries?.find(
+      (c) => String(c.value).toLowerCase() === String(profileCountry).toLowerCase()
+    );
+    updateFilters({
+      country: match
+        ? { id: match.id, value: match.value, code: match.code }
+        : { id: null, value: profileCountry },
+      region: null,
+      city: null,
+    });
+    showToast(`Showing leads in ${profileCountry}`);
+  };
+
+  const applyProfileCity = () => {
+    if (!profileCity) return;
+    const isActive =
+      String(filters.city?.value || "").toLowerCase() ===
+      String(profileCity).toLowerCase();
+    if (isActive) {
+      updateFilters({ city: null });
+      showToast("City filter cleared");
+      return;
+    }
+    const countryMatch = facets?.countries?.find(
+      (c) =>
+        String(c.value).toLowerCase() ===
+        String(profileCountry || "").toLowerCase()
+    );
+    updateFilters({
+      country: countryMatch
+        ? { id: countryMatch.id, value: countryMatch.value, code: countryMatch.code }
+        : profileCountry
+        ? { id: null, value: profileCountry }
+        : filters.country,
+      region: null,
+      city: { id: null, value: profileCity },
+    });
+    showToast(`Showing leads in ${profileCity}`);
+  };
+
+  const applyProfileIndustry = () => {
+    if (!profileIndustryMatch?.value) return;
+    const isActive = filters.industry === profileIndustryMatch.value;
+    updateFilters({ industry: isActive ? "" : profileIndustryMatch.value });
+    showToast(
+      isActive
+        ? "Industry filter cleared"
+        : `Showing ${profileIndustryMatch.value} leads`
+    );
+  };
+
+  const applyProfileCategory = () => {
+    if (!profileCategoryMatch?.value) return;
+    const isActive = filters.category === profileCategoryMatch.value;
+    updateFilters({
+      category: isActive ? "" : profileCategoryMatch.value,
+      industry: "",
+    });
+    showToast(
+      isActive
+        ? "Category filter cleared"
+        : `Showing ${profileCategoryMatch.value} leads`
+    );
+  };
+
+  // The 4 default profile-derived chips shown inside the default-filters row.
+  const profileChips = useMemo(() => {
+    const chips = [];
+
+    if (profileCountry) {
+      const isActive =
+        String(filters.country?.value || "").toLowerCase() ===
+        String(profileCountry).toLowerCase();
+      chips.push({
+        id: "profile-country",
+        label: `In ${profileCountry}`,
+        icon: Globe2,
+        profile: true,
+        active: isActive,
+        onClick: applyProfileCountry,
+        count: suggestion?.count,
+      });
+    }
+    if (profileCity) {
+      const isActive =
+        String(filters.city?.value || "").toLowerCase() ===
+        String(profileCity).toLowerCase();
+      chips.push({
+        id: "profile-city",
+        label: `In ${profileCity}`,
+        icon: MapPin,
+        profile: true,
+        active: isActive,
+        onClick: applyProfileCity,
+      });
+    }
+    if (profileIndustryMatch?.value) {
+      const isActive = filters.industry === profileIndustryMatch.value;
+      chips.push({
+        id: "profile-industry",
+        label: profileIndustryMatch.value,
+        icon: Building2,
+        profile: true,
+        active: isActive,
+        onClick: applyProfileIndustry,
+        count: profileIndustryMatch.count,
+      });
+    }
+    if (profileCategoryMatch?.value) {
+      const isActive = filters.category === profileCategoryMatch.value;
+      chips.push({
+        id: "profile-category",
+        label: profileCategoryMatch.value,
+        icon: Layers,
+        profile: true,
+        active: isActive,
+        onClick: applyProfileCategory,
+        count: profileCategoryMatch.count,
+      });
+    }
+    return chips;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    profileCountry,
+    profileCity,
+    profileIndustryMatch?.value,
+    profileCategoryMatch?.value,
+    filters.country?.value,
+    filters.city?.value,
+    filters.industry,
+    filters.category,
+  ]);
+
+  // ---------------------------------------------------------------------------
   // Suggested / quick filters shown above the results
   // ---------------------------------------------------------------------------
   const topCategories = useMemo(() => (facets?.categories || []).slice(0, 4), [facets]);
@@ -671,7 +890,7 @@ export default function DirectoryPage() {
 
   return (
     <>
-      {/* ===================== Main App Page Dark Filter Hub ===================== */}
+      {/* ===================== Main App Page Filter Hub ===================== */}
       <div className="app-main-filter-panel">
         {/* Div 1: input field with search button & reset button */}
         <div className="app-filter-search-div">
@@ -724,7 +943,94 @@ export default function DirectoryPage() {
           </div>
         </div>
 
-        {/* Div 2: default filters drop downs filter for category, industry, Country, State, City */}
+        {/* Div 2: default quick filters row — Verified Only + Near Me / radius
+            geospatial search + profile-derived Current Country / Current City /
+            Interested Industry / Interested Category chips. Clean flex wrap,
+            with a top border separator from the search row above. */}
+        <div className="app-filter-extras-div">
+          <label className={`app-filter-verify-toggle${filters.verifiedOnly ? " active" : ""}`}>
+            <input
+              type="checkbox"
+              checked={filters.verifiedOnly}
+              onChange={(e) => updateFilters({ verifiedOnly: e.target.checked })}
+            />
+            <span className="app-filter-verify-track">
+              <span className="app-filter-verify-thumb" />
+            </span>
+            <span className="app-filter-verify-text">
+              <BadgeCheck size={15} />
+              Verified Only
+              {facets?.totals?.verified != null && (
+                <em className="app-filter-verify-count">{formatCount(facets.totals.verified)}</em>
+              )}
+            </span>
+          </label>
+
+          <div className="app-filter-geo-group">
+            <button
+              type="button"
+              className={`app-filter-geo-btn${filters.geo ? " active" : ""}`}
+              onClick={handleNearMe}
+            >
+              <Compass size={15} />
+              <span>{filters.geo ? `Near Me · ${Math.round(filters.radius / 1000)} km` : "Near Me"}</span>
+            </button>
+
+            {filters.geo && (
+              <div className="app-filter-radius-group">
+                <span className="app-filter-radius-label">Radius:</span>
+                {[10, 25, 50, 100, 250].map((km) => {
+                  const value = km * 1000;
+                  return (
+                    <button
+                      key={km}
+                      type="button"
+                      className={`app-filter-radius-pill${filters.radius === value ? " active" : ""}`}
+                      onClick={() => updateFilters({ radius: value })}
+                    >
+                      {km} km
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {profileChips.length > 0 && (
+            <div className="app-filter-profile-chips">
+              <span className="app-filter-profile-chips-label">From your profile</span>
+              {profileChips.map((chip) => {
+                const Icon = chip.icon;
+                return (
+                  <button
+                    key={chip.id}
+                    type="button"
+                    className={`app-filter-profile-chip${chip.active ? " active" : ""}`}
+                    onClick={chip.onClick}
+                    title={
+                      chip.active
+                        ? `Clear ${chip.label} filter`
+                        : `Filter by ${chip.label}`
+                    }
+                  >
+                    <Icon size={13} />
+                    <span>{chip.label}</span>
+                    {chip.count != null && (
+                      <em className="app-filter-profile-chip-count">
+                        {formatCount(chip.count)}
+                      </em>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Div 3: dropdown filters (Category, Industry, Country, State, City) in
+            their own grid row. Kept separate from the default quick-filter
+            chips above so the dropdowns never get intermixed with the
+            one-click filters. */}
         <div className="app-filter-dropdowns-div">
           {/* 1. CATEGORY */}
           <div className="app-filter-dropdown-col">
@@ -861,57 +1167,6 @@ export default function DirectoryPage() {
                 </option>
               ))}
             </select>
-          </div>
-        </div>
-
-        {/* Div 3: additional default filters — Verified Only + Near Me / radius geospatial search */}
-        <div className="app-filter-extras-div">
-          <label className={`app-filter-verify-toggle${filters.verifiedOnly ? " active" : ""}`}>
-            <input
-              type="checkbox"
-              checked={filters.verifiedOnly}
-              onChange={(e) => updateFilters({ verifiedOnly: e.target.checked })}
-            />
-            <span className="app-filter-verify-track">
-              <span className="app-filter-verify-thumb" />
-            </span>
-            <span className="app-filter-verify-text">
-              <BadgeCheck size={15} />
-              Verified Only
-              {facets?.totals?.verified != null && (
-                <em className="app-filter-verify-count">{formatCount(facets.totals.verified)}</em>
-              )}
-            </span>
-          </label>
-
-          <div className="app-filter-geo-group">
-            <button
-              type="button"
-              className={`app-filter-geo-btn${filters.geo ? " active" : ""}`}
-              onClick={handleNearMe}
-            >
-              <Compass size={15} />
-              <span>{filters.geo ? `Near Me · ${Math.round(filters.radius / 1000)} km` : "Near Me"}</span>
-            </button>
-
-            {filters.geo && (
-              <div className="app-filter-radius-group">
-                <span className="app-filter-radius-label">Radius:</span>
-                {[10, 25, 50, 100, 250].map((km) => {
-                  const value = km * 1000;
-                  return (
-                    <button
-                      key={km}
-                      type="button"
-                      className={`app-filter-radius-pill${filters.radius === value ? " active" : ""}`}
-                      onClick={() => updateFilters({ radius: value })}
-                    >
-                      {km} km
-                    </button>
-                  );
-                })}
-              </div>
-            )}
           </div>
         </div>
       </div>
