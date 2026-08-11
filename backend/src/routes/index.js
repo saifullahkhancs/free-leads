@@ -3,6 +3,7 @@ const authRoutes = require("./authRoutes");
 const leadRoutes = require("./leadRoutes");
 const adminRoutes = require("./adminRoutes");
 const geoRoutes = require("./geoRoutes");
+const billingRoutes = require("./billingRoutes");
 
 const router = express.Router();
 
@@ -10,5 +11,6 @@ router.use("/auth", authRoutes);
 router.use("/leads", leadRoutes);
 router.use("/admin", adminRoutes);
 router.use("/geo", geoRoutes);
+router.use("/", billingRoutes); // /api/plans, /api/billing/*
 
 module.exports = router;

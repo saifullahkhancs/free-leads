@@ -69,6 +69,49 @@ const env = {
   GEOAPIFY_API_KEY: process.env.GEOAPIFY_API_KEY || "",
   NOMINATIM_USER_AGENT:
     process.env.NOMINATIM_USER_AGENT || "freeleads-app/1.0 (leads-directory-web-app)",
+
+  // ---- Quota / plans ----
+  // Default free-tier limits used when no plans are seeded yet.
+  DEFAULT_FREE_SEARCHES: int("DEFAULT_FREE_SEARCHES", 10),
+  DEFAULT_FREE_EXPORTS: int("DEFAULT_FREE_EXPORTS", 1),
+  DEFAULT_FREE_MAX_EXPORT: int("DEFAULT_FREE_MAX_EXPORT", 100),
+
+  // ---- Billing / PayPal ----
+  // Leave PAYPAL_CLIENT_ID blank to run in "mock mode" (billing is simulated
+  // locally so the app is usable without PayPal sandbox credentials). Set the
+  // creds + PAYPAL_MODE=sandbox|live to enable real PayPal billing.
+  PAYPAL_MODE: process.env.PAYPAL_MODE || "sandbox",        // sandbox | live
+  PAYPAL_CLIENT_ID: process.env.PAYPAL_CLIENT_ID || "",
+  PAYPAL_CLIENT_SECRET: process.env.PAYPAL_CLIENT_SECRET || "",
+  PAYPAL_WEBHOOK_ID: process.env.PAYPAL_WEBHOOK_ID || "",
+  // For testing the webhook locally (no real PayPal webhook delivery), set
+  // PAYPAL_TEST_WEBHOOK=true and POST a payload with the expected event_type.
+  PAYPAL_TEST_WEBHOOK: bool("PAYPAL_TEST_WEBHOOK", false),
+
+  // ---- External ingest API (machine-to-machine) ----
+  // Token compared constant-time; HMAC secret signs [timestamp, nonce, body].
+  // Leave INGEST_API_TOKEN empty to disable the ingest endpoint.
+  INGEST_API_TOKEN: process.env.INGEST_API_TOKEN || "",
+  INGEST_HMAC_SECRET: process.env.INGEST_HMAC_SECRET || "",
+  INGEST_TIMESTAMP_WINDOW_SECONDS: int("INGEST_TIMESTAMP_WINDOW_SECONDS", 300),
+
+  // ---- Google OAuth ----
+  // Leave GOOGLE_CLIENT_ID empty to hide the "Continue with Google" button.
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "",
+  GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || "",
+  GOOGLE_REDIRECT_URI:
+    process.env.GOOGLE_REDIRECT_URI || "http://localhost:5173/auth/google/callback",
+  GOOGLE_STATE_TTL_SECONDS: int("GOOGLE_STATE_TTL_SECONDS", 600),
+
+  // ---- Dedup ----
+  // 'sha1' (fast, matches legacy) or 'sha256' (stronger). Applied on import.
+  DEDUP_ALGORITHM: process.env.DEDUP_ALGORITHM || "sha1",
+
+  // ---- Per-user lockout / throttle (anti brute-force) ----
+  LOCKOUT_MAX_ATTEMPTS: int("LOCKOUT_MAX_ATTEMPTS", 5),
+  LOCKOUT_WINDOW_SECONDS: int("LOCKOUT_WINDOW_SECONDS", 900),
+  SEARCH_THROTTLE_PER_MINUTE: int("SEARCH_THROTTLE_PER_MINUTE", 30),
+  EXPORT_THROTTLE_PER_MINUTE: int("EXPORT_THROTTLE_PER_MINUTE", 10),
 };
 
 // Fail fast in production if secrets were left at their insecure defaults —

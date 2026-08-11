@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   ArrowRight,
   BadgeCheck,
@@ -31,7 +32,6 @@ import LeadDetailModal from "../../components/LeadDetailModal";
 import { avatarColor, formatDate, initialsOf, locationString } from "../../utils/format";
 import { DEFAULT_MOCK_LEADS } from "../../utils/mockLeads";
 import {
-  exportLeadsToCsv,
   getSavedLeads,
   isLeadSaved,
   removeSavedLead,
@@ -70,6 +70,8 @@ export default function DirectoryPage() {
   const [copiedId, setCopiedId] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
   const [nextCursor, setNextCursor] = useState(null);
+  const [quota, setQuota] = useState(null);
+  const [exporting, setExporting] = useState(false);
   const requestSeq = useRef(0);
   const searchInputRef = useRef(null);
 
@@ -139,6 +141,8 @@ export default function DirectoryPage() {
 
       const response = await api.getLeads(params);
       if (seq !== requestSeq.current) return;
+
+      if (response?.data?.quota) setQuota(response.data.quota);
 
       const fetched = response?.data?.leads || [];
       if (fetched.length > 0) {
@@ -306,15 +310,47 @@ export default function DirectoryPage() {
     }
   };
 
-  // Export current list to CSV
-  const handleExport = () => {
-    const listToExport = processedLeads;
-    if (listToExport.length === 0) {
-      showToast("No leads to export");
-      return;
+  // Export current search via the SERVER (gated by plan/quota + audited),
+  // then trigger a browser download of the returned file.
+  const handleExport = async () => {
+    const params = {
+      q: q.trim() || undefined,
+      industry: industry || undefined,
+      limit: 100,
+    };
+    if (geoCoords) {
+      params.lat = geoCoords.lat;
+      params.lon = geoCoords.lon;
+      params.radius = geoCoords.radius || 50000;
     }
-    exportLeadsToCsv(listToExport, `freeleads_export_${new Date().toISOString().slice(0, 10)}.csv`);
-    showToast(`✓ Exported ${listToExport.length} leads to CSV`);
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const result = await api.exportLeads(params, "csv");
+      const blob = new Blob([result.content], { type: result.contentType });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", result.filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showToast("✓ Leads exported via server");
+      // Refresh quota pill after an export.
+      api.getMyBilling().then((r) => r?.data?.quota && setQuota(r.data.quota)).catch(() => {});
+    } catch (err) {
+      const code = err?.data?.errors?.code;
+      if (err?.status === 429 || code === "QUOTA_EXCEEDED" || code === "THROTTLED") {
+        showToast("⚠ Export limit reached. Upgrade your plan to export more.");
+      } else if (err?.status === 403) {
+        showToast(`⚠ ${err.message}`);
+      } else {
+        showToast(`⚠ ${err.message || "Export failed"}`);
+      }
+    } finally {
+      setExporting(false);
+    }
   };
 
   // Process leads: filter by saved/verified, and sort
@@ -590,15 +626,31 @@ export default function DirectoryPage() {
             </button>
           </div>
 
-          {/* Export CSV */}
+          {/* Quota pill + Export */}
+          {quota && (
+            <Link
+              to="/app/billing"
+              className="app-quota-pill"
+              title="View your plan & usage"
+            >
+              <Sparkles size={13} />
+              <span>
+                {quota.plan.name} ·{" "}
+                {quota.searches.limit === -1
+                  ? "Unlimited searches"
+                  : `${Math.max(0, quota.searches.limit - quota.searches.used)} searches left`}
+              </span>
+            </Link>
+          )}
           <button
             type="button"
             className="app-export-btn"
             onClick={handleExport}
-            title="Download CSV of current leads"
+            disabled={exporting}
+            title="Download CSV of current leads (server-side, gated by your plan)"
           >
-            <Download size={14} />
-            <span>Export CSV</span>
+            {exporting ? <Loader2 className="spin" size={14} /> : <Download size={14} />}
+            <span>{exporting ? "Exporting..." : "Export CSV"}</span>
           </button>
         </div>
       </div>

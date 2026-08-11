@@ -209,3 +209,16 @@ body {
   border-radius: 12px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
 }
+
+/* ---- "Continue with Google" button + divider ---- */
+.auth-google-btn {
+  width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 11px 14px; border-radius: 10px; border: 1px solid #d1d5db; background: #fff;
+  font-weight: 600; font-size: 14px; color: #1f2937; cursor: pointer; margin-bottom: 8px;
+}
+.auth-google-btn:hover { background: #f9fafb; }
+.auth-google-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.auth-divider {
+  display: flex; align-items: center; gap: 10px; margin: 6px 0 14px; color: #9ca3af; font-size: 12px;
+}
+.auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: #e5e7eb; }

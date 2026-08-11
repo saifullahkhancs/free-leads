@@ -164,6 +164,15 @@ export default function AppShell() {
                         <span>My Profile</span>
                       </Link>
 
+                      <Link
+                        to="/app/billing"
+                        className="app-dropdown-item"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        <Sparkles size={15} />
+                        <span>My Plan & Usage</span>
+                      </Link>
+
                       {isAdmin && (
                         <Link
                           to="/admin"
@@ -271,6 +280,14 @@ export default function AppShell() {
                   onClick={() => setMobileDrawerOpen(false)}
                 >
                   <User size={16} /> My Profile
+                </Link>
+
+                <Link
+                  to="/app/billing"
+                  className="app-header-btn"
+                  onClick={() => setMobileDrawerOpen(false)}
+                >
+                  <Sparkles size={16} /> My Plan & Usage
                 </Link>
 
                 {isAdmin && (

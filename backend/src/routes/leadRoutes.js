@@ -1,15 +1,60 @@
 const express = require("express");
 const leadController = require("../controllers/leadController");
 const { authenticate, requireRole } = require("../middleware/auth");
+const { requireIngestAuth } = require("../middleware/ingest");
+const quotaService = require("../services/quotaService");
+const lockoutService = require("../services/lockoutService");
+const env = require("../config/env");
+const ApiError = require("../utils/ApiError");
 
 const router = express.Router();
 
-// Public-ish search (might still want authentication depending on requirements,
-// but the masking logic handles the free tier).
-// The dev doc says "Free tier gives limited access", implying search is available.
-router.get("/", authenticate, leadController.getLeads);
-router.get("/stats", authenticate, leadController.getStats);
-router.post("/export", authenticate, leadController.exportLeads);
+/** Per-user request throttle (blocks one account from hammering the API). */
+function throttle(action, maxPerMinute) {
+  return async (req, res, next) => {
+    try {
+      if (!req.user) return next(new ApiError(401, "Not authenticated"));
+      const allowed = await lockoutService.throttleUser(req.user.id, action, maxPerMinute);
+      if (!allowed) {
+        return next(
+          new ApiError(429, `Rate limit reached for ${action}. Slow down and try again.`, {
+            code: "THROTTLED",
+          })
+        );
+      }
+      next();
+    } catch (err) {
+      next(err);
+    }
+  };
+}
+
+// Search + view are gated by quota (daily search quota pool) and per-user throttle.
+router.get(
+  "/",
+  authenticate,
+  throttle("search", env.SEARCH_THROTTLE_PER_MINUTE),
+  quotaService.requireQuota("search"),
+  leadController.getLeads
+);
+router.get(
+  "/stats",
+  authenticate,
+  leadController.getStats
+);
+
+// Export: server-side, gated. Quota check happens inside leadService.exportLeads
+// (it depends on the actual row count), but we still throttle per user here.
+router.post(
+  "/export",
+  authenticate,
+  throttle("export", env.EXPORT_THROTTLE_PER_MINUTE),
+  leadController.exportLeads
+);
+
+// Machine-to-machine ingest (external pipelines). Not JWT-authed — uses its
+// own Bearer + timestamp + nonce + HMAC layer.
+router.post("/ingest", requireIngestAuth, leadController.ingestLeads);
 
 // Lead ingestion requires an editor-level role (deny-by-default).
 router.post(
@@ -25,7 +70,13 @@ router.post(
   leadController.importLeads
 );
 
-// NOTE: keep `/stats` and `/import` defined before `/:id`.
-router.get("/:id", authenticate, leadController.getLeadById);
+// NOTE: keep `/stats`, `/import`, `/export`, `/ingest` defined before `/:id`.
+router.get(
+  "/:id",
+  authenticate,
+  throttle("view_lead", env.SEARCH_THROTTLE_PER_MINUTE),
+  quotaService.requireQuota("view_lead"),
+  leadController.getLeadById
+);
 
 module.exports = router;
