@@ -41,16 +41,17 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
 
-          {/* App view — all main pages with consistent navigation */}
+          {/* App view — all main pages with consistent navigation (landing page is index) */}
           <Route path="/app" element={<AppShell />}>
-            <Route index element={<DirectoryPage />} />
+            <Route index element={<LandingPage />} />
+            <Route path="search" element={<DirectoryPage />} />
+            <Route path="directory" element={<DirectoryPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="billing" element={<BillingPage />} />
             <Route path="plans" element={<PlansPage />} />
@@ -59,6 +60,8 @@ export default function App() {
             <Route path="blog/:slug" element={<BlogPostPage />} />
             <Route path="contact" element={<ContactPage />} />
           </Route>
+
+          <Route path="/" element={<Navigate to="/app" replace />} />
 
           {/* Dashboard — CMS workspace with sidebar (requires authentication) */}
           <Route element={<AuthGuard />}>
@@ -85,7 +88,7 @@ export default function App() {
             </Route>
           </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/app" replace />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

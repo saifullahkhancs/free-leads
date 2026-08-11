@@ -148,8 +148,8 @@ export default function DashboardLayout() {
             </div>
           </div>
           <div className="dash-user-actions">
-            <Link to="/" className="dash-btn dash-btn-sm">View site</Link>
-            <Link to="/app" className="dash-btn dash-btn-sm">Open app</Link>
+            <Link to="/app" className="dash-btn dash-btn-sm" title="Website / Landing Page">Website</Link>
+            <Link to="/app/search" className="dash-btn dash-btn-sm" title="Search Leads App">Search Leads</Link>
             <button onClick={handleLogout} className="dash-btn dash-btn-sm dash-btn-danger" title="Log out">
               <LogOut size={14} />
             </button>

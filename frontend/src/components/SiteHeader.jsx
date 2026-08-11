@@ -29,7 +29,8 @@ import { initialsOf } from "../utils/format";
  */
 
 export const NAV_ITEMS = [
-  { to: "/app", label: "Search Leads", icon: Compass, end: true },
+  { to: "/app", label: "Home", icon: Globe2, end: true },
+  { to: "/app/search", label: "Search Leads", icon: Compass },
   { to: "/app/plans", label: "Pricing & Plans", icon: Sparkles },
   { to: "/app/blog", label: "Blog", icon: FileText },
   { to: "/app/contact", label: "Contact Us", icon: Mail },
@@ -43,7 +44,7 @@ export default function SiteHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const menuRef = useRef(null);
 
-  const isAdmin = user?.roles?.some((r) => ["admin", "super_admin", "editor"].includes(r));
+  const isAdmin = user?.roles?.some((r) => ["admin", "super_admin"].includes(r));
 
   const roleText =
     user?.roles?.some((r) => r === "super_admin") ? "Super Admin" :
@@ -96,7 +97,7 @@ export default function SiteHeader() {
   return (
     <header className="site-header">
       <div className="site-header-inner">
-        <Link to="/" className="site-brand">
+        <Link to="/app" className="site-brand">
           <span className="site-brand-badge"><Target size={18} /></span>
           <span className="site-brand-name">free<span>leads</span></span>
         </Link>

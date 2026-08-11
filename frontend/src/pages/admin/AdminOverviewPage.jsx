@@ -82,7 +82,8 @@ export default function AdminOverviewPage() {
               </Link>
             </>
           )}
-          <Link to="/app" className="dash-btn">Open app</Link>
+          <Link to="/app" className="dash-btn">Website</Link>
+          <Link to="/app/search" className="dash-btn dash-btn-primary">Search Leads</Link>
         </div>
       </div>
 
@@ -210,13 +211,22 @@ export default function AdminOverviewPage() {
               <p>Write, draft and publish articles for the public blog.</p>
             </div>
           </Link>}
-          <Link to="/app" className="quick-tile">
+          <Link to="/app/search" className="quick-tile">
             <span className="quick-tile-icon" style={{ background: "var(--dash-green-soft)", color: "var(--dash-green)" }}>
               <TrendingUp size={21} />
             </span>
             <div>
-              <h3>Open the app</h3>
+              <h3>Search leads app</h3>
               <p>Browse the directory like your visitors will.</p>
+            </div>
+          </Link>
+          <Link to="/app" className="quick-tile">
+            <span className="quick-tile-icon" style={{ background: "var(--dash-blue-soft)", color: "var(--dash-blue)" }}>
+              <Globe2 size={21} />
+            </span>
+            <div>
+              <h3>Website &amp; landing page</h3>
+              <p>View the public website and product home.</p>
             </div>
           </Link>
         </div>
