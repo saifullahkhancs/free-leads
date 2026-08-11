@@ -65,12 +65,10 @@ export default function PlansPage() {
             </span>
           </Link>
           <nav className="landing-nav">
-            <Link to="/#features">Platform</Link>
-            <Link to="/#how-it-works">How it works</Link>
-            <Link to="/#security">Security</Link>
-            <Link to="/plans" className="active">
-              Plans
-            </Link>
+            <Link to="/app">Search Leads</Link>
+            <Link to="/plans" className="active">Pricing &amp; Plans</Link>
+            <Link to="/blog">Blog</Link>
+            <Link to="/contact">Contact Us</Link>
           </nav>
           <div className="landing-auth-actions">
             {isAuthenticated ? (
@@ -255,10 +253,10 @@ export default function PlansPage() {
             </span>
           </Link>
           <div className="footer-links">
-            <Link to="/#features">Platform</Link>
-            <Link to="/#how-it-works">How it works</Link>
-            <Link to="/#security">Security</Link>
-            <Link to="/plans">Plans</Link>
+            <Link to="/app">Search Leads</Link>
+            <Link to="/plans">Pricing &amp; Plans</Link>
+            <Link to="/blog">Blog</Link>
+            <Link to="/contact">Contact Us</Link>
           </div>
           <p>© {new Date().getFullYear()} Free Leads · Find better. Connect sooner.</p>
         </div>

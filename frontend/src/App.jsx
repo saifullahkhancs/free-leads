@@ -10,6 +10,9 @@ import SignupPage from "./pages/SignupPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import PlansPage from "./pages/PlansPage";
+import ContactPage from "./pages/ContactPage";
+import BlogPage from "./pages/BlogPage";
+import BlogPostPage from "./pages/BlogPostPage";
 
 // App view (leads directory)
 import DirectoryPage from "./pages/app/DirectoryPage";
@@ -28,6 +31,9 @@ import UsersPage from "./pages/admin/UsersPage";
 import RolesPage from "./pages/admin/RolesPage";
 import AdminPlansPage from "./pages/admin/AdminPlansPage";
 import AdminPlanEditPage from "./pages/admin/AdminPlanEditPage";
+import ContactMessagesPage from "./pages/admin/ContactMessagesPage";
+import BlogPostsPage from "./pages/admin/BlogPostsPage";
+import BlogPostEditPage from "./pages/admin/BlogPostEditPage";
 
 import "./styles/auth.css";
 
@@ -39,6 +45,9 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/plans" element={<PlansPage />} />
           <Route path="/pricing" element={<PlansPage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/blog/:slug" element={<BlogPostPage />} />
+          <Route path="/contact" element={<ContactPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -60,12 +69,19 @@ export default function App() {
               <Route path="add-lead" element={<AddLeadPage />} />
               <Route path="import" element={<ImportLeadsPage />} />
 
+              <Route element={<RoleGuard roles={["admin", "super_admin", "editor"]} />}>
+                <Route path="blog" element={<BlogPostsPage />} />
+                <Route path="blog/new" element={<BlogPostEditPage />} />
+                <Route path="blog/:id/edit" element={<BlogPostEditPage />} />
+              </Route>
+
               <Route element={<RoleGuard roles={["admin", "super_admin"]} />}>
                 <Route path="plans" element={<AdminPlansPage />} />
                 <Route path="plans/new" element={<AdminPlanEditPage />} />
                 <Route path="plans/:id/edit" element={<AdminPlanEditPage />} />
                 <Route path="users" element={<UsersPage />} />
                 <Route path="roles" element={<RolesPage />} />
+                <Route path="contact-messages" element={<ContactMessagesPage />} />
               </Route>
             </Route>
           </Route>

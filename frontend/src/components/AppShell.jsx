@@ -3,10 +3,12 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-do
 import {
   Bookmark,
   Compass,
+  FileText,
   Globe2,
   LayoutDashboard,
   LogIn,
   LogOut,
+  Mail,
   Menu,
   Search,
   Sparkles,
@@ -85,7 +87,6 @@ export default function AppShell() {
           <Link to="/" className="app-brand">
             <span className="app-brand-badge"><Target size={18} /></span>
             <span>free<span style={{ color: "#7c9a3f" }}>leads</span></span>
-            <span className="app-brand-tag">Directory</span>
           </Link>
 
           <nav className="app-nav">
@@ -95,14 +96,28 @@ export default function AppShell() {
               className={({ isActive }) => `app-nav-link${isActive ? " active" : ""}`}
             >
               <Compass size={16} />
-              <span>Explore Directory</span>
+              <span>Search Leads</span>
             </NavLink>
             <NavLink
               to="/plans"
               className={({ isActive }) => `app-nav-link${isActive ? " active" : ""}`}
             >
               <Sparkles size={16} />
-              <span>Plans & Pricing</span>
+              <span>Pricing &amp; Plans</span>
+            </NavLink>
+            <NavLink
+              to="/blog"
+              className={({ isActive }) => `app-nav-link${isActive ? " active" : ""}`}
+            >
+              <FileText size={16} />
+              <span>Blog</span>
+            </NavLink>
+            <NavLink
+              to="/contact"
+              className={({ isActive }) => `app-nav-link${isActive ? " active" : ""}`}
+            >
+              <Mail size={16} />
+              <span>Contact Us</span>
             </NavLink>
           </nav>
 
@@ -159,7 +174,7 @@ export default function AppShell() {
                         onClick={() => setMenuOpen(false)}
                       >
                         <Compass size={15} />
-                        <span>Explore Directory</span>
+                        <span>Search Leads</span>
                       </Link>
 
                       <Link
@@ -278,7 +293,7 @@ export default function AppShell() {
                   className="app-header-btn"
                   onClick={() => setMobileDrawerOpen(false)}
                 >
-                  <Compass size={16} /> Directory
+                  <Compass size={16} /> Search Leads
                 </Link>
 
                 <Link

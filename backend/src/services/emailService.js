@@ -57,8 +57,71 @@ async function sendPasswordResetEmail(email, resetLink) {
   });
 }
 
+/**
+ * Notify the support inbox that a new contact-form message has been received.
+ * The original submission is always persisted in the database (contact_messages)
+ * so this email is purely a heads-up — failure to send it does not lose data.
+ */
+async function sendContactNotificationToTeam({ fullName, email, subject, message, recipient }) {
+  const to = recipient || env.CONTACT_TO_EMAIL || env.SMTP_FROM_EMAIL;
+  if (!to) {
+    // eslint-disable-next-line no-console
+    console.log("[emailService] No CONTACT_TO_EMAIL / SMTP_FROM_EMAIL configured; skipping team notification.");
+    return;
+  }
+  const html = `
+    <div style="font-family: Manrope, system-ui, sans-serif; color: #15231f; line-height: 1.55;">
+      <h2 style="margin: 0 0 12px; font-size: 18px; color: #1d4b3f;">New contact form submission</h2>
+      <p style="margin: 0 0 4px;"><strong>From:</strong> ${escapeHtml(fullName)} &lt;${escapeHtml(email)}&gt;</p>
+      <p style="margin: 0 0 4px;"><strong>Subject:</strong> ${escapeHtml(subject)}</p>
+      <hr style="border: none; border-top: 1px solid #dce3da; margin: 14px 0;" />
+      <p style="white-space: pre-wrap; margin: 0;">${escapeHtml(message)}</p>
+      <p style="margin-top: 18px; font-size: 12px; color: #687671;">
+        Manage this message from the Free Leads admin dashboard → Support → Contact Messages.
+      </p>
+    </div>
+  `;
+  await sendMail({
+    to,
+    subject: `[Contact] ${subject} — ${fullName}`,
+    html,
+  });
+}
+
+/** Send a reply to a contact-form submitter from the admin dashboard. */
+async function sendContactReplyEmail({ to, fullName, subject, reply, originalSubject }) {
+  const html = `
+    <div style="font-family: Manrope, system-ui, sans-serif; color: #15231f; line-height: 1.55;">
+      <p>Hi ${escapeHtml(fullName)},</p>
+      <p>Thanks for reaching out. Here's a reply from the Free Leads team regarding your message
+        "${escapeHtml(originalSubject)}":</p>
+      <div style="border-left: 3px solid #7c9a3f; padding: 8px 14px; background: #f6f7f2; margin: 12px 0; white-space: pre-wrap;">
+        ${escapeHtml(reply)}
+      </div>
+      <p style="margin-top: 18px;">If you have anything else to add, just reply to this email.</p>
+      <p>— The Free Leads team</p>
+    </div>
+  `;
+  await sendMail({
+    to,
+    subject: subject || "We received your message",
+    html,
+  });
+}
+
+function escapeHtml(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 module.exports = {
   EmailDeliveryError,
   sendVerificationEmail,
   sendPasswordResetEmail,
+  sendContactNotificationToTeam,
+  sendContactReplyEmail,
 };

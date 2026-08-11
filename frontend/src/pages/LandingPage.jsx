@@ -64,7 +64,12 @@ export default function LandingPage() {
       <header className="landing-header">
         <div className="landing-container landing-header-inner">
           <Link to="/" className="brand"><span className="brand-badge"><Target size={18} /></span><span className="brand-name">free<span>leads</span></span></Link>
-          <nav className="landing-nav"><a href="#features">Platform</a><a href="#how-it-works">How it works</a><a href="#security">Security</a><Link to="/plans">Plans</Link></nav>
+          <nav className="landing-nav">
+            <Link to="/app">Search Leads</Link>
+            <Link to="/plans">Pricing &amp; Plans</Link>
+            <Link to="/blog">Blog</Link>
+            <Link to="/contact">Contact Us</Link>
+          </nav>
           <div className="landing-auth-actions">
             {isAuthenticated ? (
               <>
@@ -141,7 +146,7 @@ export default function LandingPage() {
         <section id="security" className="landing-section security-section"><div className="landing-container security-band"><span className="security-icon"><ShieldCheck size={25} /></span><div><span className="section-kicker">TRUST, ALWAYS</span><h3>Enterprise-grade security, quietly working in the background.</h3><p>Argon2id password hashing · JWT access + httpOnly refresh cookies · deny-by-default RBAC · Redis rate limiting · server-side PII masking.</p></div><Check size={22} className="security-check" /></div></section>
         <section className="landing-cta"><div className="landing-container landing-cta-inner"><span className="section-kicker">YOUR NEXT CHAPTER</span><h2>Good leads are<br /><em>closer than you think.</em></h2><p>Join the directory built to make prospecting feel human again.</p><div className="hero-ctas center">{isAuthenticated ? <><Link to="/admin" className="btn btn-light btn-lg">Open Dashboard <ArrowRight size={18} /></Link><Link to="/app" className="btn btn-outline-light btn-lg">Open App</Link></> : <><Link to="/signup" className="btn btn-light btn-lg">Start exploring free <ArrowRight size={18} /></Link><Link to="/login" className="btn btn-outline-light btn-lg">Log in</Link></>}</div></div></section>
       </main>
-      <footer className="landing-footer"><div className="landing-container landing-footer-inner"><span className="brand"><span className="brand-badge"><Target size={14} /></span><span className="brand-name">free<span>leads</span></span></span><div className="footer-links"><a href="#features">Platform</a><a href="#how-it-works">How it works</a><a href="#security">Security</a><Link to="/plans">Plans</Link></div><p>© {new Date().getFullYear()} Free Leads · Find better. Connect sooner.</p></div></footer>
+      <footer className="landing-footer"><div className="landing-container landing-footer-inner"><span className="brand"><span className="brand-badge"><Target size={14} /></span><span className="brand-name">free<span>leads</span></span></span><div className="footer-links"><Link to="/app">Search Leads</Link><Link to="/plans">Pricing &amp; Plans</Link><Link to="/blog">Blog</Link><Link to="/contact">Contact Us</Link></div><p>© {new Date().getFullYear()} Free Leads · Find better. Connect sooner.</p></div></footer>
     </div>
   );
 }
