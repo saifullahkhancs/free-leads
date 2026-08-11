@@ -2865,9 +2865,196 @@
   cursor: not-allowed;
 }
 
+/* Div 3: extra filters row — Verified Only + Near Me / radius geospatial search */
+.app-filter-extras-div {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-top: 18px;
+  border-top: 1px solid #27272a;
+}
+
+.app-filter-verify-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px 9px 11px;
+  border: 1px solid #2e323b;
+  border-radius: 10px;
+  background: #1c1e22;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.app-filter-verify-toggle:hover {
+  border-color: #3f4452;
+  background: #23252b;
+}
+
+.app-filter-verify-toggle.active {
+  background: rgba(255, 183, 3, 0.12);
+  border-color: #ffb703;
+}
+
+.app-filter-verify-toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.app-filter-verify-track {
+  position: relative;
+  width: 32px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #2e323b;
+  flex: none;
+  transition: background 0.18s ease;
+}
+
+.app-filter-verify-toggle.active .app-filter-verify-track {
+  background: #ffb703;
+}
+
+.app-filter-verify-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.18s ease;
+}
+
+.app-filter-verify-toggle.active .app-filter-verify-thumb {
+  transform: translateX(14px);
+}
+
+.app-filter-verify-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #e4e4e7;
+}
+
+.app-filter-verify-text svg {
+  color: #ffb703;
+  flex: none;
+}
+
+.app-filter-verify-toggle.active .app-filter-verify-text {
+  color: #fff;
+}
+
+.app-filter-verify-count {
+  margin-left: 4px;
+  font-family: 'DM Mono', monospace;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+  color: #a1a1aa;
+  background: #27272a;
+  padding: 1px 6px;
+  border-radius: 9999px;
+}
+
+.app-filter-verify-toggle.active .app-filter-verify-count {
+  background: #ffb703;
+  color: #141619;
+}
+
+.app-filter-geo-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.app-filter-geo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  border: 1px solid #2e323b;
+  background: #1c1e22;
+  color: #e4e4e7;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.app-filter-geo-btn:hover {
+  background: #23252b;
+  border-color: #3f4452;
+  color: #fff;
+}
+
+.app-filter-geo-btn.active {
+  background: #ffb703;
+  border-color: #ffb703;
+  color: #141619;
+  box-shadow: 0 2px 8px rgba(255, 183, 3, 0.35);
+}
+
+.app-filter-radius-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.app-filter-radius-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffb703;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  margin-right: 2px;
+}
+
+.app-filter-radius-pill {
+  padding: 5px 10px;
+  border: 1px solid #2e323b;
+  border-radius: 9999px;
+  background: #1c1e22;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #a1a1aa;
+  cursor: pointer;
+  transition: all 0.13s ease;
+}
+
+.app-filter-radius-pill:hover {
+  border-color: #3f4452;
+  color: #e4e4e7;
+  background: #23252b;
+}
+
+.app-filter-radius-pill.active {
+  background: #ffb703;
+  border-color: #ffb703;
+  color: #141619;
+}
+
 @media (max-width: 960px) {
   .app-filter-dropdowns-div {
     grid-template-columns: repeat(3, 1fr);
+  }
+  .app-filter-geo-group {
+    margin-left: 0;
+    width: 100%;
   }
 }
 
@@ -2882,6 +3069,17 @@
   .app-filter-search-actions {
     display: grid;
     grid-template-columns: 1fr auto;
+  }
+  .app-filter-extras-div {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .app-filter-geo-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .app-filter-radius-group {
+    justify-content: flex-start;
   }
 }
 
