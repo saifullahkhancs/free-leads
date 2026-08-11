@@ -419,6 +419,93 @@ export function buildIngestSignature({ token, hmacSecret, data }) {
   return { timestamp, nonce };
 }
 
+// -----------------------------------------------------------------------
+// Contact Us (public form + admin management)
+// -----------------------------------------------------------------------
+
+/** Submit a new contact form message. No authentication required. */
+export async function submitContactForm(payload) {
+  return request("/api/contact", {
+    method: "POST",
+    skipAuth: true,
+    body: payload,
+  });
+}
+
+/** Admin: list contact messages with optional status filter. */
+export async function getContactMessages(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== "") query.append(k, v);
+  });
+  return request(`/api/contact?${query.toString()}`, { method: "GET" });
+}
+
+/** Admin: get a single contact message (and auto-mark as read). */
+export async function getContactMessage(id) {
+  return request(`/api/contact/${id}`, { method: "GET" });
+}
+
+/** Admin: patch a contact message (status and/or reply). */
+export async function updateContactMessage(id, payload) {
+  return request(`/api/contact/${id}`, { method: "PATCH", body: payload });
+}
+
+/** Admin: dashboard tile stats for contact messages. */
+export async function getContactStats() {
+  return request("/api/contact/stats", { method: "GET" });
+}
+
+// -----------------------------------------------------------------------
+// Blog (public listing + admin CRUD)
+// -----------------------------------------------------------------------
+
+/** Public: list published blog posts. */
+export async function getPublishedPosts(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== "") query.append(k, v);
+  });
+  return request(`/api/blog?${query.toString()}`, { method: "GET", skipAuth: true });
+}
+
+/** Public: get a single published post by slug. */
+export async function getPublishedPostBySlug(slug) {
+  return request(`/api/blog/${encodeURIComponent(slug)}`, {
+    method: "GET",
+    skipAuth: true,
+  });
+}
+
+/** Admin: list all blog posts (any status). */
+export async function adminListPosts(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== "") query.append(k, v);
+  });
+  return request(`/api/blog/admin/all?${query.toString()}`, { method: "GET" });
+}
+
+/** Admin: get a single post (any status) by id. */
+export async function adminGetPost(id) {
+  return request(`/api/blog/admin/${id}`, { method: "GET" });
+}
+
+/** Admin: create a new blog post. */
+export async function adminCreatePost(payload) {
+  return request("/api/blog", { method: "POST", body: payload });
+}
+
+/** Admin: update a blog post. */
+export async function adminUpdatePost(id, payload) {
+  return request(`/api/blog/${id}`, { method: "PUT", body: payload });
+}
+
+/** Admin: delete a blog post. */
+export async function adminDeletePost(id) {
+  return request(`/api/blog/${id}`, { method: "DELETE" });
+}
+
 // Re-export token helpers so pages (e.g. the Google callback) can set the
 // in-memory access token after an OAuth login.
 export { setAccessToken, getAccessToken, clearAccessToken } from "./tokenStorage";

@@ -6,8 +6,11 @@ import {
   Building2,
   Database,
   FilePlus2,
+  FileText,
   Globe2,
+  Inbox,
   Loader2,
+  Mail,
   MapPin,
   TrendingUp,
   UploadCloud,
@@ -19,7 +22,9 @@ import { avatarColor, formatDate, initialsOf, locationString } from "../../utils
 export default function AdminOverviewPage() {
   const { user } = useAuth();
   const canManage = user?.roles?.some((r) => ["admin", "super_admin", "editor"].includes(r));
+  const isAdmin = user?.roles?.some((r) => ["admin", "super_admin"].includes(r));
   const [stats, setStats] = useState(null);
+  const [contactStats, setContactStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -36,10 +41,19 @@ export default function AdminOverviewPage() {
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
+    // Only fetch contact stats if the user can see them (admins only).
+    if (isAdmin) {
+      api
+        .getContactStats()
+        .then((res) => {
+          if (!cancelled) setContactStats(res?.data || null);
+        })
+        .catch(() => {});
+    }
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isAdmin]);
 
   const c = stats?.counts || {};
 
@@ -86,6 +100,17 @@ export default function AdminOverviewPage() {
               <div className="stat-sub">{s.sub}</div>
             </div>
           ))}
+          {/* Contact-messages stat — only visible to admins. */}
+          {isAdmin && contactStats && (
+            <Link to="/admin/contact-messages" className="stat-card" style={{ textDecoration: "none", color: "inherit" }}>
+              <div className="stat-icon red"><Inbox size={20} /></div>
+              <div className="stat-value">{contactStats.new_count ?? 0}</div>
+              <div className="stat-label">New contact messages</div>
+              <div className="stat-sub">
+                {contactStats.total ?? 0} total · {contactStats.last_7_days ?? 0} this week
+              </div>
+            </Link>
+          )}
         </div>
       )}
 
@@ -165,6 +190,24 @@ export default function AdminOverviewPage() {
             <div>
               <h3>Import CSV</h3>
               <p>Bulk-upload hundreds of leads from a spreadsheet.</p>
+            </div>
+          </Link>}
+          {isAdmin && <Link to="/admin/contact-messages" className="quick-tile">
+            <span className="quick-tile-icon" style={{ background: "var(--dash-danger-soft)", color: "var(--dash-danger)" }}>
+              <Mail size={21} />
+            </span>
+            <div>
+              <h3>Contact messages</h3>
+              <p>Read and reply to submissions from the public Contact form.</p>
+            </div>
+          </Link>}
+          {canManage && <Link to="/admin/blog" className="quick-tile">
+            <span className="quick-tile-icon" style={{ background: "var(--dash-lime-soft)", color: "var(--dash-green)" }}>
+              <FileText size={21} />
+            </span>
+            <div>
+              <h3>Blog posts</h3>
+              <p>Write, draft and publish articles for the public blog.</p>
             </div>
           </Link>}
           <Link to="/app" className="quick-tile">

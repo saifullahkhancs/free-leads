@@ -56,6 +56,12 @@ const env = {
   SMTP_FROM_NAME: process.env.SMTP_FROM_NAME ,
   SMTP_USE_TLS: bool("SMTP_USE_TLS", true),
 
+  // ---- Contact Us ----
+  // Where contact-form notifications are sent. Falls back to SMTP_FROM_EMAIL
+  // when unset. The DB always stores the submission so nothing is lost if
+  // this is left blank or email delivery fails.
+  CONTACT_TO_EMAIL: process.env.CONTACT_TO_EMAIL || "",
+
   RATE_LIMIT_ENABLED: bool("RATE_LIMIT_ENABLED", true),
   RATE_LIMIT_WINDOW_SECONDS: int("RATE_LIMIT_WINDOW_SECONDS", 60),
   RATE_LIMIT_MAX_REQUESTS: int("RATE_LIMIT_MAX_REQUESTS", 100),

@@ -3,6 +3,8 @@ import { NavLink, Link, Outlet, useLocation, useNavigate } from "react-router-do
 import {
   Database,
   FilePlus2,
+  FileText,
+  Inbox,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -24,16 +26,25 @@ const PAGE_TITLES = {
   "/admin/import": { title: "Import CSV", subtitle: "Bulk upload leads from a CSV file" },
   "/admin/users": { title: "Users", subtitle: "Manage accounts and roles" },
   "/admin/roles": { title: "Roles & Permissions", subtitle: "Control what each role can do" },
+  "/admin/contact-messages": { title: "Contact Messages", subtitle: "Read & reply to submissions from the public Contact Us form" },
+  "/admin/blog": { title: "Blog Posts", subtitle: "Write, draft and publish articles on the public blog" },
+  "/admin/blog/new": { title: "New Post", subtitle: "Write a new article" },
 };
 
 function getPageMeta(pathname) {
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
-  // dynamic edit route: /admin/plans/:id/edit
+  // dynamic edit routes
   if (pathname.startsWith("/admin/plans/") && pathname.endsWith("/edit")) {
     return { title: "Edit Plan", subtitle: "Update plan details, quotas and visibility" };
   }
   if (pathname.startsWith("/admin/plans")) {
     return PAGE_TITLES["/admin/plans"];
+  }
+  if (pathname.startsWith("/admin/blog/") && pathname.endsWith("/edit")) {
+    return { title: "Edit Post", subtitle: "Update the article content and visibility" };
+  }
+  if (pathname.startsWith("/admin/blog")) {
+    return PAGE_TITLES["/admin/blog"];
   }
   return { title: "Dashboard", subtitle: "" };
 }
@@ -80,6 +91,10 @@ export default function DashboardLayout() {
               { to: "/admin/import", label: "Import CSV", icon: UploadCloud },
             ]
           : []),
+        // Editors + admins can manage blog posts
+        ...(canManage
+          ? [{ to: "/admin/blog", label: "Blog", icon: FileText }]
+          : []),
       ],
     },
     ...(isAdmin
@@ -90,6 +105,7 @@ export default function DashboardLayout() {
               { to: "/admin/plans", label: "Membership Plans", icon: Sparkles },
               { to: "/admin/users", label: "Users", icon: Users },
               { to: "/admin/roles", label: "Roles & Permissions", icon: ShieldCheck },
+              { to: "/admin/contact-messages", label: "Contact Messages", icon: Inbox },
             ],
           },
         ]
