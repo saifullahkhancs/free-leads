@@ -18,12 +18,25 @@ import { useAuth } from "../context/AuthContext";
 const PAGE_TITLES = {
   "/admin": { title: "Dashboard", subtitle: "Workspace overview" },
   "/admin/plans": { title: "Membership Plans", subtitle: "Configure subscription tiers, quotas, format support & field visibility" },
+  "/admin/plans/new": { title: "New Plan", subtitle: "Create a new membership tier" },
   "/admin/leads": { title: "Leads", subtitle: "Browse and manage your lead database" },
   "/admin/add-lead": { title: "Add Lead", subtitle: "Create a single lead manually" },
   "/admin/import": { title: "Import CSV", subtitle: "Bulk upload leads from a CSV file" },
   "/admin/users": { title: "Users", subtitle: "Manage accounts and roles" },
   "/admin/roles": { title: "Roles & Permissions", subtitle: "Control what each role can do" },
 };
+
+function getPageMeta(pathname) {
+  if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
+  // dynamic edit route: /admin/plans/:id/edit
+  if (pathname.startsWith("/admin/plans/") && pathname.endsWith("/edit")) {
+    return { title: "Edit Plan", subtitle: "Update plan details, quotas and visibility" };
+  }
+  if (pathname.startsWith("/admin/plans")) {
+    return PAGE_TITLES["/admin/plans"];
+  }
+  return { title: "Dashboard", subtitle: "" };
+}
 
 export default function DashboardLayout() {
   const { user, logout } = useAuth();
@@ -48,7 +61,7 @@ export default function DashboardLayout() {
     user?.roles?.some((r) => r === "admin") ? "Admin" :
     user?.roles?.some((r) => r === "editor") ? "Editor" : "Member";
 
-  const pageMeta = PAGE_TITLES[location.pathname] || { title: "Dashboard", subtitle: "" };
+  const pageMeta = getPageMeta(location.pathname);
 
   const handleLogout = async () => {
     await logout();
