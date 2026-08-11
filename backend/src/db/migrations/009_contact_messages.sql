@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS contact_messages (
   -- optional admin reply that was emailed to the submitter
   admin_reply     TEXT,
   replied_at      TIMESTAMPTZ,
-  replied_by      INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  replied_by      UUID REFERENCES users(id) ON DELETE SET NULL,
   created_at      TIMESTAMPTZ  NOT NULL DEFAULT now(),
   updated_at      TIMESTAMPTZ  NOT NULL DEFAULT now()
 );

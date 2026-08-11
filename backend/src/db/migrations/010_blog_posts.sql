@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS blog_posts (
   cover_image_url TEXT,
   -- 'draft' | 'published'
   status          VARCHAR(20)  NOT NULL DEFAULT 'draft',
-  author_id       INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  author_id       UUID REFERENCES users(id) ON DELETE SET NULL,
   published_at    TIMESTAMPTZ,
   created_at      TIMESTAMPTZ  NOT NULL DEFAULT now(),
   updated_at      TIMESTAMPTZ  NOT NULL DEFAULT now()
