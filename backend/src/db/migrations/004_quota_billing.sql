@@ -16,10 +16,20 @@ CREATE TABLE IF NOT EXISTS plans (
     daily_search_quota  INT NOT NULL DEFAULT 3,          -- -1 = unlimited
     daily_export_quota  INT NOT NULL DEFAULT 0,          -- -1 = unlimited
     max_export_per_req  INT NOT NULL DEFAULT 100,        -- rows per export request
-    allowed_formats     TEXT[] NOT NULL DEFAULT '{csv}', -- csv|excel|pdf|json
+    allowed_formats     TEXT[] NOT NULL DEFAULT '{excel}', -- csv|excel|pdf|json
     can_view_contact    BOOLEAN NOT NULL DEFAULT FALSE,  -- full email/socials visible
+    show_email          BOOLEAN NOT NULL DEFAULT FALSE,
+    show_phone          BOOLEAN NOT NULL DEFAULT FALSE,
+    show_linkedin       BOOLEAN NOT NULL DEFAULT FALSE,
+    show_twitter        BOOLEAN NOT NULL DEFAULT FALSE,
+    show_website        BOOLEAN NOT NULL DEFAULT FALSE,
+    show_about          BOOLEAN NOT NULL DEFAULT FALSE,
     paypal_plan_id      VARCHAR(100),
     is_default          BOOLEAN NOT NULL DEFAULT FALSE,  -- the free tier everyone starts on
+    is_popular          BOOLEAN NOT NULL DEFAULT FALSE,
+    description         TEXT,
+    cta_text            VARCHAR(100),
+    cta_url             TEXT,
     created_at          TIMESTAMPTZ DEFAULT now()
 );
 

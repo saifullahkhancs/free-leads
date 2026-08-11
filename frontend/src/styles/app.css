@@ -2168,6 +2168,65 @@
 .billing-btn-ghost { color: #b91c1c; border-color: #f5c2c2; }
 .billing-btn.disabled { opacity: 0.6; cursor: not-allowed; }
 
+.billing-plan-desc {
+  font-size: 13px;
+  color: var(--app-ink-muted, #6b7280);
+  line-height: 1.45;
+  margin: 2px 0 8px;
+  min-height: 38px;
+}
+
+.billing-plan-card.popular {
+  border-color: var(--app-lime, #7c9a3f);
+  box-shadow: 0 8px 25px -4px rgba(124, 154, 63, 0.18), 0 0 0 2px rgba(124, 154, 63, 0.22);
+}
+
+.billing-plan-card.popular .billing-plan-tag.popular-tag {
+  background: var(--app-lime, #7c9a3f);
+  color: #fff;
+  font-weight: 700;
+}
+
+.plan-feature-excluded {
+  color: #9ca3af !important;
+  text-decoration: line-through;
+  opacity: 0.75;
+}
+
+.plan-feature-excluded svg {
+  color: #9ca3af !important;
+}
+
+.billing-btn-outline {
+  background: #fff;
+  color: var(--app-ink, #1f2937);
+  border: 1px solid var(--app-border, #d1d5db);
+  text-decoration: none;
+}
+
+.billing-btn-outline:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.plan-card-actions {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.plan-in-app-link {
+  font-size: 11.5px;
+  color: var(--app-ink-muted, #6b7280);
+  text-align: center;
+  text-decoration: underline;
+}
+
+.plan-in-app-link:hover {
+  color: var(--app-ink, #1f2937);
+}
+
 /* ==========================================================================
    Search Leads — faceted filter rail + results layout
    ========================================================================== */
@@ -2639,3 +2698,190 @@
   .app-toolbar-right { width: 100%; margin-left: 0; flex-wrap: wrap; }
   .app-filter-drawer-inner { width: 92vw; }
 }
+
+/* ==========================================================================
+   Main App Page Dark Filter Hub & Full Width Layout
+   ========================================================================== */
+
+.app-search-layout.no-sidebar {
+  display: block;
+  width: 100%;
+}
+
+.app-main-filter-panel {
+  background: #141619;
+  border: 1px solid #27272a;
+  border-radius: 16px;
+  padding: 24px 28px;
+  margin-bottom: 24px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.app-filter-search-div {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.app-filter-input-wrapper {
+  flex: 1;
+  min-width: 280px;
+  height: 48px;
+  background: #1c1e22;
+  border: 1px solid #2e323b;
+  border-radius: 10px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  transition: border-color 0.2s ease;
+}
+
+.app-filter-input-wrapper:focus-within {
+  border-color: #ffb703;
+}
+
+.app-filter-search-icon {
+  color: #71717a;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.app-filter-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #f4f4f5;
+  font-size: 14.5px;
+  outline: none;
+}
+
+.app-filter-search-input::placeholder {
+  color: #71717a;
+}
+
+.app-filter-search-clear {
+  background: transparent;
+  border: none;
+  color: #71717a;
+  cursor: pointer;
+  padding: 4px;
+  display: grid;
+  place-items: center;
+}
+
+.app-filter-search-clear:hover {
+  color: #f4f4f5;
+}
+
+.app-filter-search-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app-filter-btn-search {
+  background: #ffb703;
+  color: #141619;
+  font-weight: 700;
+  font-size: 14px;
+  border: none;
+  border-radius: 10px;
+  height: 48px;
+  padding: 0 26px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.app-filter-btn-search:hover {
+  background: #f59e0b;
+}
+
+.app-filter-btn-reset {
+  background: #272a33;
+  color: #d1d5db;
+  border: 1px solid #3f4452;
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: 10px;
+  height: 48px;
+  padding: 0 22px;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.app-filter-btn-reset:hover {
+  background: #323642;
+  color: #fff;
+}
+
+.app-filter-dropdowns-div {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.app-filter-dropdown-col {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.app-filter-dropdown-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffb703;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.app-filter-dropdown-select {
+  background: #1c1e22;
+  border: 1px solid #2e323b;
+  border-radius: 10px;
+  color: #e4e4e7;
+  font-size: 13.5px;
+  height: 44px;
+  padding: 0 34px 0 14px;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  transition: border-color 0.2s ease;
+}
+
+.app-filter-dropdown-select:focus {
+  border-color: #ffb703;
+}
+
+.app-filter-dropdown-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 960px) {
+  .app-filter-dropdowns-div {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .app-filter-dropdowns-div {
+    grid-template-columns: 1fr;
+  }
+  .app-filter-search-div {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .app-filter-search-actions {
+    display: grid;
+    grid-template-columns: 1fr auto;
+  }
+}
+

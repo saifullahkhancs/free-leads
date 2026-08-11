@@ -271,6 +271,30 @@ export async function getPlans() {
   return request("/api/plans", { method: "GET" });
 }
 
+export async function getAdminPlans() {
+  return request("/api/admin/plans", { method: "GET" });
+}
+
+export async function createAdminPlan(planData) {
+  return request("/api/admin/plans", {
+    method: "POST",
+    body: planData,
+  });
+}
+
+export async function updateAdminPlan(id, planData) {
+  return request(`/api/admin/plans/${id}`, {
+    method: "PUT",
+    body: planData,
+  });
+}
+
+export async function deleteAdminPlan(id) {
+  return request(`/api/admin/plans/${id}`, {
+    method: "DELETE",
+  });
+}
+
 export async function getMyBilling() {
   return request("/api/billing/me", { method: "GET" });
 }

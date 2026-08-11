@@ -8,6 +8,36 @@ function isRolePaid(user) {
   return user && (user.roles || []).some((r) => ["admin", "super_admin"].includes(r));
 }
 
+const resolveVisibility = async (user) => {
+  if (user && isRolePaid(user)) {
+    return {
+      show_email: true,
+      show_phone: true,
+      show_linkedin: true,
+      show_twitter: true,
+      show_website: true,
+      show_about: true,
+      can_view_contact: true,
+      is_paid: true,
+    };
+  }
+  const userId = user?.id || null;
+  const [hasPaid, plan] = await Promise.all([
+    userId ? quotaService.hasActivePaidPlan(userId) : Promise.resolve(false),
+    quotaService.getActivePlan(userId),
+  ]);
+  return {
+    show_email: plan.show_email !== undefined ? Boolean(plan.show_email) : Boolean(plan.can_view_contact),
+    show_phone: plan.show_phone !== undefined ? Boolean(plan.show_phone) : Boolean(plan.can_view_contact),
+    show_linkedin: plan.show_linkedin !== undefined ? Boolean(plan.show_linkedin) : Boolean(plan.can_view_contact),
+    show_twitter: plan.show_twitter !== undefined ? Boolean(plan.show_twitter) : Boolean(plan.can_view_contact),
+    show_website: plan.show_website !== undefined ? Boolean(plan.show_website) : Boolean(plan.can_view_contact),
+    show_about: plan.show_about !== undefined ? Boolean(plan.show_about) : Boolean(plan.can_view_contact),
+    can_view_contact: Boolean(plan.can_view_contact),
+    is_paid: !!hasPaid || Boolean(plan.can_view_contact),
+  };
+};
+
 /** Query params are strings — normalize "true"/"1"/"" into a real boolean. */
 function toBool(value) {
   if (value === undefined || value === null || value === "") return false;
@@ -41,13 +71,11 @@ const getLeads = asyncHandler(async (req, res) => {
 
   // Paid access = active paid subscription OR an admin/super_admin role.
   // Admins bypass quotas; regular users are checked by the requireQuota middleware.
-  const [hasPaid, quotaStatus] = await Promise.all([
-    req.user && !isRolePaid(req.user)
-      ? quotaService.hasActivePaidPlan(req.user.id)
-      : Promise.resolve(isRolePaid(req.user)),
+  const [visibility, quotaStatus] = await Promise.all([
+    resolveVisibility(req.user),
     quotaService.getQuotaStatus(req.user.id),
   ]);
-  const is_paid = !!hasPaid;
+  const is_paid = visibility.is_paid;
 
   const result = await leadService.getLeads({
     q,
@@ -67,6 +95,7 @@ const getLeads = asyncHandler(async (req, res) => {
     lon: lon ? parseFloat(lon) : null,
     radius: radius ? parseFloat(radius) : 50000,
     is_paid,
+    visibility,
   });
 
   res.json({
@@ -121,11 +150,9 @@ const getFacets = asyncHandler(async (req, res) => {
 const getLeadById = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  const is_paid = isRolePaid(req.user)
-    ? true
-    : await quotaService.hasActivePaidPlan(req.user.id);
+  const visibility = await resolveVisibility(req.user);
 
-  const lead = await leadService.getLeadById(parseInt(id, 10), is_paid);
+  const lead = await leadService.getLeadById(parseInt(id, 10), visibility.is_paid, visibility);
 
   res.json({
     status: "success",
@@ -158,12 +185,15 @@ const exportLeads = asyncHandler(async (req, res) => {
     limit: toInt(req.query.limit) || undefined,
   };
 
+  const visibility = await resolveVisibility(req.user);
+
   const result = await leadService.exportLeads({
     userId: req.user.id,
     isAdmin: isRolePaid(req.user),
     filters,
     format,
     ip: req.ip,
+    visibility,
   });
 
   res.setHeader("Content-Type", result.contentType);

@@ -40,8 +40,12 @@ the "Leads Directory Web App" dev document (Module 1 — Foundation + Auth).
 - `LandingPage` — public marketing landing page served at `/`. Authenticated
   visitors see their name/email, a **Log out** button, and two entry buttons:
   **Dashboard** (`/admin`) and **App** (`/app`)
+- `PlansPage` (`/plans`, `/pricing`) — dedicated public pricing page showcasing
+  the 4 membership tiers (**Free**, **Starter**, **Growth**, **Pro**), daily
+  search and export limits, allowed file formats (EXCEL, CSV, PDF, JSON), and
+  direct signup/checkout links
 - `App view` (`/app`) — the leads directory: search, industry filter,
-  "Near Me" geo search, responsive card grid, and lead detail modal
+  "Near Me" geo search, responsive card grid, and lead detail modal (`/app/billing` displays your plan & daily usage)
 - `Dashboard` (`/admin`) — a responsive CMS-style workspace with a sidebar
   (Overview, Leads, Add Lead, Import CSV, Users, Roles), stat cards, and a
   topbar with the logged-in user's info and logout

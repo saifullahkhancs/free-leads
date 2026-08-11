@@ -41,6 +41,13 @@ import {
 } from "../../utils/leadFilters";
 import { getSavedLeads, removeSavedLead, saveLead } from "../../utils/savedLeads";
 
+function formatCount(n) {
+  if (n == null) return "";
+  if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+  if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k`;
+  return String(n);
+}
+
 const EMPTY_FILTERS = {
   category: "",
   industry: "",
@@ -76,7 +83,7 @@ export default function DirectoryPage() {
   const [suggestion, setSuggestion] = useState(null);
 
   // ---- UI --------------------------------------------------------------------
-  const [viewMode, setViewMode] = useState("grid");
+  const [viewMode, setViewMode] = useState("table");
   const [filtersOpen, setFiltersOpen] = useState(false); // mobile drawer
   const [selectedLead, setSelectedLead] = useState(null);
   const [savedLeadIds, setSavedLeadIds] = useState(new Set());
@@ -664,156 +671,199 @@ export default function DirectoryPage() {
 
   return (
     <>
-      {/* ===================== Hero + search command bar ===================== */}
-      <section className="app-hero-card">
-        <div className="app-hero-kicker-row">
-          <span className="app-hero-kicker">
-            <span className="pulse-circle" />
-            <b>SEARCH LEADS</b> · Real-Time Directory
-          </span>
-          {filters.geo && (
-            <span
-              className="app-hero-kicker"
-              style={{ background: "#eef7d9", color: "#506d28", borderColor: "#d5e9a9" }}
-            >
-              <Compass size={12} /> Within {Math.round(filters.radius / 1000)} km of you
-            </span>
-          )}
-          {usingFallback && (
-            <span
-              className="app-hero-kicker"
-              style={{ background: "#fef3c7", color: "#92400e", borderColor: "#fde68a" }}
-            >
-              Demo data
-            </span>
-          )}
-        </div>
-
-        <h1 className="app-hero-title">
-          Find & connect with <span className="text-gradient">decision makers</span>
-        </h1>
-        <p className="app-hero-sub">
-          Filter by category, industry, country, state and city — or jump straight to verified
-          leads near you.
-        </p>
-
-        <div className="app-search-hub">
-          <form className="app-search-bar" onSubmit={handleSearch}>
-            <div className="app-search-input-field">
-              <Search size={18} />
-              <input
-                ref={searchInputRef}
-                className="app-search-input"
-                type="text"
-                placeholder="Search by name, company, title or keyword…"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-              />
-              {q && (
-                <button
-                  type="button"
-                  className="app-search-clear"
-                  onClick={() => {
-                    setQ("");
-                    setSubmittedQ("");
-                  }}
-                  title="Clear search"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-
-            <div className="app-search-divider" />
-
-            {/* Inline category + country selects mirror the sidebar filters so
-                the most common refinements are one click away on any screen. */}
-            <div className="app-select-wrap">
-              <Layers size={14} className="icon-left" />
-              <select
-                className="app-select-input"
-                value={filters.category}
-                onChange={(e) => updateFilters({ category: e.target.value, industry: "" })}
-              >
-                <option value="">All Categories</option>
-                {(facets?.categories || []).map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.value}
-                    {c.count != null ? ` (${c.count})` : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="app-select-wrap">
-              <Globe2 size={14} className="icon-left" />
-              <select
-                className="app-select-input"
-                value={filters.country?.value || ""}
-                onChange={(e) => {
-                  const match = (facets?.countries || []).find(
-                    (c) => c.value === e.target.value
-                  );
-                  updateFilters({
-                    country: match
-                      ? { id: match.id, value: match.value, code: match.code }
-                      : null,
-                    region: null,
-                    city: null,
-                  });
+      {/* ===================== Main App Page Dark Filter Hub ===================== */}
+      <div className="app-main-filter-panel">
+        {/* Div 1: input field with search button & reset button */}
+        <div className="app-filter-search-div">
+          <div className="app-filter-input-wrapper">
+            <Search size={18} className="app-filter-search-icon" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              className="app-filter-search-input"
+              placeholder="Search by category, industry or business name..."
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleSearch(e);
+                }
+              }}
+            />
+            {q && (
+              <button
+                type="button"
+                className="app-filter-search-clear"
+                onClick={() => {
+                  setQ("");
+                  setSubmittedQ("");
                 }}
+                title="Clear search"
               >
-                <option value="">All Countries</option>
-                {(facets?.countries || []).map((c) => (
-                  <option key={c.id ?? c.value} value={c.value}>
-                    {c.value}
-                    {c.count != null ? ` (${c.count})` : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
+                <X size={15} />
+              </button>
+            )}
+          </div>
 
+          <div className="app-filter-search-actions">
             <button
               type="button"
-              className={`app-btn-geo${filters.geo ? " active" : ""}`}
-              onClick={handleNearMe}
-              title="Filter leads near your location"
+              className="app-filter-btn-search"
+              onClick={handleSearch}
             >
-              <Compass size={15} />
-              <span>{filters.geo ? "Near You" : "Near Me"}</span>
+              Search Leads
             </button>
-
-            <button type="submit" className="app-btn-search">
-              <Search size={15} />
-              <span>Search</span>
+            <button
+              type="button"
+              className="app-filter-btn-reset"
+              onClick={resetFilters}
+            >
+              Reset
             </button>
-          </form>
-
-          {/* Suggested / quick filter chips */}
-          <div className="app-chips-row">
-            {quickChips.map((chip) => {
-              const Icon = chip.icon;
-              return (
-                <button
-                  key={chip.id}
-                  type="button"
-                  className={`app-chip${chip.active ? " active" : ""}${
-                    chip.suggested ? " suggested" : ""
-                  }`}
-                  onClick={chip.onClick}
-                  title={chip.suggested ? "Suggested from your profile location" : undefined}
-                >
-                  <Icon size={14} />
-                  <span>{chip.label}</span>
-                  {chip.count != null && (
-                    <span className="app-chip-counter">{chip.count}</span>
-                  )}
-                </button>
-              );
-            })}
           </div>
         </div>
-      </section>
+
+        {/* Div 2: default filters drop downs filter for category, industry, Country, State, City */}
+        <div className="app-filter-dropdowns-div">
+          {/* 1. CATEGORY */}
+          <div className="app-filter-dropdown-col">
+            <label className="app-filter-dropdown-label">CATEGORY</label>
+            <select
+              className="app-filter-dropdown-select"
+              value={filters.category || ""}
+              onChange={(e) => updateFilters({ category: e.target.value, industry: "" })}
+            >
+              <option value="">All</option>
+              {(facets?.categories || []).map((cat) => (
+                <option key={cat.value} value={cat.value}>
+                  {cat.value}
+                  {cat.count != null ? ` (${formatCount(cat.count)})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 2. INDUSTRY */}
+          <div className="app-filter-dropdown-col">
+            <label className="app-filter-dropdown-label">INDUSTRY</label>
+            <select
+              className="app-filter-dropdown-select"
+              value={filters.industry || ""}
+              onChange={(e) => updateFilters({ industry: e.target.value })}
+            >
+              <option value="">All</option>
+              {(facets?.industries || []).map((ind) => (
+                <option key={ind.value} value={ind.value}>
+                  {ind.value}
+                  {ind.count != null ? ` (${formatCount(ind.count)})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 3. COUNTRY */}
+          <div className="app-filter-dropdown-col">
+            <label className="app-filter-dropdown-label">COUNTRY</label>
+            <select
+              className="app-filter-dropdown-select"
+              value={filters.country?.id || filters.country?.value || ""}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (!val) {
+                  updateFilters({ country: null, region: null, city: null });
+                  return;
+                }
+                const match = (facets?.countries || []).find(
+                  (c) => String(c.id || c.value) === String(val)
+                );
+                updateFilters({
+                  country: match
+                    ? { id: match.id, value: match.value, code: match.code }
+                    : { id: null, value: val },
+                  region: null,
+                  city: null,
+                });
+              }}
+            >
+              <option value="">All</option>
+              {(facets?.countries || []).map((cnt) => (
+                <option key={cnt.id ?? cnt.value} value={cnt.id ?? cnt.value}>
+                  {cnt.value}
+                  {cnt.count != null ? ` (${formatCount(cnt.count)})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 4. STATE */}
+          <div className="app-filter-dropdown-col">
+            <label className="app-filter-dropdown-label">STATE</label>
+            <select
+              className="app-filter-dropdown-select"
+              value={filters.region?.id || filters.region?.value || ""}
+              disabled={!filters.country}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (!val) {
+                  updateFilters({ region: null, city: null });
+                  return;
+                }
+                const match = (facets?.regions || []).find(
+                  (r) => String(r.id || r.value) === String(val)
+                );
+                updateFilters({
+                  region: match
+                    ? { id: match.id, value: match.value }
+                    : { id: null, value: val },
+                  city: null,
+                });
+              }}
+            >
+              <option value="">All</option>
+              {(facets?.regions || []).map((reg) => (
+                <option key={reg.id ?? reg.value} value={reg.id ?? reg.value}>
+                  {reg.value}
+                  {reg.count != null ? ` (${formatCount(reg.count)})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 5. CITY */}
+          <div className="app-filter-dropdown-col">
+            <label className="app-filter-dropdown-label">CITY</label>
+            <select
+              className="app-filter-dropdown-select"
+              value={filters.city?.id || filters.city?.value || ""}
+              disabled={!filters.country}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (!val) {
+                  updateFilters({ city: null });
+                  return;
+                }
+                const match = (facets?.cities || []).find(
+                  (ct) => String(ct.id || ct.value) === String(val)
+                );
+                updateFilters({
+                  city: match
+                    ? { id: match.id, value: match.value }
+                    : { id: null, value: val },
+                });
+              }}
+            >
+              <option value="">All</option>
+              {(facets?.cities || []).map((cty) => (
+                <option key={cty.id ?? cty.value} value={cty.id ?? cty.value}>
+                  {cty.value}
+                  {cty.count != null ? ` (${formatCount(cty.count)})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
 
       {error && (
         <div className="dash-alert dash-alert-error" style={{ marginBottom: 20 }}>
@@ -821,38 +871,12 @@ export default function DirectoryPage() {
         </div>
       )}
 
-      {/* ===================== Two-column: filters + results ===================== */}
-      <div className="app-search-layout">
-        {/* Desktop filter rail */}
-        <div className="app-filter-rail">
-          <LeadFilterPanel {...panelProps} />
-        </div>
-
-        {/* Mobile filter drawer */}
-        {filtersOpen && (
-          <div className="app-filter-drawer" onClick={() => setFiltersOpen(false)}>
-            <div className="app-filter-drawer-inner" onClick={(e) => e.stopPropagation()}>
-              <LeadFilterPanel {...panelProps} onClose={() => setFiltersOpen(false)} />
-            </div>
-          </div>
-        )}
-
+      {/* ===================== Main results (full width, no sidebar rail) ===================== */}
+      <div className="app-search-layout no-sidebar">
         <div className="app-results-col">
           {/* Toolbar */}
           <div className="app-toolbar">
             <div className="app-toolbar-left">
-              <button
-                type="button"
-                className="app-filter-toggle-btn"
-                onClick={() => setFiltersOpen(true)}
-              >
-                <SlidersHorizontal size={15} />
-                <span>Filters</span>
-                {activeFilterCount > 0 && (
-                  <span className="app-chip-counter">{activeFilterCount}</span>
-                )}
-              </button>
-
               <div className="app-count-badge">
                 <span>Showing</span>
                 <span className="app-count-number">{processedLeads.length}</span>

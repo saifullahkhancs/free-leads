@@ -21,7 +21,17 @@ const getPlans = asyncHandler(async (req, res) => {
       max_export_per_req: p.max_export_per_req,
       allowed_formats: p.allowed_formats,
       can_view_contact: p.can_view_contact,
+      show_email: p.show_email !== undefined ? Boolean(p.show_email) : Boolean(p.can_view_contact),
+      show_phone: p.show_phone !== undefined ? Boolean(p.show_phone) : Boolean(p.can_view_contact),
+      show_linkedin: p.show_linkedin !== undefined ? Boolean(p.show_linkedin) : Boolean(p.can_view_contact),
+      show_twitter: p.show_twitter !== undefined ? Boolean(p.show_twitter) : Boolean(p.can_view_contact),
+      show_website: p.show_website !== undefined ? Boolean(p.show_website) : Boolean(p.can_view_contact),
+      show_about: p.show_about !== undefined ? Boolean(p.show_about) : Boolean(p.can_view_contact),
       is_default: p.is_default,
+      is_popular: Boolean(p.is_popular),
+      description: p.description || "",
+      cta_text: p.cta_text || "",
+      cta_url: p.cta_url || "",
     })),
   });
 });

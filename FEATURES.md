@@ -12,9 +12,19 @@
 - **Radius Search**: Find networking opportunities within a 10km, 50km, or 100km radius.
 - **PostGIS Powered**: Uses `GEOGRAPHY(POINT)` and `GIST` indexing for sub-second distance calculations across millions of rows.
 
-### 3. Tiered Access (Freemium)
-- **Free Tier**: Browse leads, see headlines, and view masked emails (e.g., `s****@example.com`).
-- **Pro Tier**: Unlock full PII (emails, social links), direct website access, and unlimited geospatial queries.
+### 3. Tiered Access (Freemium & Paid Membership Plans)
+- **4 Transparent Tiers**:
+  - **Free** ($0/month): 3 searches/day, 500 exports/day, up to 500 records/export, EXCEL format.
+  - **Starter** ($29/month): 10 searches/day, 4,500 exports/day, up to 500 records/export, CSV & EXCEL formats.
+  - **Growth** ($49/month - Most Popular): 50 searches/day, 10,000 exports/day, up to 1,000 records/export, CSV, EXCEL & PDF formats.
+  - **Pro** ($199/month): 100 searches/day, 40,000 exports/day, up to 5,000 records/export, CSV, EXCEL, PDF & JSON formats.
+- **Dedicated Plans Page** (`/plans` and `/pricing`): Public pricing table with complete comparison of allowances, file formats, and direct subscription links.
+- **In-App Billing View** (`/app/billing`): Logged-in users can view their active plan, daily search/export usage bars, and upgrade/change plans.
+- **Admin Plan Management (`/admin/plans`)**:
+  - Add, edit, or delete membership plans directly from the admin dashboard.
+  - Customize search quotas, export quotas, and max records per export for any plan.
+  - Enable or disable supported file formats per plan: **EXCEL**, **CSV**, **PDF**, and **JSON**.
+  - Configure granular contact & social field visibility per plan: control whether **Email**, **Phone**, **LinkedIn**, **Twitter**, **Website**, and **About/Notes** are unmasked or hidden for users on each plan.
 
 ### 4. Data Integrity
 - **Verified Leads**: Badge system for leads with confirmed contact info.
