@@ -1,10 +1,20 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
+
+/* Stylesheet order matters:
+   1. theme.css       — global :root tokens + reset (must be first so every
+                        var() below resolves, in any scope)
+   2. design systems  — auth / landing / dashboard / app
+   3. site-*.css      — the shared header + shell, loaded last so the single
+                        menu bar always wins over legacy rules */
+import "./styles/theme.css";
 import "./styles/auth.css";
 import "./styles/landing.css";
 import "./styles/dashboard.css";
 import "./styles/app.css";
+import "./styles/site-layout.css";
+import "./styles/site-header.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

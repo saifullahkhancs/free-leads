@@ -3,175 +3,48 @@
    ========================================================================== */
 
 :root {
-  --app-bg: #ffffff;
-  --app-surface: #ffffff;
-  --app-surface-subtle: #f9faf7;
-  --app-surface-hover: #f1f5ee;
-  --app-border: #e2e8e0;
-  --app-border-focus: #1d4b3f;
-  --app-border-subtle: #edf1ea;
-  --app-ink: #14201c;
-  --app-ink-muted: #5e6f67;
-  --app-ink-faint: #8d9e96;
-  --app-green-dark: #163c32;
-  --app-green: #1d4b3f;
-  --app-green-hover: #265d4f;
-  --app-green-light: #eaf3eb;
+  /* App design-system palette — aliased to the global tokens in theme.css so
+     there is one source of truth for the theme. */
+  --app-bg: var(--fl-paper);
+  --app-surface: var(--fl-paper);
+  --app-surface-subtle: var(--fl-paper-subtle);
+  --app-surface-hover: var(--fl-surface-hover);
+  --app-border: var(--fl-line);
+  --app-border-focus: var(--fl-green);
+  --app-border-subtle: var(--fl-line-subtle);
+  --app-ink: var(--fl-ink);
+  --app-ink-muted: var(--fl-ink-muted);
+  --app-ink-faint: var(--fl-ink-faint);
+  --app-green-dark: var(--fl-green-dark);
+  --app-green: var(--fl-green);
+  --app-green-hover: var(--fl-green-hover);
+  --app-green-light: var(--fl-green-soft);
   --app-green-glow: rgba(29, 75, 63, 0.12);
-  --app-lime: #c9f269;
-  --app-lime-light: #f2fadc;
-  --app-lime-dark: #4b6823;
-  --app-amber: #d97706;
-  --app-amber-light: #fef3c7;
-  --app-blue: #2563eb;
-  --app-blue-light: #eff6ff;
-  --app-radius-xl: 18px;
-  --app-radius-lg: 14px;
-  --app-radius-md: 10px;
-  --app-radius-sm: 8px;
-  --app-radius-full: 9999px;
-  --app-shadow-xs: 0 1px 2px rgba(20, 32, 28, 0.04);
-  --app-shadow-sm: 0 2px 6px rgba(20, 32, 28, 0.04), 0 1px 2px rgba(20, 32, 28, 0.02);
-  --app-shadow-md: 0 8px 20px -4px rgba(20, 32, 28, 0.06), 0 2px 6px rgba(20, 32, 28, 0.03);
-  --app-shadow-lg: 0 16px 36px -8px rgba(20, 32, 28, 0.12), 0 4px 12px rgba(20, 32, 28, 0.04);
+  --app-lime: var(--fl-lime);
+  --app-lime-light: var(--fl-lime-soft);
+  --app-lime-dark: var(--fl-lime-ink);
+  --app-amber: var(--fl-warn);
+  --app-amber-light: var(--fl-warn-soft);
+  --app-blue: var(--fl-blue);
+  --app-blue-light: var(--fl-blue-soft);
+  --app-radius-xl: var(--fl-radius-xl);
+  --app-radius-lg: var(--fl-radius-lg);
+  --app-radius-md: var(--fl-radius-md);
+  --app-radius-sm: var(--fl-radius-sm);
+  --app-radius-full: var(--fl-radius-full);
+  --app-shadow-xs: var(--fl-shadow-xs);
+  --app-shadow-sm: var(--fl-shadow-sm);
+  --app-shadow-md: var(--fl-shadow-md);
+  --app-shadow-lg: var(--fl-shadow-lg);
   --app-shadow-hover: 0 20px 40px -10px rgba(29, 75, 63, 0.16), 0 4px 12px rgba(20, 32, 28, 0.04);
 }
 
-/* Base App Shell Layout */
-.app-shell {
-  min-height: 100vh;
-  background: var(--app-bg);
-  color: var(--app-ink);
-  font-family: Manrope, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  overflow-x: hidden;
-}
-
-/* Modern App Header */
-.app-header {
-  position: sticky;
-  top: 0;
-  z-index: 60;
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border-bottom: 1px solid var(--app-border);
-  box-shadow: 0 1px 3px rgba(20, 32, 28, 0.03);
-  transition: all 0.2s ease;
-}
-
-.app-header-inner {
-  max-width: 1260px;
-  margin: 0 auto;
-  padding: 0 24px;
-  height: 68px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-/* Brand */
-.app-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 800;
-  font-size: 17px;
-  letter-spacing: -0.6px;
-  color: var(--app-green);
-  text-decoration: none;
-  transition: transform 0.15s ease;
-}
-
-.app-brand:hover {
-  transform: translateY(-1px);
-}
-
-.app-brand-badge {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--app-green) 0%, #245749 100%);
-  color: var(--app-lime);
-  display: grid;
-  place-items: center;
-  box-shadow: 0 4px 10px rgba(29, 75, 63, 0.2);
-}
-
-.app-brand-tag {
-  font-size: 10px;
-  font-weight: 700;
-  font-family: 'DM Mono', monospace;
-  padding: 2px 7px;
-  border-radius: var(--app-radius-full);
-  background: var(--app-lime-light);
-  color: var(--app-lime-dark);
-  letter-spacing: 0.5px;
-  margin-left: 2px;
-  text-transform: uppercase;
-}
-
-/* Navigation Tabs */
-.app-nav {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-left: 12px;
-}
-
-.app-nav-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: var(--app-radius-md);
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--app-ink);
-  text-decoration: none;
-  transition: all 0.15s ease;
-  border: 1px solid var(--app-border);
-  cursor: pointer;
-  background: var(--app-surface);
-}
-
-.app-nav-link:hover {
-  color: var(--app-green);
-  border-color: var(--app-green);
-  background: var(--app-surface-hover);
-}
-
-.app-nav-link.active {
-  color: #ffffff;
-  background: var(--app-green);
-  border-color: var(--app-green);
-  box-shadow: var(--app-shadow-sm);
-}
-
-.app-nav-pill-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-family: 'DM Mono', monospace;
-  font-weight: 700;
-  padding: 1px 7px;
-  border-radius: var(--app-radius-full);
-  background: var(--app-lime);
-  color: var(--app-green);
-  line-height: 1.4;
-}
-
-
-/* Header Right Actions */
-.app-header-right {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+/* ---------- Legacy app header ----------
+   The old `.app-shell` / `.app-header` / `.app-nav` / `.app-user-*` styles
+   were removed: the navigation bar is now a single shared component styled by
+   site-header.css. Only the `.app-header-btn` utility below is still used by
+   page content (DirectoryPage / ProfilePage action buttons).
+   -------------------------------------------------------------- */
 
 .app-header-btn {
   display: inline-flex;
@@ -208,177 +81,15 @@
   color: #ffffff;
 }
 
-/* User Menu Pill & Dropdown */
-.app-user-wrapper {
-  position: relative;
-}
-
-.app-user-pill {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 5px 12px 5px 6px;
-  border-radius: var(--app-radius-full);
-  background: #ffffff;
-  border: 1px solid var(--app-border);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  user-select: none;
-}
-
-.app-user-pill:hover {
-  border-color: #b7c7b4;
-  box-shadow: var(--app-shadow-xs);
-}
-
-.app-user-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #3fae8a 0%, #1d6f55 100%);
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 800;
-  display: grid;
-  place-items: center;
-  position: relative;
-  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.4);
-}
-
-.app-user-avatar-dot {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #22c55e;
-  border: 2px solid #ffffff;
-}
-
-.app-user-info {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
-  text-align: left;
-}
-
-.app-user-name {
-  font-size: 12.5px;
-  font-weight: 700;
-  color: var(--app-ink);
-  max-width: 130px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.app-user-role {
-  font-size: 10px;
-  font-family: 'DM Mono', monospace;
-  color: var(--app-ink-faint);
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.app-user-dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  width: 240px;
-  background: #ffffff;
-  border: 1px solid var(--app-border);
-  border-radius: var(--app-radius-lg);
-  box-shadow: var(--app-shadow-lg);
-  padding: 8px;
-  z-index: 100;
-  animation: dropdownFade 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes dropdownFade {
-  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.app-dropdown-header {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--app-border-subtle);
-  margin-bottom: 6px;
-}
-
-.app-dropdown-header strong {
-  display: block;
-  font-size: 13px;
-  color: var(--app-ink);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.app-dropdown-header small {
-  display: block;
-  font-size: 11px;
-  color: var(--app-ink-faint);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-top: 2px;
-}
-
-.app-dropdown-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 12px;
-  border-radius: var(--app-radius-sm);
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--app-ink);
-  text-decoration: none;
-  cursor: pointer;
-  border: none;
-  background: transparent;
-  width: 100%;
-  text-align: left;
-  transition: all 0.12s ease;
-}
-
-.app-dropdown-item:hover {
-  background: var(--app-surface-hover);
-  color: var(--app-green);
-}
-
-.app-dropdown-item.danger {
-  color: #dc2626;
-}
-
-.app-dropdown-item.danger:hover {
-  background: #fef2f2;
-  color: #b91c1c;
-}
-
-/* Mobile Menu Button */
-.app-mobile-menu-btn {
-  display: none;
-  width: 38px;
-  height: 38px;
-  border-radius: var(--app-radius-md);
-  border: 1px solid var(--app-border);
-  background: #ffffff;
-  color: var(--app-green);
-  place-items: center;
-  cursor: pointer;
-}
-
 /* ==========================================================================
    App Main Container & Hero Search Hub
    ========================================================================== */
 .app-main-container {
   flex: 1;
   width: 100%;
-  max-width: 1260px;
+  max-width: var(--fl-container-max);
   margin: 0 auto;
-  padding: 32px 24px 80px;
+  padding: 32px var(--fl-container-pad) 80px;
 }
 
 /* Modern App Hero Banner */
@@ -1674,22 +1385,8 @@
 /* ==========================================================================
    Responsive Adaptations
    ========================================================================== */
-@media (max-width: 1024px) {
-  .app-header-search-trigger {
-    display: none;
-  }
-}
-
 @media (max-width: 768px) {
-  .app-header-inner {
-    padding: 0 16px;
-  }
-  .app-nav {
-    display: none;
-  }
-  .app-mobile-menu-btn {
-    display: grid;
-  }
+  /* Header responsiveness now lives in site-header.css. */
   .app-main-container {
     padding: 20px 16px 60px;
   }
@@ -1718,9 +1415,6 @@
   }
   .app-grid {
     grid-template-columns: 1fr;
-  }
-  .app-user-info {
-    display: none;
   }
 }
 

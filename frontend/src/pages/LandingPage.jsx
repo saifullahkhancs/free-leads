@@ -67,8 +67,8 @@ export default function LandingPage() {
           <nav className="landing-nav">
             <Link to="/app">Search Leads</Link>
             <Link to="/app/plans">Pricing &amp; Plans</Link>
-            <Link to="/blog">Blog</Link>
-            <Link to="/contact">Contact Us</Link>
+            <Link to="/app/blog">Blog</Link>
+            <Link to="/app/contact">Contact Us</Link>
           </nav>
           <div className="landing-auth-actions">
             {isAuthenticated ? (

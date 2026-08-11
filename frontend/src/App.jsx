@@ -35,7 +35,6 @@ import ContactMessagesPage from "./pages/admin/ContactMessagesPage";
 import BlogPostsPage from "./pages/admin/BlogPostsPage";
 import BlogPostEditPage from "./pages/admin/BlogPostEditPage";
 
-import "./styles/auth.css";
 
 export default function App() {
   return (

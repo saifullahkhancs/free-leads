@@ -1,0 +1,143 @@
+/* ==========================================================================
+   FreeLeads — Global theme tokens (single source of truth)
+   --------------------------------------------------------------------------
+   Every colour / radius / shadow used by the landing, app and dashboard
+   design systems is declared here at :root.
+
+   Why this file exists:
+   The three stylesheets (landing.css, app.css, dashboard.css) each used to
+   declare their own palette on a *scoped* selector (`.landing`, `.dash`).
+   When a rule from one system leaked onto markup owned by another (e.g.
+   `.app-nav a.active` from dashboard.css matching the AppShell header), the
+   scoped variables resolved to nothing and properties silently collapsed to
+   their initial value — which is how the active nav button ended up rendering
+   white text on a transparent background.
+
+   Declaring the tokens globally makes every var() resolvable everywhere, so a
+   stray selector can never blank out a colour again.
+   ========================================================================== */
+
+:root {
+  /* ---------- Brand palette ---------- */
+  --fl-green: #1d4b3f;
+  --fl-green-hover: #265d4f;
+  --fl-green-dark: #163c32;
+  --fl-green-soft: #eaf3eb;
+  --fl-lime: #c9f269;
+  --fl-lime-soft: #f2fadc;
+  --fl-lime-ink: #4b6823;
+  --fl-accent: #78933b;
+
+  /* ---------- Neutrals ---------- */
+  --fl-ink: #14201c;
+  --fl-ink-muted: #5e6f67;
+  --fl-ink-faint: #8d9e96;
+  --fl-paper: #ffffff;
+  --fl-paper-subtle: #f9faf7;
+  --fl-paper-warm: #f6f7f2;
+  --fl-surface-hover: #f1f5ee;
+  --fl-line: #e2e8e0;
+  --fl-line-strong: #d7dfd5;
+  --fl-line-subtle: #edf1ea;
+
+  /* ---------- Status ---------- */
+  --fl-danger: #d64545;
+  --fl-danger-soft: #fdeeee;
+  --fl-warn: #d97706;
+  --fl-warn-soft: #fef3c7;
+  --fl-blue: #2563eb;
+  --fl-blue-soft: #eff6ff;
+
+  /* ---------- Radii ---------- */
+  --fl-radius-xl: 18px;
+  --fl-radius-lg: 14px;
+  --fl-radius-md: 10px;
+  --fl-radius-sm: 8px;
+  --fl-radius-full: 9999px;
+
+  /* ---------- Shadows ---------- */
+  --fl-shadow-xs: 0 1px 2px rgba(20, 32, 28, 0.04);
+  --fl-shadow-sm: 0 2px 6px rgba(20, 32, 28, 0.04), 0 1px 2px rgba(20, 32, 28, 0.02);
+  --fl-shadow-md: 0 8px 20px -4px rgba(20, 32, 28, 0.06), 0 2px 6px rgba(20, 32, 28, 0.03);
+  --fl-shadow-lg: 0 16px 36px -8px rgba(20, 32, 28, 0.12), 0 4px 12px rgba(20, 32, 28, 0.04);
+
+  /* ---------- Layout ----------
+     Content is fluid and only stops growing on very large monitors, so at
+     100% browser zoom the app fills the viewport instead of sitting in a
+     narrow 1180-1260px column. */
+  --fl-container-max: 1720px;
+  --fl-container-pad: 28px;
+  --fl-font: Manrope, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* ---------- Legacy aliases ----------
+     Declared globally so scoped design-system vars always resolve, even if a
+     rule matches outside its intended container. */
+  --dash-ink: var(--fl-ink);
+  --dash-muted: var(--fl-ink-muted);
+  --dash-faint: var(--fl-ink-faint);
+  --dash-paper: var(--fl-paper);
+  --dash-card: var(--fl-paper);
+  --dash-line: var(--fl-line);
+  --dash-line-2: var(--fl-line-strong);
+  --dash-green: var(--fl-green);
+  --dash-green-2: var(--fl-green-hover);
+  --dash-green-soft: var(--fl-green-soft);
+  --dash-lime: var(--fl-lime);
+  --dash-lime-soft: var(--fl-lime-soft);
+  --dash-lime-ink: var(--fl-lime-ink);
+  --dash-danger: var(--fl-danger);
+  --dash-danger-soft: var(--fl-danger-soft);
+  --dash-warn: var(--fl-warn);
+  --dash-warn-soft: var(--fl-warn-soft);
+  --dash-blue: var(--fl-blue);
+  --dash-blue-soft: var(--fl-blue-soft);
+}
+
+/* ---------- Global reset / page frame ----------
+   `html` and `body` must span the full viewport width, otherwise the app can
+   render inside a shrink-to-fit box on wide screens. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+body {
+  background: var(--fl-paper);
+  color: var(--fl-ink);
+  font-family: var(--fl-font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+/* Shared fluid container used by every design system */
+.fl-container {
+  width: 100%;
+  max-width: var(--fl-container-max);
+  margin-inline: auto;
+  padding-inline: var(--fl-container-pad);
+}
