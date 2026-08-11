@@ -179,6 +179,23 @@ export async function getLeadById(id) {
   return request(`/api/leads/${id}`);
 }
 
+/**
+ * Filter facets for the search page: categories, industries, countries,
+ * states and cities — each with a result count — plus a location suggestion
+ * derived from the signed-in user's profile. Pass the currently applied
+ * filters so the options cascade (category narrows industries, country
+ * narrows states, etc.).
+ */
+export async function getLeadFacets(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "" && value !== false) {
+      query.append(key, value);
+    }
+  });
+  return request(`/api/leads/facets?${query.toString()}`);
+}
+
 export async function getLeadStats() {
   return request("/api/leads/stats", { method: "GET" });
 }

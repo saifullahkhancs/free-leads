@@ -583,6 +583,30 @@ async function getCurrentUser(userId) {
   return { ...sanitizeUser(user, roles), permissions };
 }
 
+/**
+ * Lightweight lookup of just the user's saved location — used by the leads
+ * directory to suggest "leads in your country" without loading roles,
+ * permissions and the whole user row.
+ */
+async function getProfileLocation(userId) {
+  const { rows } = await query(
+    `SELECT location_lat, location_lng, location_city, location_region,
+            location_country, location_label
+     FROM users WHERE id = $1`,
+    [userId]
+  );
+  const row = rows[0];
+  if (!row) return null;
+  return {
+    lat: row.location_lat ?? null,
+    lng: row.location_lng ?? null,
+    city: row.location_city ?? null,
+    region: row.location_region ?? null,
+    country: row.location_country ?? null,
+    label: row.location_label ?? null,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Update profile (name + map-picked location)
 // ---------------------------------------------------------------------------
@@ -643,6 +667,7 @@ module.exports = {
   resetPassword,
   googleLogin,
   getCurrentUser,
+  getProfileLocation,
   updateProfile,
   getUserRoles,
   getUserPermissions,
