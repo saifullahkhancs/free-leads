@@ -863,6 +863,57 @@ export default function DirectoryPage() {
             </select>
           </div>
         </div>
+
+        {/* Div 3: additional default filters — Verified Only + Near Me / radius geospatial search */}
+        <div className="app-filter-extras-div">
+          <label className={`app-filter-verify-toggle${filters.verifiedOnly ? " active" : ""}`}>
+            <input
+              type="checkbox"
+              checked={filters.verifiedOnly}
+              onChange={(e) => updateFilters({ verifiedOnly: e.target.checked })}
+            />
+            <span className="app-filter-verify-track">
+              <span className="app-filter-verify-thumb" />
+            </span>
+            <span className="app-filter-verify-text">
+              <BadgeCheck size={15} />
+              Verified Only
+              {facets?.totals?.verified != null && (
+                <em className="app-filter-verify-count">{formatCount(facets.totals.verified)}</em>
+              )}
+            </span>
+          </label>
+
+          <div className="app-filter-geo-group">
+            <button
+              type="button"
+              className={`app-filter-geo-btn${filters.geo ? " active" : ""}`}
+              onClick={handleNearMe}
+            >
+              <Compass size={15} />
+              <span>{filters.geo ? `Near Me · ${Math.round(filters.radius / 1000)} km` : "Near Me"}</span>
+            </button>
+
+            {filters.geo && (
+              <div className="app-filter-radius-group">
+                <span className="app-filter-radius-label">Radius:</span>
+                {[10, 25, 50, 100, 250].map((km) => {
+                  const value = km * 1000;
+                  return (
+                    <button
+                      key={km}
+                      type="button"
+                      className={`app-filter-radius-pill${filters.radius === value ? " active" : ""}`}
+                      onClick={() => updateFilters({ radius: value })}
+                    >
+                      {km} km
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {error && (
