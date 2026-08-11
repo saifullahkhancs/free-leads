@@ -409,14 +409,13 @@ export default function DirectoryPage() {
   };
 
   // ---------------------------------------------------------------------------
-  // Profile-derived default filters — sourced from `user.location` and
-  // `user.interests` (set at sign-up / on the profile page). Used as quick
-  // chips inside the default-filters row. Falls back to the API `suggestion`
-  // when the user's profile hasn't been filled in yet.
+  // Profile-derived default filters — sourced only from `user.location`
+  // and `user.interests`. They appear only when the user has actual profile
+  // data set.
   // ---------------------------------------------------------------------------
   const profileLocation = user?.location || {};
-  const profileCountry = suggestion?.country || profileLocation.country || "";
-  const profileCity = suggestion?.city || profileLocation.city || "";
+  const profileCountry = profileLocation.country || "";
+  const profileCity = profileLocation.city || "";
   // interests may be an array of strings, an array of objects, or a comma string.
   const rawInterests = user?.interests;
   const profileInterests = Array.isArray(rawInterests)
@@ -574,7 +573,7 @@ export default function DirectoryPage() {
         profile: true,
         active: isActive,
         onClick: applyProfileCountry,
-        count: suggestion?.count,
+        count: undefined,
       });
     }
     if (profileCity) {
