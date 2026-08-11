@@ -1,16 +1,11 @@
 import { useEffect, useState } from "react";
-import { Check, CreditCard, Loader2, Sparkles, X } from "lucide-react";
+import { CreditCard, Loader2, Sparkles } from "lucide-react";
 import * as api from "../../api/client";
-
-const FORMAT_LABELS = {
-  csv: "CSV",
-  excel: "Excel",
-  pdf: "PDF",
-  json: "JSON",
-};
+import { mergePlansWithDefaults } from "../../utils/plansData";
+import PlanFeaturesList from "../../components/PlanFeaturesList";
 
 export default function BillingPage() {
-  const [plans, setPlans] = useState([]);
+  const [plans, setPlans] = useState(() => mergePlansWithDefaults([]));
   const [billing, setBilling] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -22,7 +17,7 @@ export default function BillingPage() {
     setError("");
     try {
       const [plansRes, billingRes] = await Promise.all([api.getPlans(), api.getMyBilling()]);
-      setPlans(plansRes?.data || []);
+      setPlans(mergePlansWithDefaults(plansRes?.data || []));
       setBilling(billingRes?.data || null);
     } catch (err) {
       setError(err.message || "Could not load billing info");
@@ -184,57 +179,56 @@ export default function BillingPage() {
         {plans.map((plan) => {
           const isCurrent = plan.code === currentPlanCode;
           const isNext = billing?.quota?.nextPlan?.code === plan.code && !isCurrent;
+          const isPopular = Boolean(plan.is_popular || plan.code === "growth");
+
           return (
-            <div key={plan.code} className={`billing-plan-card${isCurrent ? " current" : ""}${isNext ? " next" : ""}`}>
+            <div
+              key={plan.code}
+              className={`billing-plan-card${isCurrent ? " current" : ""}${isNext ? " next" : ""}${
+                isPopular ? " popular" : ""
+              }`}
+            >
+              {isPopular && !isCurrent && (
+                <span className="billing-plan-tag popular-tag">Most Popular</span>
+              )}
               {isCurrent && <span className="billing-plan-tag">Current</span>}
-              {isNext && !isCurrent && <span className="billing-plan-tag">Recommended</span>}
+              {isNext && !isCurrent && !isPopular && (
+                <span className="billing-plan-tag">Recommended</span>
+              )}
               <h3>{plan.name}</h3>
               <div className="billing-price">
                 ${(plan.price_cents / 100).toFixed(0)}
-                <span>/mo</span>
+                <span>/month</span>
               </div>
-              <ul className="billing-plan-features">
-                <li>
-                  <Check size={14} />
-                  {plan.daily_search_quota === -1 ? "Unlimited searches/day" : `${plan.daily_search_quota} searches/day`}
-                </li>
-                <li>
-                  <Check size={14} />
-                  {plan.daily_export_quota === -1 ? "Unlimited exports/day" : `${plan.daily_export_quota} exports/day`}
-                </li>
-                <li>
-                  <Check size={14} />
-                  Max {plan.max_export_per_req} rows/export
-                </li>
-                <li>
-                  <Check size={14} />
-                  Formats: {(plan.allowed_formats || []).map((f) => FORMAT_LABELS[f] || f).join(", ")}
-                </li>
-                <li>
-                  {plan.can_view_contact ? (
-                    <><Check size={14} /> Full contact info</>
+              <p className="billing-plan-desc">{plan.description}</p>
+
+              <PlanFeaturesList plan={plan} />
+
+              <div className="plan-card-actions">
+                {isCurrent ? (
+                  activeSub?.status === "active" && !plan.is_default ? (
+                    <button className="billing-btn billing-btn-ghost" onClick={handleCancel} disabled={busy}>
+                      {busy ? <Loader2 className="spin" size={15} /> : "Cancel plan"}
+                    </button>
                   ) : (
-                    <><X size={14} /> Masked contact info</>
-                  )}
-                </li>
-              </ul>
-              {isCurrent ? (
-                activeSub?.status === "active" && !plan.is_default ? (
-                  <button className="billing-btn billing-btn-ghost" onClick={handleCancel} disabled={busy}>
-                    {busy ? <Loader2 className="spin" size={15} /> : "Cancel plan"}
+                    <div className="billing-btn disabled">Current plan</div>
+                  )
+                ) : isNext ? (
+                  <button className="billing-btn billing-btn-primary" onClick={() => handleUpgrade(plan.code)} disabled={busy}>
+                    {busy ? <Loader2 className="spin" size={15} /> : `Upgrade to ${plan.name}`}
                   </button>
                 ) : (
-                  <div className="billing-btn disabled">Current plan</div>
-                )
-              ) : isNext ? (
-                <button className="billing-btn billing-btn-primary" onClick={() => handleUpgrade(plan.code)} disabled={busy}>
-                  {busy ? <Loader2 className="spin" size={15} /> : `Upgrade to ${plan.name}`}
-                </button>
-              ) : (
-                <button className="billing-btn billing-btn-primary" onClick={() => handleSubscribe(plan.code)} disabled={busy}>
-                  {busy ? <Loader2 className="spin" size={15} /> : <><CreditCard size={14} /> Choose {plan.name}</>}
-                </button>
-              )}
+                  <button className="billing-btn billing-btn-primary" onClick={() => handleSubscribe(plan.code)} disabled={busy}>
+                    {busy ? <Loader2 className="spin" size={15} /> : <><CreditCard size={14} /> Choose {plan.name}</>}
+                  </button>
+                )}
+                <a
+                  href={plan.cta_url}
+                  className="plan-in-app-link"
+                >
+                  {plan.cta_text} (external link) →
+                </a>
+              </div>
             </div>
           );
         })}

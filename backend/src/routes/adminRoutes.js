@@ -21,4 +21,10 @@ router.get("/roles", adminController.getRoles);
 router.get("/audit-logs", adminController.getAuditLogs);
 router.post("/leads/dedup", adminController.runDedup);
 
+// Membership Plans
+router.get("/plans", adminController.getAdminPlans);
+router.post("/plans", adminController.createPlan);
+router.put("/plans/:id", adminController.updatePlan);
+router.delete("/plans/:id", adminController.deletePlan);
+
 module.exports = router;

@@ -97,31 +97,32 @@ const getLeads = async ({
     paramIndex += 2;
   }
 
-  // Add sensitive fields only if is_paid is true
-  if (is_paid) {
-    queryText += `,
-      l.email,
-      l.linkedin_url,
-      l.twitter_url,
-      l.facebook_url,
-      l.website_url,
-      l.about
-    `;
-  } else {
-    // Masked fields for free tier
-    queryText += `,
-      CASE
-        WHEN l.email IS NULL THEN NULL
-        ELSE overlay(l.email placing '****' from 2 for position('@' in l.email) - 2)
-      END as email,
-      NULL as linkedin_url,
-      NULL as twitter_url,
-      NULL as facebook_url,
-      NULL as website_url,
-      NULL as about,
-      NULL as phone
-    `;
-  }
+  const showEmail = visibility ? Boolean(visibility.show_email) : is_paid;
+  const showPhone = visibility ? Boolean(visibility.show_phone) : is_paid;
+  const showLinkedin = visibility ? Boolean(visibility.show_linkedin) : is_paid;
+  const showTwitter = visibility ? Boolean(visibility.show_twitter) : is_paid;
+  const showWebsite = visibility ? Boolean(visibility.show_website) : is_paid;
+  const showAbout = visibility ? Boolean(visibility.show_about) : is_paid;
+
+  const emailCol = showEmail
+    ? "l.email"
+    : "CASE WHEN l.email IS NULL THEN NULL ELSE overlay(l.email placing '****' from 2 for position('@' in l.email) - 2) END";
+  const phoneCol = showPhone ? "l.phone" : "NULL";
+  const linkedinCol = showLinkedin ? "l.linkedin_url" : "NULL";
+  const twitterCol = showTwitter ? "l.twitter_url" : "NULL";
+  const facebookCol = showTwitter ? "l.facebook_url" : "NULL";
+  const websiteCol = showWebsite ? "l.website_url" : "NULL";
+  const aboutCol = showAbout ? "l.about" : "NULL";
+
+  queryText += `,
+    ${emailCol} as email,
+    ${phoneCol} as phone,
+    ${linkedinCol} as linkedin_url,
+    ${twitterCol} as twitter_url,
+    ${facebookCol} as facebook_url,
+    ${websiteCol} as website_url,
+    ${aboutCol} as about
+  `;
 
   queryText += `
     FROM leads l
@@ -345,7 +346,7 @@ const getFacets = async ({ q, category, industry, country_id, region_id, verifie
 /**
  * Get a single lead by ID
  */
-const getLeadById = async (id, is_paid = false) => {
+const getLeadById = async (id, is_paid = false, visibility = null) => {
   let queryText = `
     SELECT
       l.*,
@@ -366,16 +367,24 @@ const getLeadById = async (id, is_paid = false) => {
     throw new ApiError(404, "Lead not found");
   }
 
-  if (!is_paid) {
-    // Mask sensitive fields
+  const showEmail = visibility ? Boolean(visibility.show_email) : is_paid;
+  const showPhone = visibility ? Boolean(visibility.show_phone) : is_paid;
+  const showLinkedin = visibility ? Boolean(visibility.show_linkedin) : is_paid;
+  const showTwitter = visibility ? Boolean(visibility.show_twitter) : is_paid;
+  const showWebsite = visibility ? Boolean(visibility.show_website) : is_paid;
+  const showAbout = visibility ? Boolean(visibility.show_about) : is_paid;
+
+  if (!showEmail) {
     lead.email = lead.email ? lead.email.replace(/(.).+(@.+)/, "$1****$2") : null;
-    lead.phone = null;
-    lead.linkedin_url = null;
+  }
+  if (!showPhone) lead.phone = null;
+  if (!showLinkedin) lead.linkedin_url = null;
+  if (!showTwitter) {
     lead.twitter_url = null;
     lead.facebook_url = null;
-    lead.website_url = null;
-    lead.about = null;
   }
+  if (!showWebsite) lead.website_url = null;
+  if (!showAbout) lead.about = null;
 
   return lead;
 };
@@ -386,10 +395,14 @@ const getLeadById = async (id, is_paid = false) => {
  * daily export quota + audit log.
  * Supports formats: csv, json (plans only advertise formats we can produce).
  */
-const exportLeads = async ({ userId, isAdmin, filters = {}, format = "csv", ip }) => {
+const exportLeads = async ({ userId, isAdmin, filters = {}, format = "csv", ip, visibility = null }) => {
   const plan = await quotaService.getActivePlan(userId);
   const allowedFormats = (plan.allowed_formats || ["csv"]).map((f) => String(f).toLowerCase());
-  const fmt = String(format).toLowerCase();
+  let fmt = String(format || "").toLowerCase();
+
+  if (fmt === "csv" && allowedFormats.includes("excel") && !allowedFormats.includes("csv")) {
+    fmt = "excel";
+  }
 
   if (!allowedFormats.includes(fmt)) {
     throw new ApiError(
@@ -409,7 +422,7 @@ const exportLeads = async ({ userId, isAdmin, filters = {}, format = "csv", ip }
     ip,
   });
 
-  const { leads } = await getLeads({ ...filters, limit: rowLimit, is_paid: true });
+  const { leads } = await getLeads({ ...filters, limit: rowLimit, is_paid: true, visibility });
 
   auditService.log({
     actorId: userId,
@@ -432,6 +445,30 @@ const exportLeads = async ({ userId, isAdmin, filters = {}, format = "csv", ip }
 function serializeLeads(leads, format) {
   if (format === "json") {
     return { content: JSON.stringify(leads, null, 2), contentType: "application/json", ext: "json" };
+  }
+
+  if (format === "pdf") {
+    if (leads.length === 0) {
+      return { content: "FreeLeads Export Report\n\nNo records found.", contentType: "text/plain; charset=utf-8", ext: "txt" };
+    }
+    const report = [`FreeLeads Export Report (${leads.length} records)\nGenerated: ${new Date().toISOString().slice(0, 10)}\n`];
+    leads.forEach((l, i) => {
+      report.push(`${i + 1}. ${l.full_name || "Lead"} | ${l.job_title || ""} | ${l.company_name || ""} | ${l.email || ""}`);
+    });
+    return { content: report.join("\n"), contentType: "text/plain; charset=utf-8", ext: "txt" };
+  }
+
+  if (format === "excel") {
+    if (leads.length === 0) {
+      return { content: "\uFEFF", contentType: "text/csv; charset=utf-8", ext: "csv" };
+    }
+    const headers = Object.keys(leads[0]).join(",");
+    const rows = leads.map((lead) =>
+      Object.values(lead)
+        .map((val) => `"${(val || "").toString().replace(/"/g, '""')}"`)
+        .join(",")
+    );
+    return { content: "\uFEFF" + [headers, ...rows].join("\r\n"), contentType: "text/csv; charset=utf-8", ext: "csv" };
   }
 
   // csv (default)

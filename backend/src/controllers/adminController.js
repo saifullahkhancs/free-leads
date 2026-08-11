@@ -249,6 +249,225 @@ const createUser = asyncHandler(async (req, res) => {
   });
 });
 
+// ---- Membership Plans Management (Admin) ----
+
+const getAdminPlans = asyncHandler(async (req, res) => {
+  const { rows } = await query("SELECT * FROM plans ORDER BY price_cents ASC, id ASC");
+  res.status(200).json({ status: "success", data: rows });
+});
+
+const createPlan = asyncHandler(async (req, res) => {
+  const {
+    code,
+    name,
+    price_cents = 0,
+    billing_cycle = "monthly",
+    daily_search_quota = 3,
+    daily_export_quota = 0,
+    max_export_per_req = 100,
+    allowed_formats = ["excel"],
+    can_view_contact = false,
+    show_email = false,
+    show_phone = false,
+    show_linkedin = false,
+    show_twitter = false,
+    show_website = false,
+    show_about = false,
+    is_default = false,
+    is_popular = false,
+    description = "",
+    cta_text = "Select Plan",
+    cta_url = "",
+  } = req.body || {};
+
+  if (!code || !name) {
+    throw new ApiError(400, "Plan code and name are required");
+  }
+
+  const normalizedFormats = Array.isArray(allowed_formats)
+    ? allowed_formats.map((f) => String(f).toLowerCase()).filter((f) => ["csv", "excel", "pdf", "json"].includes(f))
+    : ["excel"];
+
+  const newPlan = await withTransaction(async (client) => {
+    if (is_default) {
+      await client.query("UPDATE plans SET is_default = FALSE");
+    }
+    if (is_popular) {
+      await client.query("UPDATE plans SET is_popular = FALSE");
+    }
+
+    const { rows } = await client.query(
+      `INSERT INTO plans (
+        code, name, price_cents, billing_cycle, daily_search_quota,
+        daily_export_quota, max_export_per_req, allowed_formats,
+        can_view_contact, show_email, show_phone, show_linkedin,
+        show_twitter, show_website, show_about, is_default, is_popular,
+        description, cta_text, cta_url
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+      RETURNING *`,
+      [
+        code,
+        name,
+        parseInt(price_cents, 10) || 0,
+        billing_cycle || "monthly",
+        parseInt(daily_search_quota, 10),
+        parseInt(daily_export_quota, 10),
+        parseInt(max_export_per_req, 10),
+        normalizedFormats,
+        Boolean(can_view_contact),
+        Boolean(show_email),
+        Boolean(show_phone),
+        Boolean(show_linkedin),
+        Boolean(show_twitter),
+        Boolean(show_website),
+        Boolean(show_about),
+        Boolean(is_default),
+        Boolean(is_popular),
+        description,
+        cta_text,
+        cta_url,
+      ]
+    );
+    return rows[0];
+  });
+
+  auditService.log({
+    actorId: req.user.id,
+    action: "plan_create",
+    entityType: "plan",
+    entityId: newPlan.id,
+    metadata: { code: newPlan.code, name: newPlan.name },
+  });
+
+  res.status(201).json({ status: "success", data: newPlan });
+});
+
+const updatePlan = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const {
+    name,
+    price_cents = 0,
+    billing_cycle = "monthly",
+    daily_search_quota = 3,
+    daily_export_quota = 0,
+    max_export_per_req = 100,
+    allowed_formats = ["excel"],
+    can_view_contact = false,
+    show_email = false,
+    show_phone = false,
+    show_linkedin = false,
+    show_twitter = false,
+    show_website = false,
+    show_about = false,
+    is_default = false,
+    is_popular = false,
+    description = "",
+    cta_text = "Select Plan",
+    cta_url = "",
+  } = req.body || {};
+
+  const normalizedFormats = Array.isArray(allowed_formats)
+    ? allowed_formats.map((f) => String(f).toLowerCase()).filter((f) => ["csv", "excel", "pdf", "json"].includes(f))
+    : ["excel"];
+
+  const updatedPlan = await withTransaction(async (client) => {
+    const { rows: existing } = await client.query("SELECT * FROM plans WHERE id = $1", [id]);
+    if (!existing[0]) {
+      throw new ApiError(404, "Plan not found");
+    }
+
+    if (is_default && !existing[0].is_default) {
+      await client.query("UPDATE plans SET is_default = FALSE");
+    }
+    if (is_popular && !existing[0].is_popular) {
+      await client.query("UPDATE plans SET is_popular = FALSE");
+    }
+
+    const { rows } = await client.query(
+      `UPDATE plans
+       SET
+         name = $2,
+         price_cents = $3,
+         billing_cycle = $4,
+         daily_search_quota = $5,
+         daily_export_quota = $6,
+         max_export_per_req = $7,
+         allowed_formats = $8,
+         can_view_contact = $9,
+         show_email = $10,
+         show_phone = $11,
+         show_linkedin = $12,
+         show_twitter = $13,
+         show_website = $14,
+         show_about = $15,
+         is_default = $16,
+         is_popular = $17,
+         description = $18,
+         cta_text = $19,
+         cta_url = $20
+       WHERE id = $1
+       RETURNING *`,
+      [
+        id,
+        name,
+        parseInt(price_cents, 10) || 0,
+        billing_cycle || "monthly",
+        parseInt(daily_search_quota, 10),
+        parseInt(daily_export_quota, 10),
+        parseInt(max_export_per_req, 10),
+        normalizedFormats,
+        Boolean(can_view_contact),
+        Boolean(show_email),
+        Boolean(show_phone),
+        Boolean(show_linkedin),
+        Boolean(show_twitter),
+        Boolean(show_website),
+        Boolean(show_about),
+        Boolean(is_default),
+        Boolean(is_popular),
+        description,
+        cta_text,
+        cta_url,
+      ]
+    );
+    return rows[0];
+  });
+
+  auditService.log({
+    actorId: req.user.id,
+    action: "plan_update",
+    entityType: "plan",
+    entityId: updatedPlan.id,
+    metadata: { code: updatedPlan.code, name: updatedPlan.name },
+  });
+
+  res.status(200).json({ status: "success", data: updatedPlan });
+});
+
+const deletePlan = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { rows: existing } = await query("SELECT * FROM plans WHERE id = $1", [id]);
+  if (!existing[0]) {
+    throw new ApiError(404, "Plan not found");
+  }
+  if (existing[0].is_default) {
+    throw new ApiError(400, "Cannot delete the default free plan");
+  }
+
+  await query("DELETE FROM plans WHERE id = $1", [id]);
+
+  auditService.log({
+    actorId: req.user.id,
+    action: "plan_delete",
+    entityType: "plan",
+    entityId: id,
+    metadata: { code: existing[0].code, name: existing[0].name },
+  });
+
+  res.status(200).json({ status: "success", data: { deleted: true } });
+});
+
 module.exports = {
   requireAdmin,
   getAllUsers,
@@ -259,4 +478,8 @@ module.exports = {
   createUser,
   getAuditLogs,
   runDedup,
+  getAdminPlans,
+  createPlan,
+  updatePlan,
+  deletePlan,
 };

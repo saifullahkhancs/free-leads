@@ -8,6 +8,7 @@ import {
   Menu,
   PlusCircle,
   ShieldCheck,
+  Sparkles,
   Target,
   UploadCloud,
   Users,
@@ -16,6 +17,7 @@ import { useAuth } from "../context/AuthContext";
 
 const PAGE_TITLES = {
   "/admin": { title: "Dashboard", subtitle: "Workspace overview" },
+  "/admin/plans": { title: "Membership Plans", subtitle: "Configure subscription tiers, quotas, format support & field visibility" },
   "/admin/leads": { title: "Leads", subtitle: "Browse and manage your lead database" },
   "/admin/add-lead": { title: "Add Lead", subtitle: "Create a single lead manually" },
   "/admin/import": { title: "Import CSV", subtitle: "Bulk upload leads from a CSV file" },
@@ -72,6 +74,7 @@ export default function DashboardLayout() {
           {
             label: "Administration",
             items: [
+              { to: "/admin/plans", label: "Membership Plans", icon: Sparkles },
               { to: "/admin/users", label: "Users", icon: Users },
               { to: "/admin/roles", label: "Roles & Permissions", icon: ShieldCheck },
             ],

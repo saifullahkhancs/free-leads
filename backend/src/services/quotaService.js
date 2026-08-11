@@ -85,9 +85,19 @@ async function getActivePlan(userId) {
     daily_search_quota: env.DEFAULT_FREE_SEARCHES,
     daily_export_quota: env.DEFAULT_FREE_EXPORTS,
     max_export_per_req: env.DEFAULT_FREE_MAX_EXPORT,
-    allowed_formats: ["csv"],
+    allowed_formats: ["excel"],
     can_view_contact: false,
+    show_email: false,
+    show_phone: false,
+    show_linkedin: false,
+    show_twitter: false,
+    show_website: false,
+    show_about: false,
     is_default: true,
+    is_popular: false,
+    description: "Get started with basic access – perfect for trying out the platform.",
+    cta_text: "Start Free",
+    cta_url: "https://peachpuff-kingfisher-714348.hostingersite.com/u-wU5yHgnUXt/?flapp_plan=free",
   };
 }
 

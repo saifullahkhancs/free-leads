@@ -72,9 +72,9 @@ const env = {
 
   // ---- Quota / plans ----
   // Default free-tier limits used when no plans are seeded yet.
-  DEFAULT_FREE_SEARCHES: int("DEFAULT_FREE_SEARCHES", 10),
-  DEFAULT_FREE_EXPORTS: int("DEFAULT_FREE_EXPORTS", 1),
-  DEFAULT_FREE_MAX_EXPORT: int("DEFAULT_FREE_MAX_EXPORT", 100),
+  DEFAULT_FREE_SEARCHES: int("DEFAULT_FREE_SEARCHES", 3),
+  DEFAULT_FREE_EXPORTS: int("DEFAULT_FREE_EXPORTS", 500),
+  DEFAULT_FREE_MAX_EXPORT: int("DEFAULT_FREE_MAX_EXPORT", 500),
 
   // ---- Billing / PayPal ----
   // Leave PAYPAL_CLIENT_ID blank to run in "mock mode" (billing is simulated

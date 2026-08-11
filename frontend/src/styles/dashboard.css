@@ -623,3 +623,260 @@
   .dash-topbar-user { display: none; }
   .dir-grid { grid-template-columns: 1fr; }
 }
+
+/* ==========================================================================
+   Admin Plans & Quotas Configuration Page (/admin/plans)
+   ========================================================================== */
+
+.admin-plans-page {
+  max-width: 1240px;
+}
+
+.admin-plans-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.admin-plans-header h1 {
+  margin: 0 0 6px;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--dash-ink, #0f172a);
+}
+
+.admin-plans-header p {
+  margin: 0;
+  font-size: 13.5px;
+  color: #64748b;
+  max-width: 720px;
+  line-height: 1.5;
+}
+
+.admin-plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.admin-plan-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.admin-plan-card:hover {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+  border-color: #cbd5e1;
+}
+
+.admin-plan-card.popular {
+  border-color: #7c9a3f;
+  box-shadow: 0 4px 20px rgba(124, 154, 63, 0.12);
+}
+
+.admin-plan-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.admin-plan-title-row h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.admin-plan-title-row code {
+  font-size: 11px;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-family: monospace;
+}
+
+.admin-plan-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.admin-plan-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+
+.admin-plan-badge.default {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.admin-plan-badge.popular {
+  background: #7c9a3f;
+  color: #fff;
+}
+
+.admin-plan-price {
+  font-size: 26px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-top: 8px;
+}
+
+.admin-plan-price span {
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.admin-plan-desc {
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.5;
+  margin: 4px 0 0;
+}
+
+.admin-plan-section {
+  border-top: 1px solid #f1f5f9;
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-plan-section-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.admin-plan-quota-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #334155;
+}
+
+.admin-format-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-chip {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.admin-chip.enabled {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #d1fae5;
+}
+
+.admin-chip.disabled {
+  background: #f8fafc;
+  color: #94a3b8;
+  border: 1px solid #e2e8f0;
+  text-decoration: line-through;
+}
+
+.admin-plan-card-footer {
+  margin-top: auto;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 14px;
+  display: flex;
+  gap: 8px;
+}
+
+.admin-plan-card-footer button {
+  flex: 1;
+}
+
+.admin-plan-modal {
+  max-width: 760px;
+  width: 100%;
+}
+
+.form-section-head {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #0f172a;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.form-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.admin-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.checkbox-card-label {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+  background: #f8fafc;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.checkbox-card-label:hover {
+  border-color: #cbd5e1;
+  background: #fff;
+}
+
+.checkbox-card-label input[type="checkbox"]:checked + span {
+  color: #0f172a;
+}
+
+.admin-plan-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}

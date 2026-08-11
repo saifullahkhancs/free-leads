@@ -9,6 +9,7 @@ import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import PlansPage from "./pages/PlansPage";
 
 // App view (leads directory)
 import DirectoryPage from "./pages/app/DirectoryPage";
@@ -25,6 +26,7 @@ import AddLeadPage from "./pages/admin/AddLeadPage";
 import ImportLeadsPage from "./pages/admin/ImportLeadsPage";
 import UsersPage from "./pages/admin/UsersPage";
 import RolesPage from "./pages/admin/RolesPage";
+import AdminPlansPage from "./pages/admin/AdminPlansPage";
 
 import "./styles/auth.css";
 
@@ -34,6 +36,8 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/plans" element={<PlansPage />} />
+          <Route path="/pricing" element={<PlansPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -56,6 +60,7 @@ export default function App() {
               <Route path="import" element={<ImportLeadsPage />} />
 
               <Route element={<RoleGuard roles={["admin", "super_admin"]} />}>
+                <Route path="plans" element={<AdminPlansPage />} />
                 <Route path="users" element={<UsersPage />} />
                 <Route path="roles" element={<RolesPage />} />
               </Route>

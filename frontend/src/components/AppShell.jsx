@@ -97,6 +97,13 @@ export default function AppShell() {
               <Compass size={16} />
               <span>Explore Directory</span>
             </NavLink>
+            <NavLink
+              to="/plans"
+              className={({ isActive }) => `app-nav-link${isActive ? " active" : ""}`}
+            >
+              <Sparkles size={16} />
+              <span>Plans & Pricing</span>
+            </NavLink>
           </nav>
 
           <button

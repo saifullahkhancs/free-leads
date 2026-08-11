@@ -21,6 +21,10 @@
   - `AddLeadPage.jsx` — manually create a single lead (editor+)
   - `ImportLeadsPage.jsx` — bulk CSV import with drag & drop, downloadable
     template, and per-row error report (editor+)
+  - `AdminPlansPage.jsx` (`/admin/plans`) — membership plans & quotas configuration:
+    add, edit, or delete subscription tiers, set search/export daily quotas,
+    enable/disable download formats (Excel, CSV, PDF, JSON), and control contact &
+    social field visibility (Email, Phone, LinkedIn, Twitter, Website, About) per plan (admin+)
   - `UsersPage.jsx` — user management (admin+)
   - `RolesPage.jsx` — roles & permissions viewer (admin+)
 
