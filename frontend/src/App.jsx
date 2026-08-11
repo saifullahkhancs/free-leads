@@ -27,6 +27,7 @@ import ImportLeadsPage from "./pages/admin/ImportLeadsPage";
 import UsersPage from "./pages/admin/UsersPage";
 import RolesPage from "./pages/admin/RolesPage";
 import AdminPlansPage from "./pages/admin/AdminPlansPage";
+import AdminPlanEditPage from "./pages/admin/AdminPlanEditPage";
 
 import "./styles/auth.css";
 
@@ -61,6 +62,8 @@ export default function App() {
 
               <Route element={<RoleGuard roles={["admin", "super_admin"]} />}>
                 <Route path="plans" element={<AdminPlansPage />} />
+                <Route path="plans/new" element={<AdminPlanEditPage />} />
+                <Route path="plans/:id/edit" element={<AdminPlanEditPage />} />
                 <Route path="users" element={<UsersPage />} />
                 <Route path="roles" element={<RolesPage />} />
               </Route>
