@@ -139,7 +139,10 @@ export async function getCurrentUser() {
   return request("/api/auth/me", { method: "GET" });
 }
 
-/** Update own profile: first/last name + map-picked location. */
+/**
+ * Update own profile: first/last name, map-picked location and the
+ * category / industry of interest that seed the directory's default filters.
+ */
 export async function updateProfile(payload) {
   return request("/api/auth/me", { method: "PATCH", body: payload });
 }
