@@ -451,6 +451,30 @@
   flex-wrap: wrap;
 }
 
+/* Shown only while the directory is displaying the bundled sample leads —
+   i.e. no query, no filters, and no live results from the API. */
+.app-demo-banner {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 18px;
+  padding: 10px 14px;
+  border-radius: var(--app-radius-md);
+  background: var(--app-lime-light);
+  border: 1px solid var(--app-lime);
+  color: var(--app-lime-dark);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.app-demo-banner strong {
+  font-weight: 800;
+}
+
+.app-demo-banner svg {
+  flex-shrink: 0;
+}
+
 .app-count-badge {
   font-size: 13.5px;
   font-weight: 800;

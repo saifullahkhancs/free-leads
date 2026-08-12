@@ -158,6 +158,28 @@ export default function DirectoryPage() {
     [filters, submittedQ, sortBy]
   );
 
+  // True while the directory is in its "untouched" state — no query typed and
+  // no filter applied. The demo dataset is only allowed to stay on screen while
+  // this holds; the first real search/filter hands the results back to the API.
+  const isUnfiltered = useCallback(
+    (overrides = {}) => {
+      const f = { ...filters, ...overrides.filters };
+      const query = overrides.q !== undefined ? overrides.q : submittedQ;
+      return !(
+        String(query || "").trim() ||
+        f.category ||
+        f.industry ||
+        f.country ||
+        f.region ||
+        f.city ||
+        f.verifiedOnly ||
+        f.savedOnly ||
+        f.geo
+      );
+    },
+    [filters, submittedQ]
+  );
+
   // Local-filter shape used by the mock-data fallback.
   const localFilterShape = useCallback(
     (overrides = {}) => {
@@ -178,8 +200,10 @@ export default function DirectoryPage() {
   );
 
   // ---------------------------------------------------------------------------
-  // Fetch leads. Falls back to the bundled mock dataset — with the same filters
-  // applied locally — when the API is unreachable or returns nothing.
+  // Fetch leads. On an *untouched* directory (no query, no filters) an
+  // unreachable/empty API falls back to the bundled demo dataset so the page is
+  // never blank on first load. The moment the user searches or filters, the
+  // demo rows are dropped — results then come from the API only.
   // ---------------------------------------------------------------------------
   const fetchLeads = useCallback(
     async ({ cursor = null, ...overrides } = {}) => {
@@ -188,12 +212,17 @@ export default function DirectoryPage() {
       (isAppend ? setLoadingMore : setLoading)(true);
       setError(null);
 
+      // The demo dataset is only ever shown on an untouched directory. As soon
+      // as the user types a query or picks a filter we show real results (or a
+      // real empty state) instead of pretending the mock rows matched.
       const applyFallback = () => {
-        const filtered = sortLeads(
-          applyLocalFilters(DEFAULT_MOCK_LEADS, localFilterShape(overrides)),
-          sortBy
-        );
-        setLeads(filtered);
+        if (!isUnfiltered(overrides)) {
+          setLeads([]);
+          setNextCursor(null);
+          setUsingFallback(false);
+          return;
+        }
+        setLeads(sortLeads([...DEFAULT_MOCK_LEADS], sortBy));
         setNextCursor(null);
         setUsingFallback(true);
       };
@@ -211,20 +240,7 @@ export default function DirectoryPage() {
         if (fetched.length === 0 && !isAppend) {
           // A genuinely empty *filtered* result must stay empty — only fall back
           // to the demo dataset when nothing is filtered and the DB is bare.
-          const hasAnyFilter =
-            submittedQ.trim() ||
-            filters.category ||
-            filters.industry ||
-            filters.country ||
-            filters.verifiedOnly ||
-            filters.geo;
-          if (hasAnyFilter) {
-            setLeads([]);
-            setNextCursor(null);
-            setUsingFallback(false);
-          } else {
-            applyFallback();
-          }
+          applyFallback();
         } else {
           setUsingFallback(false);
           setLeads((prev) => (isAppend ? [...prev, ...fetched] : fetched));
@@ -244,7 +260,7 @@ export default function DirectoryPage() {
         if (seq === requestSeq.current) (isAppend ? setLoadingMore : setLoading)(false);
       }
     },
-    [buildParams, localFilterShape, sortBy, submittedQ, filters]
+    [buildParams, isUnfiltered, sortBy]
   );
 
   // ---------------------------------------------------------------------------
@@ -316,6 +332,7 @@ export default function DirectoryPage() {
     filters.region,
     filters.city,
     filters.verifiedOnly,
+    filters.savedOnly,
     filters.geo,
     filters.radius,
     sortBy,
@@ -1167,6 +1184,17 @@ export default function DirectoryPage() {
       {error && (
         <div className="dash-alert dash-alert-error" style={{ marginBottom: 20 }}>
           ⚠ {error}
+        </div>
+      )}
+
+      {usingFallback && !loading && (
+        <div className="app-demo-banner">
+          <Sparkles size={14} />
+          <span>
+            <strong>Sample leads</strong> — showing {processedLeads.length} example profiles
+            while the directory has no live results. Search or apply a filter to query real
+            leads.
+          </span>
         </div>
       )}
 
