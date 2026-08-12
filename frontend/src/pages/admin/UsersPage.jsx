@@ -5,10 +5,10 @@ import { useAuth } from "../../context/AuthContext";
 import { formatDate, initialsOf } from "../../utils/format";
 
 const ROLE_COLORS = {
-  super_admin: { bg: "#fdeeee", fg: "#c0392b" },
-  admin: { bg: "#fdf3e3", fg: "#c2700a" },
-  editor: { bg: "#e8f0fe", fg: "#2563eb" },
-  user: { bg: "#e5f5e6", fg: "#1f7a3d" },
+  super_admin: { bg: "rgba(255, 107, 107, 0.15)", fg: "#ff6b6b" },
+  admin: { bg: "rgba(255, 209, 102, 0.15)", fg: "#ffd166" },
+  editor: { bg: "rgba(127, 168, 255, 0.15)", fg: "#7fa8ff" },
+  user: { bg: "rgba(75, 195, 140, 0.15)", fg: "#62d69f" },
 };
 
 export default function UsersPage() {

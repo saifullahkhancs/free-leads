@@ -98,8 +98,8 @@ export default function SiteHeader() {
     <header className="site-header">
       <div className="site-header-inner">
         <Link to="/app" className="site-brand">
-          <span className="site-brand-badge"><Target size={18} /></span>
-          <span className="site-brand-name">free<span>leads</span></span>
+          <span className="site-brand-dot" />
+          <span className="site-brand-name">Free<span>Leads</span></span>
         </Link>
 
         <nav className="site-nav" aria-label="Main navigation">

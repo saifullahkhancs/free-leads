@@ -18,10 +18,10 @@ import { useAuth } from "../../context/AuthContext";
 import { formatDate, initialsOf } from "../../utils/format";
 
 const STATUS_COLORS = {
-  new: { bg: "#e8f0fe", fg: "#2563eb", label: "New" },
-  read: { bg: "#fdf3e3", fg: "#c2700a", label: "Read" },
-  replied: { bg: "#dcfce7", fg: "#15803d", label: "Replied" },
-  closed: { bg: "#eef1ee", fg: "#5d6b64", label: "Closed" },
+  new: { bg: "rgba(127, 168, 255, 0.15)", fg: "#7fa8ff", label: "New" },
+  read: { bg: "rgba(255, 209, 102, 0.15)", fg: "#ffd166", label: "Read" },
+  replied: { bg: "rgba(75, 195, 140, 0.15)", fg: "#62d69f", label: "Replied" },
+  closed: { bg: "rgba(255, 255, 255, 0.08)", fg: "#82938a", label: "Closed" },
 };
 
 /**
