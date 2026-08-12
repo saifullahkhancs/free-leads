@@ -752,6 +752,43 @@ const ingestLeads = async (payload, source = "ingest") => {
 };
 
 /**
+ * Public, aggregate-only lead coverage for the marketing landing page.
+ *
+ * This intentionally returns no person or contact fields. Keeping the query in
+ * the service also means the "top countries" list always reflects the active
+ * database rather than a manually maintained marketing list.
+ */
+const getLandingStats = async () => {
+  const [totalRes, countriesRes] = await Promise.all([
+    pool.query(`
+      SELECT COUNT(*)::int AS total_leads
+      FROM leads
+      WHERE is_active = TRUE
+    `),
+    pool.query(`
+      SELECT
+        c.id,
+        c.name,
+        c.code,
+        COUNT(l.id)::int AS lead_count,
+        COUNT(l.id) FILTER (WHERE l.is_verified = TRUE)::int AS verified_count,
+        COUNT(DISTINCT l.city_id)::int AS city_count
+      FROM leads l
+      INNER JOIN countries c ON c.id = l.country_id
+      WHERE l.is_active = TRUE
+      GROUP BY c.id, c.name, c.code
+      ORDER BY lead_count DESC, c.name ASC
+      LIMIT 12
+    `),
+  ]);
+
+  return {
+    total_leads: totalRes.rows[0]?.total_leads || 0,
+    top_countries: countriesRes.rows,
+  };
+};
+
+/**
  * Aggregated stats for the dashboard overview.
  */
 const getStats = async () => {
@@ -808,6 +845,7 @@ module.exports = {
   createLead,
   importLeadsCsv,
   ingestLeads,
+  getLandingStats,
   getStats,
   deriveCategory,
 };

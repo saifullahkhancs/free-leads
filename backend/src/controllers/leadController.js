@@ -258,6 +258,19 @@ const importLeads = asyncHandler(async (req, res) => {
 });
 
 /**
+ * GET /api/leads/landing-stats — public aggregate coverage for the landing page.
+ * No lead records or contact fields are exposed by this endpoint.
+ */
+const getLandingStats = asyncHandler(async (req, res) => {
+  const stats = await leadService.getLandingStats();
+  res.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
+  res.json({
+    status: "success",
+    data: stats,
+  });
+});
+
+/**
  * GET /api/leads/stats — dashboard overview numbers.
  */
 const getStats = asyncHandler(async (req, res) => {
@@ -276,5 +289,6 @@ module.exports = {
   createLead,
   importLeads,
   ingestLeads,
+  getLandingStats,
   getStats,
 };
