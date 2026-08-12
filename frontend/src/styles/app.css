@@ -88,15 +88,45 @@
 
 /* Main Filter Hub Container */
 .app-main-filter-panel {
+  width: 100%;
+  max-width: var(--fl-container-max);
+  margin: 0 auto 24px;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   padding: 22px 24px;
-  margin-bottom: 24px;
   box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+/* Results area below the filter hub. Constrains width to the same fluid
+   container as the rest of the app surface. */
+.app-search-layout {
+  display: block;
+  width: 100%;
+  max-width: var(--fl-container-max);
+  margin-inline: auto;
+  padding-inline: var(--fl-container-pad);
+  padding-bottom: 80px;
+}
+
+/* No sidebar rail: results span the full container width. */
+.app-search-layout.no-sidebar .app-results-col {
+  width: 100%;
+  min-width: 0;
+}
+
+.app-results-col {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 560px) {
+  .app-search-layout {
+    padding-inline: 16px;
+  }
 }
 
 /* Div 1: Search input + Search Leads & Reset buttons */
@@ -1332,6 +1362,31 @@
   cursor: pointer;
 }
 
+.app-btn-search {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 11px 22px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--green);
+  background: var(--green);
+  color: #0c1a14 !important;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 26px -8px rgba(75, 195, 140, 0.55);
+  transition: all 0.2s ease;
+}
+
+.app-btn-search:hover {
+  background: var(--green-hover);
+  border-color: var(--green-hover);
+  transform: translateY(-2px);
+}
+
 .skeleton-card {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -1745,6 +1800,15 @@
   margin-bottom: 36px;
 }
 
+/* These marketing heroes wrap all their content in a single full-width
+   container (the two-column split happens inside them), so they must not
+   inherit the two-column grid from .landing-hero. */
+.plans-hero-section,
+.contact-hero,
+.blog-hero {
+  display: block;
+}
+
 .billing-hero h1,
 .plans-hero-section h1 {
   font-size: 28px;
@@ -1868,17 +1932,67 @@
 
 .billing-plan-card.popular {
   border-color: var(--lime);
-  box-shadow: 0 0 30px rgba(215, 255, 99, 0.12);
+  box-shadow: 0 0 30px rgba(215, 255, 99, 0.12), 0 24px 48px -20px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.billing-plan-card.popular::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--lime), var(--green-hover), var(--lime));
+  z-index: 2;
 }
 
 .billing-plan-card.current {
   border-color: var(--green);
 }
 
+@media (min-width: 1025px) {
+  .billing-plan-card.popular {
+    transform: translateY(-12px);
+  }
+  .billing-plan-card.popular:hover {
+    transform: translateY(-14px);
+  }
+}
+
+/* Plan header: icon tile + name + tagline */
+.billing-plan-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.billing-plan-icon {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+}
+
+.billing-plan-tagline {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-faint);
+  margin-top: 2px;
+}
+
 .billing-plan-tag {
   position: absolute;
   top: -12px;
   right: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: 4px 12px;
   border-radius: 100px;
   font-family: var(--font-mono);
@@ -1886,6 +2000,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  z-index: 3;
 }
 
 .popular-tag {
@@ -1902,7 +2017,7 @@
 .billing-plan-card h3 {
   font-size: 18px;
   font-weight: 700;
-  margin: 0 0 8px;
+  margin: 0;
   color: var(--ink);
 }
 
@@ -2025,9 +2140,50 @@
   color: var(--lime);
 }
 
+/* Trust / guarantee row beneath the plans grid */
+.plans-trust-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+  margin-top: 40px;
+}
+
+.plans-trust-row span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.plans-trust-row svg {
+  color: var(--green-hover);
+  flex: none;
+}
+
 /* FAQ section */
 .plans-faq-section {
   padding: 70px 0;
+}
+
+/* Alternate section background band used between marketing sections. */
+.landing-section-alt {
+  background: linear-gradient(180deg, transparent, rgba(75, 195, 140, 0.05), transparent);
+}
+
+/* Narrow centered inner container for the closing CTA band. */
+.landing-cta-inner {
+  max-width: 760px;
+}
+
+/* Left copy column inside the two-column contact hero. */
+.landing-hero-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .faq-grid {
@@ -2245,6 +2401,60 @@
   color: var(--green-hover);
 }
 
+/* Right column wrapper for the contact form / success card. */
+.contact-card-wrap {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Error banner above the contact form. */
+.contact-form-error {
+  background: var(--danger-soft);
+  border: 1px solid rgba(255, 107, 107, 0.35);
+  color: var(--danger);
+  font-size: 13px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 16px;
+}
+
+/* Success state of the contact card. */
+.contact-card-success {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 380px;
+}
+
+.contact-card-success h3 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--ink);
+}
+
+.contact-card-success p {
+  color: var(--ink-muted);
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0 0 18px;
+  max-width: 400px;
+}
+
+.contact-success-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--green-soft);
+  color: var(--green);
+  display: grid;
+  place-items: center;
+  margin-bottom: 12px;
+}
+
 .contact-why {
   padding: 70px 0;
 }
@@ -2340,6 +2550,62 @@
 
 .blog-list-section {
   padding: 20px 0 80px;
+}
+
+/* Skeleton loading states for the blog list + single post. */
+.blog-card-skel {
+  pointer-events: none;
+}
+
+.blog-card-skel .blog-card-cover {
+  background: linear-gradient(135deg, var(--line-subtle), var(--panel-hover));
+  margin-bottom: 14px;
+}
+
+.blog-card-skel .shimmer {
+  margin: 0 20px 12px;
+}
+
+.blog-card-skel .shimmer-line.short {
+  margin-top: 18px;
+}
+
+.blog-article-skel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px 0 40px;
+}
+
+/* Shimmer placeholder bars (shared with skeleton-card via @keyframes shimmer). */
+.shimmer {
+  background: linear-gradient(90deg, var(--line-subtle) 25%, var(--panel-hover) 50%, var(--line-subtle) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+
+.shimmer-line {
+  height: 14px;
+  width: 100%;
+}
+
+.shimmer-line.short {
+  width: 70%;
+}
+
+.shimmer-line.tiny {
+  width: 45%;
+  height: 10px;
+}
+
+.shimmer-line.thin {
+  width: 40%;
+  height: 12px;
+}
+
+.blog-post-page {
+  min-height: 100vh;
 }
 
 .blog-feature {

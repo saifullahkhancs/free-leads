@@ -2,13 +2,35 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
+  BadgeCheck,
+  Crown,
   HelpCircle,
+  Rocket,
+  ShieldCheck,
   Sparkles,
+  TrendingUp,
+  Zap,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import * as api from "../api/client";
 import { mergePlansWithDefaults } from "../utils/plansData";
 import PlanFeaturesList from "../components/PlanFeaturesList";
+
+// Visual identity per tier (accent colour + icon). Purely presentational —
+// no pricing/billing data is fabricated here.
+const PLAN_META = {
+  free: { icon: Zap, accent: "#4bc38c", soft: "rgba(75,195,140,0.14)", tag: "For trying it out" },
+  starter: { icon: Rocket, accent: "#7fa8ff", soft: "rgba(127,168,255,0.14)", tag: "For solo founders" },
+  growth: { icon: TrendingUp, accent: "#d7ff63", soft: "rgba(215,255,99,0.12)", tag: "For growing teams" },
+  pro: { icon: Crown, accent: "#b79bff", soft: "rgba(183,155,255,0.14)", tag: "For power users" },
+};
+
+const TRUST_ROW = [
+  "Cancel anytime",
+  "Secure checkout",
+  "No hidden fees",
+  "7-day money-back guarantee",
+];
 
 export default function PlansPage() {
   const { isAuthenticated } = useAuth();
@@ -41,10 +63,8 @@ export default function PlansPage() {
     loadPlans();
   }, [isAuthenticated]);
 
-
   return (
     <div className="landing plans-page">
-
       <main>
         <section className="landing-hero plans-hero-section">
           <div className="hero-grid-bg" />
@@ -67,6 +87,8 @@ export default function PlansPage() {
               {plans.map((plan) => {
                 const isCurrent = isAuthenticated && plan.code === activePlanCode;
                 const isPopular = Boolean(plan.is_popular || plan.code === "growth");
+                const meta = PLAN_META[plan.code] || PLAN_META.starter;
+                const Icon = meta.icon;
 
                 return (
                   <div
@@ -77,14 +99,28 @@ export default function PlansPage() {
                   >
                     {isPopular && !isCurrent && (
                       <span className="billing-plan-tag popular-tag">
-                        <Sparkles size={12} style={{ display: "inline", marginRight: 4 }} />
-                        Most Popular
+                        <Sparkles size={12} /> Most Popular
                       </span>
                     )}
                     {isCurrent && (
-                      <span className="billing-plan-tag current-tag">Current Plan</span>
+                      <span className="billing-plan-tag current-tag">
+                        <BadgeCheck size={12} /> Current Plan
+                      </span>
                     )}
-                    <h3>{plan.name}</h3>
+
+                    <div className="billing-plan-head">
+                      <span
+                        className="billing-plan-icon"
+                        style={{ background: meta.soft, color: meta.accent }}
+                      >
+                        <Icon size={20} />
+                      </span>
+                      <div>
+                        <h3>{plan.name}</h3>
+                        <span className="billing-plan-tagline">{meta.tag}</span>
+                      </div>
+                    </div>
+
                     <div className="billing-price">
                       ${(plan.price_cents / 100).toFixed(0)}
                       <span>/month</span>
@@ -113,6 +149,14 @@ export default function PlansPage() {
                   </div>
                 );
               })}
+            </div>
+
+            <div className="plans-trust-row">
+              {TRUST_ROW.map((item) => (
+                <span key={item}>
+                  <ShieldCheck size={14} /> {item}
+                </span>
+              ))}
             </div>
           </div>
         </section>
