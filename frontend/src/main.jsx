@@ -11,6 +11,7 @@ import App from "./App.jsx";
 import "./styles/theme.css";
 import "./styles/auth.css";
 import "./styles/landing.css";
+import "./styles/landing-cards.css";
 import "./styles/dashboard.css";
 import "./styles/app.css";
 import "./styles/site-layout.css";

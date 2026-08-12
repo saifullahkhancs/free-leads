@@ -199,6 +199,11 @@ export async function getLeadFacets(params = {}) {
   return request(`/api/leads/facets?${query.toString()}`);
 }
 
+/** Public aggregate counts used by the marketing landing page. */
+export async function getLandingLeadStats() {
+  return request("/api/leads/landing-stats", { method: "GET", skipAuth: true });
+}
+
 export async function getLeadStats() {
   return request("/api/leads/stats", { method: "GET" });
 }

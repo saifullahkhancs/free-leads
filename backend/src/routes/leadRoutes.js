@@ -37,6 +37,10 @@ router.get(
   quotaService.requireQuota("search"),
   leadController.getLeads
 );
+// Public landing-page coverage. Aggregate counts only; no lead/contact data.
+// Keep this above /:id so "landing-stats" is never treated as a lead id.
+router.get("/landing-stats", leadController.getLandingStats);
+
 router.get(
   "/stats",
   authenticate,
@@ -80,7 +84,7 @@ router.post(
   leadController.importLeads
 );
 
-// NOTE: keep `/stats`, `/import`, `/export`, `/ingest` defined before `/:id`.
+// NOTE: keep `/landing-stats`, `/stats`, `/import`, `/export`, `/ingest` before `/:id`.
 router.get(
   "/:id",
   authenticate,
