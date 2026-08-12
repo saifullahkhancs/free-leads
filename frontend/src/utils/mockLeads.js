@@ -15,6 +15,8 @@ export const DEFAULT_MOCK_LEADS = [
     about: "Engineering leader with 12+ years experience scaling payments, developer APIs, and cloud infrastructure.",
     is_verified: true,
     created_at: "2026-07-28T10:30:00Z",
+    lat: 37.7749,
+    lon: -122.4194,
   },
   {
     id: 102,
@@ -32,6 +34,8 @@ export const DEFAULT_MOCK_LEADS = [
     about: "Passionate about building fast, intuitive software tools that software teams love using every day.",
     is_verified: true,
     created_at: "2026-07-29T14:15:00Z",
+    lat: 51.5074,
+    lon: -0.1278,
   },
   {
     id: 103,
@@ -49,6 +53,8 @@ export const DEFAULT_MOCK_LEADS = [
     about: "Spearheading backend systems, database clustering, and high-concurrency developer primitives.",
     is_verified: true,
     created_at: "2026-08-01T08:00:00Z",
+    lat: 30.2672,
+    lon: -97.7431,
   },
   {
     id: 104,
@@ -66,6 +72,8 @@ export const DEFAULT_MOCK_LEADS = [
     about: "Leading cross-functional product design and developer handoff tooling used by millions of designers worldwide.",
     is_verified: true,
     created_at: "2026-08-02T11:45:00Z",
+    lat: 37.7749,
+    lon: -122.4194,
   },
   {
     id: 105,
@@ -83,6 +91,8 @@ export const DEFAULT_MOCK_LEADS = [
     about: "Second-time founder backed by top-tier venture funds. Research background in NLP and reinforcement learning.",
     is_verified: true,
     created_at: "2026-08-03T09:20:00Z",
+    lat: 40.7128,
+    lon: -74.0060,
   },
   {
     id: 106,
@@ -100,6 +110,8 @@ export const DEFAULT_MOCK_LEADS = [
     about: "Dedicated to helping organizations transform team productivity and workplace knowledge sharing.",
     is_verified: true,
     created_at: "2026-08-04T16:10:00Z",
+    lat: 43.6532,
+    lon: -79.3832,
   },
   {
     id: 107,
@@ -117,6 +129,8 @@ export const DEFAULT_MOCK_LEADS = [
     about: "Physician-scientist bridging clinical research, regulatory compliance, and cutting-edge biotech therapeutics.",
     is_verified: true,
     created_at: "2026-08-05T13:00:00Z",
+    lat: 42.3601,
+    lon: -71.0589,
   },
   {
     id: 108,
@@ -134,6 +148,8 @@ export const DEFAULT_MOCK_LEADS = [
     about: "Expert in Nordic health data registries, European medical device regulations, and healthcare data security.",
     is_verified: true,
     created_at: "2026-08-05T15:30:00Z",
+    lat: 59.3293,
+    lon: 18.0686,
   },
   {
     id: 109,
@@ -151,6 +167,8 @@ export const DEFAULT_MOCK_LEADS = [
     about: "Investor supporting early-stage founders building transformative developer platforms and financial infrastructure.",
     is_verified: true,
     created_at: "2026-08-06T10:00:00Z",
+    lat: 37.4538,
+    lon: -122.1775,
   },
   {
     id: 110,
@@ -168,6 +186,8 @@ export const DEFAULT_MOCK_LEADS = [
     about: "15+ years in private capital markets, structuring high-value acquisitions and cross-border tech mergers.",
     is_verified: true,
     created_at: "2026-08-06T14:40:00Z",
+    lat: 48.8566,
+    lon: 2.3522,
   },
   {
     id: 111,
@@ -185,6 +205,8 @@ export const DEFAULT_MOCK_LEADS = [
     about: "Architecting real-time risk scoring engines, AML pipelines, and automated merchant compliance systems.",
     is_verified: true,
     created_at: "2026-08-07T09:15:00Z",
+    lat: 51.5074,
+    lon: -0.1278,
   },
   {
     id: 112,
@@ -202,6 +224,8 @@ export const DEFAULT_MOCK_LEADS = [
     about: "Directing omnichannel organic growth, community brand advocacy, and creator monetization strategies.",
     is_verified: true,
     created_at: "2026-08-07T12:00:00Z",
+    lat: 40.4168,
+    lon: -3.7038,
   },
   {
     id: 113,
@@ -219,6 +243,8 @@ export const DEFAULT_MOCK_LEADS = [
     about: "Connecting global platform ecosystems, creator app marketplaces, and strategic enterprise software alliances.",
     is_verified: true,
     created_at: "2026-08-08T07:45:00Z",
+    lat: -33.8688,
+    lon: 151.2093,
   },
   {
     id: 114,
@@ -236,6 +262,8 @@ export const DEFAULT_MOCK_LEADS = [
     about: "Pioneering regional low-latency edge cloud nodes and sovereign data compliance across the MENA region.",
     is_verified: true,
     created_at: "2026-08-08T11:20:00Z",
+    lat: 25.2048,
+    lon: 55.2708,
   },
   {
     id: 115,
@@ -253,6 +281,8 @@ export const DEFAULT_MOCK_LEADS = [
     about: "Building resilient payments infrastructure connecting African merchants with global e-commerce and banking rails.",
     is_verified: true,
     created_at: "2026-08-09T08:10:00Z",
+    lat: 6.5244,
+    lon: 3.3792,
   },
   {
     id: 116,
@@ -270,5 +300,7 @@ export const DEFAULT_MOCK_LEADS = [
     about: "Focused on frontend UX, high-polish typography, web performance, and modern developer interfaces.",
     is_verified: true,
     created_at: "2026-08-09T14:50:00Z",
+    lat: 38.7223,
+    lon: -9.1393,
   },
 ];
