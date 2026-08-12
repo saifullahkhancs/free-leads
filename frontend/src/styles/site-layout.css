@@ -1,8 +1,5 @@
 /* ==========================================================================
-   FreeLeads — Shared shell & footer layout
-   --------------------------------------------------------------------------
-   Owns the outer page frame so content fills the browser width at 100% zoom
-   instead of being pinned to a narrow centred column.
+   FreeLeads — Shared Shell & Footer Layout (Dark Theme)
    ========================================================================== */
 
 .site-shell {
@@ -10,29 +7,30 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--fl-paper);
-  color: var(--fl-ink);
-  font-family: var(--fl-font);
+  background: var(--bg-gradient);
+  color: var(--ink);
+  font-family: var(--font-body);
 }
 
-/* The main content area grows to fill the viewport; its inner sections use
-   .fl-container (or their own page container) for horizontal rhythm. */
 .site-main {
   flex: 1 1 auto;
   width: 100%;
   min-width: 0;
   display: flex;
   flex-direction: column;
+  background: transparent;
 }
 
 /* ---------- Footer ---------- */
 .site-footer {
   width: 100%;
   margin-top: auto;
-  background: #163a31;
-  color: #adc4b6;
-  border-top: 1px solid #35604e;
-  padding: 22px 0;
+  background: var(--panel);
+  color: var(--ink-faint);
+  border-top: 1px solid var(--line);
+  padding: 28px 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
 }
 
 .site-footer-inner {
@@ -52,43 +50,48 @@
   align-items: center;
   gap: 9px;
   text-decoration: none;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--ink);
 }
 
-.site-footer-brand .site-brand-badge {
-  width: 27px;
-  height: 27px;
-  border-radius: 8px;
-  box-shadow: none;
+.site-footer-brand .site-brand-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--lime);
+  box-shadow: 0 0 8px var(--lime);
 }
 
-.site-footer-brand .site-brand-name {
-  font-size: 14px;
-  color: #ffffff;
+.site-footer-brand .site-brand-name span {
+  color: var(--green-hover);
 }
-
-.site-footer-brand .site-brand-name span { color: var(--fl-lime); }
 
 .site-footer-links {
   display: flex;
   align-items: center;
-  gap: 22px;
+  gap: 24px;
   flex-wrap: wrap;
+  font-family: var(--font-body);
 }
 
 .site-footer-links a {
-  font-size: 12px;
-  font-weight: 600;
-  color: #adc4b6;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-muted);
   text-decoration: none;
   transition: color 0.15s ease;
 }
 
-.site-footer-links a:hover { color: var(--fl-lime); }
+.site-footer-links a:hover {
+  color: var(--lime);
+}
 
 .site-footer p {
   margin: 0;
-  font-size: 11px;
-  color: #91ada0;
+  font-size: 12px;
+  color: var(--ink-faint);
 }
 
 @media (max-width: 720px) {
@@ -96,15 +99,13 @@
     flex-direction: column;
     align-items: flex-start;
   }
-  .site-footer-links { gap: 14px; }
+  .site-footer-links {
+    gap: 14px;
+  }
 }
 
 /* ==========================================================================
-   Full-width overrides
-   --------------------------------------------------------------------------
-   The legacy design systems capped content at 1180-1260px, which left large
-   empty gutters on normal 1440px+ displays at 100% zoom. Content now scales
-   with the viewport up to --fl-container-max.
+   Full-width containers
    ========================================================================== */
 
 .site-main .app-main-container,
@@ -118,8 +119,6 @@
   padding-inline: var(--fl-container-pad);
 }
 
-/* Pages nested in the shell must not add their own sticky/duplicate chrome
-   or a second full-height background layer. */
 .site-main > .landing,
 .site-main .landing {
   min-height: 0;
@@ -127,17 +126,10 @@
   background: transparent;
 }
 
-/* Defensive: if any nested page still renders a legacy header, hide it so a
-   second menu bar can never appear under the real one. */
 .site-main .landing-header,
 .site-main .app-header,
 .site-main .landing-footer {
   display: none !important;
-}
-
-/* Plans page renders 4 cards — let them breathe on wide screens. */
-.site-main .plans-grid-container {
-  max-width: min(var(--fl-container-max), 1400px);
 }
 
 @media (max-width: 560px) {

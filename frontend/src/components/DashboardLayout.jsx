@@ -116,8 +116,8 @@ export default function DashboardLayout() {
     <div className="dash">
       <aside className={`dash-sidebar${sidebarOpen ? " open" : ""}`}>
         <Link to="/admin" className="dash-brand">
-          <span className="dash-brand-badge"><Target size={18} /></span>
-          <span className="dash-brand-name">free<span>leads</span></span>
+          <span className="dash-brand-dot" />
+          <span className="dash-brand-name">Free<span>Leads</span></span>
         </Link>
 
         <div className="dash-sidebar-scroll">

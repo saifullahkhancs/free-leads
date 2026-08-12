@@ -7,8 +7,8 @@ export default function SiteFooter() {
     <footer className="site-footer">
       <div className="site-footer-inner">
         <Link to="/" className="site-footer-brand">
-          <span className="site-brand-badge"><Target size={14} /></span>
-          <span className="site-brand-name">free<span>leads</span></span>
+          <span className="site-brand-dot" />
+          <span className="site-brand-name">Free<span>Leads</span></span>
         </Link>
 
         <nav className="site-footer-links" aria-label="Footer navigation">
