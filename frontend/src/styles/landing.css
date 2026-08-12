@@ -66,6 +66,78 @@
   display: block;
 }
 
+/* ---------- Hero background grid + shared marketing utilities ---------- */
+
+/* Full-bleed decorative grid + glow behind hero copy. Absolutely positioned so
+   it never participates in the hero's grid-column layout (an in-flow empty div
+   would otherwise take a column and collapse the page). */
+.hero-grid-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(ellipse 900px 500px at 15% -5%, rgba(75, 195, 140, 0.16), transparent 60%),
+    radial-gradient(ellipse 700px 500px at 100% 0%, rgba(215, 255, 99, 0.06), transparent 55%),
+    linear-gradient(rgba(58, 79, 67, 0.4) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(58, 79, 67, 0.4) 1px, transparent 1px);
+  background-size: auto, auto, 46px 46px, 46px 46px;
+  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, #000 25%, transparent 80%);
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, #000 25%, transparent 80%);
+}
+
+/* Keep the hero's real content above the background grid overlay. */
+.landing-hero > .landing-container {
+  position: relative;
+  z-index: 1;
+}
+
+/* Pill badge used at the top of marketing heroes. */
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--lime);
+  background: rgba(215, 255, 99, 0.08);
+  border: 1px solid rgba(215, 255, 99, 0.2);
+  padding: 6px 14px;
+  border-radius: 100px;
+  margin-bottom: 22px;
+}
+
+.hero-badge svg {
+  flex: none;
+}
+
+/* Pulsing status dot used inside hero-badge. */
+.pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--lime);
+  box-shadow: 0 0 8px var(--lime);
+  display: inline-block;
+  animation: pulse 1.8s infinite;
+}
+
+/* Accent inline emphasis inside headings. */
+.accent {
+  color: var(--green-hover);
+}
+
+/* Center utility for heading / button groups. */
+.center {
+  text-align: center;
+}
+
+.hero-ctas.center {
+  justify-content: center;
+}
+
 /* ---------- Section Heads ---------- */
 .section-head,
 .section-heading {
@@ -104,6 +176,23 @@ section.block,
 }
 
 /* ---------- Button Variants ---------- */
+/* Base .btn resets so any "btn btn-*" combo lays out consistently; the
+   variant classes provide the actual colour/size styling. */
+.btn,
+.landing .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 100px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 14.5px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
 .btn-primary,
 .landing .btn-primary {
   background: var(--green);
@@ -205,6 +294,37 @@ section.block,
   background: var(--panel-hover);
   border-color: var(--line-strong);
   color: var(--ink);
+}
+
+.btn-outline-light,
+.landing .btn-outline-light {
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--ink);
+  padding: 12px 24px;
+  border-radius: 100px;
+  font-weight: 600;
+  font-size: 14.5px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-outline-light:hover,
+.landing .btn-outline-light:hover {
+  background: var(--panel-hover);
+  border-color: var(--green);
+  color: var(--ink);
+  transform: translateY(-2px);
+}
+
+.btn-lg {
+  padding: 16px 32px;
+  font-size: 16px;
 }
 
 /* ==========================================================================
