@@ -140,7 +140,7 @@ const getLeads = async ({
   }
 
   if (lat && lon) {
-    queryText += ` AND ST_DWithin(l.location, ST_MakePoint($1, $2)::geography, $${paramIndex})`;
+    queryText += ` AND l.location IS NOT NULL AND ST_DWithin(l.location, ST_MakePoint($1, $2)::geography, $${paramIndex})`;
     values.push(radius);
     paramIndex++;
   }

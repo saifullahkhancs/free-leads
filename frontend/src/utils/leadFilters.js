@@ -98,7 +98,11 @@ export function applyLocalFilters(leads, filters = {}) {
             : l.distance ?? null;
         return d == null ? l : { ...l, distance: d };
       })
-      .filter((l) => l.distance == null || l.distance <= radius);
+      .filter((l) => {
+        // Only include leads with a valid distance that is within the radius
+        if (l.distance == null) return false;
+        return l.distance <= radius;
+      });
   }
 
   return list;
