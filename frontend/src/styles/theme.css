@@ -1,75 +1,77 @@
 /* ==========================================================================
-   FreeLeads — Global theme tokens — DARK THEME (site) + LIGHT OVERRIDE (dash)
+   FreeLeads — Global theme tokens (single source of truth)
    --------------------------------------------------------------------------
-   Public website (.site-shell, .landing, .app) uses the dark palette from the
-   reference mockup. Dashboard (.dash) is forced back to its original light
-   palette so existing admin styles remain untouched.
+   Every colour / radius / shadow used by the landing, app and dashboard
+   design systems is declared here at :root.
+
+   Why this file exists:
+   The three stylesheets (landing.css, app.css, dashboard.css) each used to
+   declare their own palette on a *scoped* selector (`.landing`, `.dash`).
+   When a rule from one system leaked onto markup owned by another (e.g.
+   `.app-nav a.active` from dashboard.css matching the AppShell header), the
+   scoped variables resolved to nothing and properties silently collapsed to
+   their initial value — which is how the active nav button ended up rendering
+   white text on a transparent background.
+
+   Declaring the tokens globally makes every var() resolvable everywhere, so a
+   stray selector can never blank out a colour again.
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
-
 :root {
-  /* ---------- Dark site palette (from mockup) ---------- */
-  --fl-bg: #1c2a24;
-  --fl-bg-soft: #1f2f27;
-  --fl-panel: #24352c;
-  --fl-panel-hover: #2c4036;
-  --fl-panel-2: #2a3e33;
-  --fl-line: #3a4f43;
-  --fl-line-strong: #4a6455;
-  --fl-line-subtle: #2f433a;
-  --fl-green: #4bc38c;
-  --fl-green-hover: #62d69f;
-  --fl-green-soft: rgba(75,195,140,0.14);
-  --fl-green-soft-2: rgba(75,195,140,0.08);
-  --fl-lime: #d7ff63;
-  --fl-lime-soft: rgba(215,255,99,0.12);
-  --fl-lime-border: rgba(215,255,99,0.22);
-  --fl-lime-ink: #1a2412;
-  --fl-coral: #ff9d73;
-  --fl-blue: #7fa8ff;
-  --fl-purple: #b79bff;
-  --fl-ink: #f5f8f2;
-  --fl-ink-muted: #b3c4b8;
-  --fl-ink-faint: #82938a;
+  /* ---------- Brand palette ---------- */
+  --fl-green: #1d4b3f;
+  --fl-green-hover: #265d4f;
+  --fl-green-dark: #163c32;
+  --fl-green-soft: #eaf3eb;
+  --fl-lime: #c9f269;
+  --fl-lime-soft: #f2fadc;
+  --fl-lime-ink: #4b6823;
+  --fl-accent: #78933b;
 
-  /* Aliases used by older stylesheets */
-  --fl-paper: var(--fl-bg);
-  --fl-paper-subtle: var(--fl-panel);
-  --fl-paper-warm: #18231d;
-  --fl-surface-hover: var(--fl-panel-hover);
-  --fl-green-dark: #102019;
-  --fl-accent: var(--fl-green);
-  --fl-lime-hover: #e1ff85;
+  /* ---------- Neutrals ---------- */
+  --fl-ink: #14201c;
+  --fl-ink-muted: #5e6f67;
+  --fl-ink-faint: #8d9e96;
+  --fl-paper: #ffffff;
+  --fl-paper-subtle: #f9faf7;
+  --fl-paper-warm: #f6f7f2;
+  --fl-surface-hover: #f1f5ee;
+  --fl-line: #e2e8e0;
+  --fl-line-strong: #d7dfd5;
+  --fl-line-subtle: #edf1ea;
 
-  /* Status */
-  --fl-danger: #ff7a7a;
-  --fl-danger-soft: rgba(255,122,122,0.14);
-  --fl-warn: #ffb86b;
-  --fl-warn-soft: rgba(255,184,107,0.14);
-  --fl-blue-soft: rgba(127,168,255,0.14);
+  /* ---------- Status ---------- */
+  --fl-danger: #d64545;
+  --fl-danger-soft: #fdeeee;
+  --fl-warn: #d97706;
+  --fl-warn-soft: #fef3c7;
+  --fl-blue: #2563eb;
+  --fl-blue-soft: #eff6ff;
 
-  /* Radii */
-  --fl-radius-xl: 20px;
+  /* ---------- Radii ---------- */
+  --fl-radius-xl: 18px;
   --fl-radius-lg: 14px;
   --fl-radius-md: 10px;
   --fl-radius-sm: 8px;
   --fl-radius-full: 9999px;
 
-  /* Shadows (dark) */
-  --fl-shadow-xs: 0 1px 2px rgba(0,0,0,0.24);
-  --fl-shadow-sm: 0 2px 10px rgba(0,0,0,0.18), 0 1px 3px rgba(0,0,0,0.18);
-  --fl-shadow-md: 0 12px 28px -8px rgba(0,0,0,0.45), 0 3px 10px rgba(0,0,0,0.22);
-  --fl-shadow-lg: 0 22px 44px -12px rgba(0,0,0,0.55), 0 8px 20px rgba(0,0,0,0.3);
+  /* ---------- Shadows ---------- */
+  --fl-shadow-xs: 0 1px 2px rgba(20, 32, 28, 0.04);
+  --fl-shadow-sm: 0 2px 6px rgba(20, 32, 28, 0.04), 0 1px 2px rgba(20, 32, 28, 0.02);
+  --fl-shadow-md: 0 8px 20px -4px rgba(20, 32, 28, 0.06), 0 2px 6px rgba(20, 32, 28, 0.03);
+  --fl-shadow-lg: 0 16px 36px -8px rgba(20, 32, 28, 0.12), 0 4px 12px rgba(20, 32, 28, 0.04);
 
-  /* Layout */
-  --fl-container-max: 1180px;
-  --fl-container-pad: 28px;
-  --fl-font: 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --fl-font-display: 'Space Grotesk', sans-serif;
-  --fl-font-mono: 'IBM Plex Mono', monospace;
+  /* ---------- Layout ----------
+     Content is fluid and only stops growing on very large monitors, so at
+     100% browser zoom the app fills the viewport instead of sitting in a
+     narrow 1180-1260px column. */
+  --fl-container-max: 1480px;
+  --fl-container-pad: 32px;
+  --fl-font: Manrope, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
-  /* Legacy dash aliases — re-declared in .dash */
+  /* ---------- Legacy aliases ----------
+     Declared globally so scoped design-system vars always resolve, even if a
+     rule matches outside its intended container. */
   --dash-ink: var(--fl-ink);
   --dash-muted: var(--fl-ink-muted);
   --dash-faint: var(--fl-ink-faint);
@@ -91,70 +93,17 @@
   --dash-blue-soft: var(--fl-blue-soft);
 }
 
-/* ---------- Dashboard LIGHT override ----------
-   Everything inside .dash uses the original light palette so the admin
-   workspace stays exactly as before, regardless of :root being dark. */
-.dash {
-  --fl-green: #1d4b3f;
-  --fl-green-hover: #265d4f;
-  --fl-green-dark: #163c32;
-  --fl-green-soft: #eaf3eb;
-  --fl-lime: #c9f269;
-  --fl-lime-soft: #f2fadc;
-  --fl-lime-ink: #4b6823;
-  --fl-accent: #78933b;
-  --fl-bg: #ffffff;
-  --fl-panel: #ffffff;
-  --fl-panel-hover: #f1f5ee;
-  --fl-line: #e2e8e0;
-  --fl-line-strong: #d7dfd5;
-  --fl-line-subtle: #edf1ea;
-  --fl-ink: #14201c;
-  --fl-ink-muted: #5e6f67;
-  --fl-ink-faint: #8d9e96;
-  --fl-paper: #ffffff;
-  --fl-paper-subtle: #f9faf7;
-  --fl-paper-warm: #f6f7f2;
-  --fl-surface-hover: #f1f5ee;
-  --fl-danger: #d64545;
-  --fl-danger-soft: #fdeeee;
-  --fl-warn: #d97706;
-  --fl-warn-soft: #fef3c7;
-  --fl-blue: #2563eb;
-  --fl-blue-soft: #eff6ff;
-
-  --dash-ink: #14201c;
-  --dash-muted: #5e6f67;
-  --dash-faint: #8d9e96;
-  --dash-paper: #ffffff;
-  --dash-card: #ffffff;
-  --dash-line: #e2e8e0;
-  --dash-line-2: #d7dfd5;
-  --dash-green: #1d4b3f;
-  --dash-green-2: #265d4f;
-  --dash-green-soft: #eaf3eb;
-  --dash-lime: #c9f269;
-  --dash-lime-soft: #f2fadc;
-  --dash-lime-ink: #4b6823;
-  --dash-danger: #d64545;
-  --dash-danger-soft: #fdeeee;
-  --dash-warn: #d97706;
-  --dash-warn-soft: #fef3c7;
-  --dash-blue: #2563eb;
-  --dash-blue-soft: #eff6ff;
-
-  --fl-shadow-xs: 0 1px 2px rgba(20, 32, 28, 0.05);
-  --fl-shadow-sm: 0 2px 6px rgba(20, 32, 28, 0.04), 0 1px 2px rgba(20, 32, 28, 0.02);
-  --fl-shadow-md: 0 8px 20px -4px rgba(20, 32, 28, 0.06), 0 2px 6px rgba(20, 32, 28, 0.03);
-  --fl-shadow-lg: 0 16px 36px -8px rgba(20, 32, 28, 0.12), 0 4px 12px rgba(20, 32, 28, 0.04);
-}
-
-/* ---------- Global reset ---------- */
+/* ---------- Global reset / page frame ----------
+   `html` and `body` must span the full viewport width, otherwise the app can
+   render inside a shrink-to-fit box on wide screens. */
 *,
 *::before,
-*::after { box-sizing: border-box; }
+*::after {
+  box-sizing: border-box;
+}
 
-html, body {
+html,
+body {
   width: 100%;
   min-height: 100%;
   margin: 0;
@@ -163,10 +112,7 @@ html, body {
 }
 
 body {
-  background:
-    radial-gradient(ellipse 900px 500px at 15% -5%, rgba(75,195,140,0.14), transparent 60%),
-    radial-gradient(ellipse 700px 500px at 100% 0%, rgba(215,255,99,0.06), transparent 55%),
-    var(--fl-bg);
+  background: var(--fl-paper);
   color: var(--fl-ink);
   font-family: var(--fl-font);
   -webkit-font-smoothing: antialiased;
@@ -181,16 +127,17 @@ body {
   flex-direction: column;
 }
 
-img, svg, video, canvas { max-width: 100%; }
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
 
+/* Shared fluid container used by every design system */
 .fl-container {
   width: 100%;
   max-width: var(--fl-container-max);
   margin-inline: auto;
   padding-inline: var(--fl-container-pad);
-}
-
-/* Headings use Space Grotesk when inside public shell */
-.site-shell h1, .site-shell h2, .site-shell h3, .site-shell h4 {
-  font-family: var(--fl-font-display);
 }

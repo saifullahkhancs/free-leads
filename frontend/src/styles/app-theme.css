@@ -1,26 +1,43 @@
-/* FreeLeads — App Theme (dark) — site-shell already dark, just ensure consistency */
+/*
+ * FreeLeads — App Card Refinement (Scoped Token Overrides)
+ *
+ * This approach preserves the existing design language by overriding the
+ * global background tokens only within the .app-theme scope.
+ * The dashboard remains untouched as it does not use the .app-theme class.
+ */
 
 .app-theme {
-  --fl-paper: var(--fl-bg);
-  --fl-paper-subtle: var(--fl-panel);
-  --fl-paper-warm: #18231d;
-  --fl-surface-hover: var(--fl-panel-hover);
-  --fl-line: var(--fl-line);
-  --fl-line-subtle: #2f433a;
-  background-color: var(--fl-bg);
+  /* Override global paper/background tokens with a subtle sage tint */
+  --fl-paper: #f5f8f3;
+  --fl-paper-subtle: #eef3ec;
+  --fl-paper-warm: #f1f7ee;
+  --fl-surface-hover: #e8f0e6;
+  --fl-line: #dce6d9;
+  --fl-line-subtle: #e7eee4;
+
+  /* Ensure the main shell background follows the new token */
+  background-color: var(--fl-paper);
 }
 
-.app-theme .site-shell,
+.app-theme .site-shell {
+  background-color: var(--fl-paper);
+}
+
 .app-theme .site-main {
-  background: transparent;
+  background-color: var(--fl-paper);
 }
 
+/* Ensure the sticky header also respects the new tint while remaining translucent */
 .app-theme .site-header {
-  background: rgba(28, 42, 36, 0.92);
+  background: rgba(245, 248, 243, 0.92);
   border-bottom-color: var(--fl-line);
 }
 
-/* Ensure all major cards use panel color */
+/* 
+ * The following specific overrides ensure that any component hard-coded to 
+ * #ffffff (pure white) in app.css or site-header.css also picks up the tint.
+ */
+
 .app-theme .app-search-bar,
 .app-theme .lead-card,
 .app-theme .compact-card,
@@ -36,21 +53,31 @@
 .app-theme .site-user-pill,
 .app-theme .site-dropdown,
 .app-theme .site-drawer,
+.app-theme .auth-card,
 .app-theme .feature-card,
 .app-theme .step-card,
 .app-theme .directory-card,
 .app-theme .float-chip,
+.app-theme .directory-search,
 .app-theme .country-card,
 .app-theme .type-card {
-  background-color: var(--fl-panel);
-  border-color: var(--fl-line);
+  background-color: var(--fl-paper) !important;
 }
 
+/* Maintain hover states with the new tinted palette */
 .app-theme .lead-card:hover,
 .app-theme .compact-card:hover,
 .app-theme .site-btn:hover,
 .app-theme .site-user-pill:hover,
 .app-theme .site-dropdown-item:hover,
 .app-theme .app-table tr:hover {
-  background-color: var(--fl-panel-hover) !important;
+  background-color: var(--fl-surface-hover) !important;
+}
+
+/* Fix shadows to look natural on the new background */
+.app-theme {
+  --fl-shadow-xs: 0 1px 2px rgba(20, 32, 28, 0.03);
+  --fl-shadow-sm: 0 2px 6px rgba(20, 32, 28, 0.03), 0 1px 2px rgba(20, 32, 28, 0.02);
+  --fl-shadow-md: 0 8px 20px -4px rgba(20, 32, 28, 0.06), 0 2px 6px rgba(20, 32, 28, 0.03);
+  --fl-shadow-lg: 0 16px 36px -8px rgba(20, 32, 28, 0.1), 0 4px 12px rgba(20, 32, 28, 0.04);
 }

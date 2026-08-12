@@ -1,5 +1,8 @@
 /* ==========================================================================
-   FreeLeads — Shared shell & footer layout (dark)
+   FreeLeads — Shared shell & footer layout
+   --------------------------------------------------------------------------
+   Owns the outer page frame so content fills the browser width at 100% zoom
+   instead of being pinned to a narrow centred column.
    ========================================================================== */
 
 .site-shell {
@@ -7,14 +10,13 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background:
-    radial-gradient(ellipse 900px 500px at 15% -5%, rgba(75,195,140,0.14), transparent 60%),
-    radial-gradient(ellipse 700px 500px at 100% 0%, rgba(215,255,99,0.06), transparent 55%),
-    var(--fl-bg);
+  background: var(--fl-paper);
   color: var(--fl-ink);
   font-family: var(--fl-font);
 }
 
+/* The main content area grows to fill the viewport; its inner sections use
+   .fl-container (or their own page container) for horizontal rhythm. */
 .site-main {
   flex: 1 1 auto;
   width: 100%;
@@ -27,11 +29,10 @@
 .site-footer {
   width: 100%;
   margin-top: auto;
-  background: #151f19;
-  color: var(--fl-ink-faint);
-  border-top: 1px solid var(--fl-line);
-  padding: 26px 0;
-  font-family: var(--fl-font-mono);
+  background: #163a31;
+  color: #adc4b6;
+  border-top: 1px solid #35604e;
+  padding: 22px 0;
 }
 
 .site-footer-inner {
@@ -53,30 +54,18 @@
   text-decoration: none;
 }
 
-.site-footer-brand .site-brand-badge,
-.site-footer-brand .site-brand-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: var(--fl-lime);
-  box-shadow: 0 0 10px var(--fl-lime);
-  display:inline-block;
-}
 .site-footer-brand .site-brand-badge {
-  width: 28px; height: 28px;
+  width: 27px;
+  height: 27px;
   border-radius: 8px;
   box-shadow: none;
-  background: var(--fl-panel);
-  border: 1px solid var(--fl-line);
-  color: var(--fl-lime);
 }
 
 .site-footer-brand .site-brand-name {
   font-size: 14px;
-  color: var(--fl-ink);
-  font-family: var(--fl-font-display);
-  font-weight: 700;
-  letter-spacing: -0.3px;
+  color: #ffffff;
 }
+
 .site-footer-brand .site-brand-name span { color: var(--fl-lime); }
 
 .site-footer-links {
@@ -85,31 +74,38 @@
   gap: 22px;
   flex-wrap: wrap;
 }
+
 .site-footer-links a {
   font-size: 12px;
   font-weight: 600;
-  color: var(--fl-ink-muted);
+  color: #adc4b6;
   text-decoration: none;
-  font-family: var(--fl-font);
   transition: color 0.15s ease;
 }
-.site-footer-links a:hover { color: var(--fl-green-hover); }
+
+.site-footer-links a:hover { color: var(--fl-lime); }
 
 .site-footer p {
   margin: 0;
   font-size: 11px;
-  color: var(--fl-ink-faint);
-  font-family: var(--fl-font-mono);
-  letter-spacing: 0.02em;
+  color: #91ada0;
 }
 
 @media (max-width: 720px) {
-  .site-footer-inner { flex-direction: column; align-items: flex-start; }
+  .site-footer-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
   .site-footer-links { gap: 14px; }
 }
 
-/* ---------- Full-width overrides ----------
-   Keep previous “fluid container” logic but ensure dark bg wins. */
+/* ==========================================================================
+   Full-width overrides
+   --------------------------------------------------------------------------
+   The legacy design systems capped content at 1180-1260px, which left large
+   empty gutters on normal 1440px+ displays at 100% zoom. Content now scales
+   with the viewport up to --fl-container-max.
+   ========================================================================== */
 
 .site-main .app-main-container,
 .site-main .landing-container,
@@ -122,6 +118,8 @@
   padding-inline: var(--fl-container-pad);
 }
 
+/* Pages nested in the shell must not add their own sticky/duplicate chrome
+   or a second full-height background layer. */
 .site-main > .landing,
 .site-main .landing {
   min-height: 0;
@@ -129,15 +127,17 @@
   background: transparent;
 }
 
-/* Hide any legacy headers that could double-stack */
+/* Defensive: if any nested page still renders a legacy header, hide it so a
+   second menu bar can never appear under the real one. */
 .site-main .landing-header,
 .site-main .app-header,
 .site-main .landing-footer {
   display: none !important;
 }
 
+/* Plans page renders 4 cards — let them breathe on wide screens. */
 .site-main .plans-grid-container {
-  max-width: min(var(--fl-container-max), 1280px);
+  max-width: min(var(--fl-container-max), 1400px);
 }
 
 @media (max-width: 560px) {
