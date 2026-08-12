@@ -10,23 +10,12 @@ import {
   Mail,
   Menu,
   Sparkles,
-  Target,
   User,
   UserPlus,
   X,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { initialsOf } from "../utils/format";
-
-/**
- * The single, canonical navigation bar for the whole public + app surface.
- *
- * Previously AppShell, PlansPage, BlogPage, BlogPostPage and ContactPage each
- * rendered their own <header>. Because the /app routes nest those pages inside
- * AppShell's <Outlet />, two headers stacked on top of each other. This
- * component is now the only menu bar, rendered once by AppShell / the public
- * layout, and every page just renders its content.
- */
 
 export const NAV_ITEMS = [
   { to: "/app", label: "Home", icon: Globe2, end: true },
@@ -54,7 +43,6 @@ export default function SiteHeader() {
   const fullName =
     [user?.firstName, user?.lastName].filter(Boolean).join(" ") || "User";
 
-  // Close the account dropdown when clicking anywhere outside of it.
   useEffect(() => {
     const onPointerDown = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
@@ -63,7 +51,6 @@ export default function SiteHeader() {
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, []);
 
-  // Close menus on Escape.
   useEffect(() => {
     const onKeyDown = (e) => {
       if (e.key === "Escape") {
@@ -75,18 +62,14 @@ export default function SiteHeader() {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  // Close everything whenever the route changes.
   useEffect(() => {
     setMenuOpen(false);
     setMobileOpen(false);
   }, [location.pathname]);
 
-  // Prevent the page behind the mobile drawer from scrolling.
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
+    return () => { document.body.style.overflow = ""; };
   }, [mobileOpen]);
 
   const handleLogout = async () => {
@@ -98,8 +81,8 @@ export default function SiteHeader() {
     <header className="site-header">
       <div className="site-header-inner">
         <Link to="/app" className="site-brand">
-          <span className="site-brand-badge"><Target size={18} /></span>
-          <span className="site-brand-name">free<span>leads</span></span>
+          <span className="site-brand-dot" aria-hidden="true" />
+          <span className="site-brand-name">FreeLeads</span>
         </Link>
 
         <nav className="site-nav" aria-label="Main navigation">
@@ -197,7 +180,7 @@ export default function SiteHeader() {
               </Link>
               <Link to="/signup" className="site-btn site-btn-primary">
                 <UserPlus size={15} aria-hidden="true" />
-                <span>Sign up</span>
+                <span>Start free</span>
               </Link>
             </>
           )}
@@ -214,7 +197,6 @@ export default function SiteHeader() {
         </div>
       </div>
 
-      {/* ---------- Mobile drawer ---------- */}
       {mobileOpen && (
         <div className="site-drawer-backdrop" onClick={() => setMobileOpen(false)}>
           <div className="site-drawer" onClick={(e) => e.stopPropagation()}>
@@ -277,7 +259,7 @@ export default function SiteHeader() {
                 </Link>
                 <Link to="/signup" className="site-drawer-link is-primary">
                   <UserPlus size={17} aria-hidden="true" />
-                  <span>Sign up</span>
+                  <span>Start free</span>
                 </Link>
               </>
             )}
