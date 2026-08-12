@@ -25,9 +25,9 @@
   flex: 1;
 }
 
-/* Ensure sticky header uses frosted dark green translucent blur */
+/* Ensure sticky header uses frosted light green translucent blur */
 .app-theme .site-header {
-  background: rgba(28, 42, 36, 0.88);
+  background: rgba(244, 250, 246, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--line);

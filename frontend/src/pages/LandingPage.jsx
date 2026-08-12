@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, LayoutDashboard, MapPin } from "lucide-react";
 import * as api from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import GlobeAnimation from "../components/GlobeAnimation";
 
 const LEAD_TYPES = [
   {
@@ -147,28 +148,15 @@ export default function LandingPage() {
   const { isAuthenticated, user } = useAuth();
   const isAdmin = user?.roles?.some((r) => ["admin", "super_admin"].includes(r));
   const [countries, setCountries] = useState(FALLBACK_COUNTRIES);
-  const heroVisualRef = useRef(null);
 
-  // Interactive 3D tilt for the hero directory card. Mouse position drives
-  // rotateX/rotateY + a moving highlight via CSS custom properties.
-  const handleHeroMove = (e) => {
-    const el = heroVisualRef.current;
-    if (!el) return;
+  // Track mouse over lead-type cards for the moving radial highlight.
+  const handleTypeCardMove = (e) => {
+    const el = e.currentTarget;
     const rect = el.getBoundingClientRect();
-    if (!rect.width || !rect.height) return;
-    const px = (e.clientX - rect.left) / rect.width;
-    const py = (e.clientY - rect.top) / rect.height;
-    el.style.setProperty("--tilt-y", `${(px - 0.5) * 10}deg`);
-    el.style.setProperty("--tilt-x", `${(0.5 - py) * 10}deg`);
-    el.style.setProperty("--glow-x", `${px * 100}%`);
-    el.style.setProperty("--glow-y", `${py * 100}%`);
-  };
-
-  const handleHeroLeave = () => {
-    const el = heroVisualRef.current;
-    if (!el) return;
-    el.style.setProperty("--tilt-y", "0deg");
-    el.style.setProperty("--tilt-x", "0deg");
+    const px = ((e.clientX - rect.left) / rect.width) * 100;
+    const py = ((e.clientY - rect.top) / rect.height) * 100;
+    el.style.setProperty("--mx", `${px}%`);
+    el.style.setProperty("--my", `${py}%`);
   };
 
   useEffect(() => {
@@ -234,81 +222,17 @@ export default function LandingPage() {
           </div>
         </div>
 
-        <div
-          className="hero-visual"
-          ref={heroVisualRef}
-          onMouseMove={handleHeroMove}
-          onMouseLeave={handleHeroLeave}
-        >
-          <div className="directory-card">
-            <div className="card-glow" />
-            <div className="dir-top">
-              <div>
-                <span className="eyebrow">DISCOVER</span>
-                <h3>Find your next lead</h3>
-              </div>
-              <span className="win-dots"><i /><i /><i /></span>
-            </div>
-            <div className="dir-search">
-              <span>🔍</span>
-              <span>Search people, companies...</span>
-              <kbd>⌘K</kbd>
-            </div>
-            <div className="filter-row">
-              <span className="filter active">All leads</span>
-              <span className="filter">📍 Near me</span>
-              <span className="filter">SaaS</span>
-              <span className="filter">Growth</span>
-            </div>
-            <div className="results-label">
-              <span>TOP MATCHES</span>
-              <Link to={isAuthenticated ? "/app/search" : "/signup"} style={{ color: "inherit", textDecoration: "none" }}>
-                <span>View all →</span>
-              </Link>
-            </div>
-            <div className="lead-row">
-              <span className="lead-avatar" style={{ background: "#d96b4d" }}>AR</span>
-              <span className="lead-info">
-                <strong>Amelia Rhodes</strong>
-                <small>Head of Growth · SaaS · London, UK</small>
-              </span>
-              <span className="lead-score">98%</span>
-            </div>
-            <div className="lead-row">
-              <span className="lead-avatar" style={{ background: "#4667d8" }}>DK</span>
-              <span className="lead-info">
-                <strong>Daniel Kim</strong>
-                <small>Founder · FinTech · Seoul, KR</small>
-              </span>
-              <span className="lead-score">94%</span>
-            </div>
-            <div className="lead-row">
-              <span className="lead-avatar" style={{ background: "#b18b40" }}>MS</span>
-              <span className="lead-info">
-                <strong>Maria Santos</strong>
-                <small>Marketing Director · São Paulo, BR</small>
-              </span>
-              <span className="lead-score">91%</span>
-            </div>
-            <div className="dir-footer">
-              <span>✓ Contacts protected by default</span>
-              <span>→</span>
-            </div>
-          </div>
-
-          <span className="float-chip chip-top"><span className="mini-green-dot" /> 5M+ leads ready</span>
-          <span className="float-chip chip-bottom">
-            <MapPin size={12} className="chip-ico" /> 195 countries
-          </span>
+        <div className="hero-visual hero-globe-visual">
+          <GlobeAnimation />
         </div>
       </section>
 
       {/* STAT STRIP */}
       <div className="stats">
-        <div className="stat"><b>5M+</b><span>Lead records target</span></div>
-        <div className="stat"><b>195</b><span>Countries covered</span></div>
+        <div className="stat bold-stat stat-highlight"><b>5 million</b><span>Verified lead records</span></div>
+        <div className="stat bold-stat stat-highlight"><b>196</b><span>Countries around the world</span></div>
         <div className="stat"><b>150+</b><span>Industries to explore</span></div>
-        <div className="stat"><b>Free</b><span>One calm place for better outreach</span></div>
+        <div className="stat"><b>Free</b><span>A calm place for better outreach</span></div>
       </div>
 
       {/* COVERAGE / COUNTRIES */}
@@ -354,6 +278,7 @@ export default function LandingPage() {
               key={type.title}
               className="type-card"
               style={{ "--accent": type.accent, "--soft": type.soft }}
+              onMouseMove={handleTypeCardMove}
             >
               <div className="type-head">
                 <span className="type-ic">{type.icon}</span>
