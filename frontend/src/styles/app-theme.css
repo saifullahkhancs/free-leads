@@ -1,0 +1,380 @@
+/*
+ * FreeLeads — user-facing app theme
+ *
+ * This stylesheet is intentionally scoped to .app-theme. The dashboard keeps
+ * its existing light design because it lives outside AppShell.
+ */
+
+.app-theme {
+  --app-bg: #0d1714;
+  --app-surface: #14221e;
+  --app-surface-subtle: #192a24;
+  --app-surface-hover: #20362e;
+  --app-border: #2b463b;
+  --app-border-focus: #63d7a7;
+  --app-border-subtle: #223a31;
+  --app-ink: #eff8f2;
+  --app-ink-muted: #a9beb4;
+  --app-ink-faint: #789287;
+  --app-green-dark: #0d3a2d;
+  --app-green: #42bd91;
+  --app-green-hover: #5bd5a8;
+  --app-green-light: rgba(66, 189, 145, 0.14);
+  --app-green-glow: rgba(66, 189, 145, 0.22);
+  --app-lime: #c9f269;
+  --app-lime-light: rgba(201, 242, 105, 0.14);
+  --app-lime-dark: #d8ef9a;
+  --app-amber: #f6c453;
+  --app-amber-light: rgba(246, 196, 83, 0.14);
+  --app-blue: #84b9ff;
+  --app-blue-light: rgba(132, 185, 255, 0.14);
+  --app-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.22);
+  --app-shadow-sm: 0 8px 22px rgba(0, 0, 0, 0.18), 0 1px 2px rgba(0, 0, 0, 0.22);
+  --app-shadow-md: 0 16px 34px rgba(0, 0, 0, 0.24), 0 3px 8px rgba(0, 0, 0, 0.18);
+  --app-shadow-lg: 0 24px 55px rgba(0, 0, 0, 0.38), 0 5px 14px rgba(0, 0, 0, 0.22);
+  --app-shadow-hover: 0 22px 42px rgba(0, 0, 0, 0.32), 0 5px 14px rgba(66, 189, 145, 0.08);
+
+  background: var(--app-bg);
+  color: var(--app-ink);
+}
+
+.app-theme .site-main {
+  background:
+    radial-gradient(circle at 82% 0%, rgba(66, 189, 145, 0.08), transparent 34rem),
+    radial-gradient(circle at 8% 24%, rgba(201, 242, 105, 0.035), transparent 30rem),
+    var(--app-bg);
+}
+
+.app-theme .app-main-container,
+.app-theme .profile-page,
+.app-theme .billing-page,
+.app-theme .plans-page,
+.app-theme .plans-hero-section {
+  color: var(--app-ink);
+}
+
+/* Shared app navigation and chrome */
+.app-theme .site-header {
+  background: rgba(13, 23, 20, 0.88);
+  border-bottom-color: rgba(66, 189, 145, 0.18);
+  box-shadow: 0 1px 10px rgba(0, 0, 0, 0.2);
+}
+
+.app-theme .site-brand,
+.app-theme .site-brand-name,
+.app-theme .site-nav-link,
+.app-theme .site-user-name,
+.app-theme .site-dropdown-head strong,
+.app-theme .site-dropdown-item,
+.app-theme .site-drawer-link,
+.app-theme .site-drawer-user strong {
+  color: var(--app-ink);
+}
+
+.app-theme .site-brand-name span { color: var(--app-lime); }
+.app-theme .site-nav-link:hover,
+.app-theme .site-dropdown-item:hover,
+.app-theme .site-drawer-link:hover {
+  color: var(--app-green-hover);
+  background: var(--app-surface-hover);
+  border-color: var(--app-border);
+}
+
+.app-theme .site-nav-link.is-active,
+.app-theme .site-nav-link.is-active:hover,
+.app-theme .site-nav-link.is-active:focus,
+.app-theme .site-nav-link.is-active:visited,
+.app-theme .site-drawer-link.is-active,
+.app-theme .site-drawer-link.is-active:hover {
+  color: #07140f;
+  background: var(--app-lime);
+  border-color: var(--app-lime);
+  box-shadow: 0 5px 18px rgba(201, 242, 105, 0.18);
+}
+
+.app-theme .site-nav-link.is-active svg,
+.app-theme .site-drawer-link.is-active svg { color: #23441d; }
+
+.app-theme .site-btn,
+.app-theme .site-user-pill,
+.app-theme .site-burger {
+  background: var(--app-surface);
+  color: var(--app-ink);
+  border-color: var(--app-border);
+}
+
+.app-theme .site-btn:hover,
+.app-theme .site-user-pill:hover,
+.app-theme .site-burger:hover {
+  color: var(--app-green-hover);
+  border-color: var(--app-green);
+  background: var(--app-surface-hover);
+}
+
+.app-theme .site-btn-primary,
+.app-theme .site-btn-primary:visited,
+.app-theme .site-drawer-link.is-primary {
+  color: #07140f;
+  background: var(--app-lime);
+  border-color: var(--app-lime);
+  box-shadow: 0 5px 18px rgba(201, 242, 105, 0.16);
+}
+
+.app-theme .site-btn-primary:hover {
+  color: #07140f;
+  background: #d8fa87;
+  border-color: #d8fa87;
+}
+
+.app-theme .site-user-role,
+.app-theme .site-dropdown-head small,
+.app-theme .site-drawer-user small { color: var(--app-ink-muted); }
+.app-theme .site-user-dot { border-color: var(--app-surface); }
+.app-theme .site-dropdown,
+.app-theme .site-drawer {
+  background: #14221e;
+  border-color: var(--app-border);
+  box-shadow: var(--app-shadow-lg);
+}
+.app-theme .site-dropdown-head,
+.app-theme .site-drawer-user { border-color: var(--app-border-subtle); }
+.app-theme .site-dropdown-item.is-danger,
+.app-theme .site-drawer-link.is-danger { color: #ff9b9b; }
+.app-theme .site-dropdown-item.is-danger:hover,
+.app-theme .site-drawer-link.is-danger:hover {
+  background: rgba(214, 69, 69, 0.15);
+  color: #ffb2b2;
+}
+.app-theme .site-dropdown-sep,
+.app-theme .site-drawer-sep { background: var(--app-border-subtle); }
+
+/* App search hub, filters, cards, tables and empty states */
+.app-theme .app-hero-card,
+.app-theme .app-search-bar,
+.app-theme .lead-card,
+.app-theme .compact-card,
+.app-theme .app-table-wrapper,
+.app-theme .profile-card,
+.app-theme .billing-current-card,
+.app-theme .billing-usage,
+.app-theme .billing-plan-card,
+.app-theme .filter-panel,
+.app-theme .app-filter-rail,
+.app-theme .lead-modal-card {
+  background: var(--app-surface);
+  border-color: var(--app-border);
+  box-shadow: var(--app-shadow-sm);
+}
+
+.app-theme .app-hero-card {
+  background:
+    radial-gradient(circle at 92% 6%, rgba(201, 242, 105, 0.14), transparent 17rem),
+    linear-gradient(145deg, #172a24 0%, #11201c 100%);
+}
+
+.app-theme .app-search-bar:focus-within,
+.app-theme .fl-search-box:focus-within {
+  border-color: var(--app-green);
+  box-shadow: 0 0 0 3px rgba(66, 189, 145, 0.16), var(--app-shadow-md);
+}
+
+.app-theme .app-search-input,
+.app-theme .app-select-input,
+.app-theme .app-sort-select,
+.app-theme .fl-field input,
+.app-theme .fl-field select,
+.app-theme .fl-field textarea,
+.app-theme .fl-search-box,
+.app-theme .fl-search-box input {
+  color: var(--app-ink);
+  background-color: var(--app-surface-subtle);
+  border-color: var(--app-border);
+}
+
+.app-theme .app-search-input::placeholder,
+.app-theme .fl-search-box input::placeholder { color: var(--app-ink-faint); }
+.app-theme .app-search-input:focus,
+.app-theme .app-select-input:focus,
+.app-theme .app-sort-select:focus,
+.app-theme .fl-field input:focus,
+.app-theme .fl-field select:focus,
+.app-theme .fl-field textarea:focus { border-color: var(--app-green); }
+
+.app-theme .app-search-clear,
+.app-theme .app-btn-geo,
+.app-theme .app-chip,
+.app-theme .app-sort-select,
+.app-theme .app-view-toggle,
+.app-theme .app-export-btn,
+.app-theme .lead-card-copy-btn,
+.app-theme .app-suggestion-chip,
+.app-theme .filter-group,
+.app-theme .filter-toggle,
+.app-theme .fl-locate-btn,
+.app-theme .fl-clear-btn,
+.app-theme .billing-btn,
+.app-theme .billing-btn-outline {
+  background: var(--app-surface-subtle);
+  color: var(--app-ink-muted);
+  border-color: var(--app-border);
+}
+
+.app-theme .app-search-clear:hover,
+.app-theme .app-btn-geo:hover,
+.app-theme .app-chip:hover,
+.app-theme .app-export-btn:hover,
+.app-theme .lead-card-copy-btn:hover,
+.app-theme .app-suggestion-chip:hover,
+.app-theme .fl-locate-btn:hover,
+.app-theme .fl-clear-btn:hover,
+.app-theme .billing-btn-outline:hover {
+  color: var(--app-green-hover);
+  background: var(--app-surface-hover);
+  border-color: var(--app-green);
+}
+
+.app-theme .app-btn-geo.active,
+.app-theme .app-chip.active,
+.app-theme .app-view-btn.active,
+.app-theme .filter-toggle.active .filter-toggle-track {
+  color: #07140f;
+  background: var(--app-lime);
+  border-color: var(--app-lime);
+}
+
+.app-theme .app-chip.active .app-chip-counter { color: #23441d; background: rgba(7, 20, 15, 0.12); }
+.app-theme .app-chip-counter { background: rgba(255, 255, 255, 0.08); }
+.app-theme .app-count-number,
+.app-theme .app-active-tag,
+.app-theme .app-demo-banner,
+.app-theme .app-suggestions span {
+  background: var(--app-green-light);
+  border-color: rgba(66, 189, 145, 0.32);
+  color: #a8f0cc;
+}
+.app-theme .app-demo-banner { background: var(--app-lime-light); border-color: rgba(201, 242, 105, 0.34); color: #d8ef9a; }
+.app-theme .app-clear-all-btn { color: var(--app-ink-faint); }
+.app-theme .app-clear-all-btn:hover { color: #ff9b9b; }
+.app-theme .app-btn-search,
+.app-theme .fl-save-btn,
+.app-theme .lead-modal-btn.primary,
+.app-theme .billing-btn-primary {
+  color: #07140f;
+  background: var(--app-green);
+  border-color: var(--app-green);
+}
+.app-theme .app-btn-search:hover,
+.app-theme .fl-save-btn:hover,
+.app-theme .lead-modal-btn.primary:hover,
+.app-theme .billing-btn-primary:hover { background: var(--app-green-hover); border-color: var(--app-green-hover); }
+
+.app-theme .lead-card:hover,
+.app-theme .compact-card:hover,
+.app-theme .billing-plan-card:hover { border-color: rgba(66, 189, 145, 0.72); }
+.app-theme .lead-card-name,
+.app-theme .compact-info strong,
+.app-theme .table-lead-name,
+.app-theme .billing-plan-card h3,
+.app-theme .profile-card h2,
+.app-theme .profile-heading h1,
+.app-theme .billing-hero h1 { color: var(--app-ink); }
+.app-theme .lead-card-title,
+.app-theme .lead-card-headline,
+.app-theme .lead-card-loc,
+.app-theme .lead-card-email,
+.app-theme .compact-info small,
+.app-theme .table-lead-headline,
+.app-theme .billing-hero p,
+.app-theme .profile-heading p,
+.app-theme .profile-card p,
+.app-theme .billing-plan-desc { color: var(--app-ink-muted); }
+.app-theme .lead-card-contact-row,
+.app-theme .app-table th,
+.app-theme .app-table tr:hover,
+.app-theme .filter-group-head:hover:not(.static),
+.app-theme .fl-location-summary,
+.app-theme .fl-map-hint,
+.app-theme .billing-bar { background: var(--app-surface-subtle); }
+.app-theme .app-table th,
+.app-theme .app-table td,
+.app-theme .lead-card-footer { border-color: var(--app-border-subtle); }
+.app-theme .app-table tr:hover { background: var(--app-surface-hover); }
+.app-theme .lead-pill-company { background: rgba(66, 189, 145, 0.12); color: #9be8c6; border-color: rgba(66, 189, 145, 0.3); }
+.app-theme .lead-pill-industry { background: rgba(132, 185, 255, 0.12); color: #afd0ff; border-color: rgba(132, 185, 255, 0.28); }
+.app-theme .lead-pill-verified { background: rgba(34, 197, 94, 0.13); color: #9ce8af; border-color: rgba(34, 197, 94, 0.28); }
+.app-theme .lead-card-avatar-verified { border-color: var(--app-surface); }
+
+/* Modal, profile, map and billing pages */
+.app-theme .lead-modal-overlay { background: rgba(3, 10, 7, 0.78); }
+.app-theme .lead-modal-banner { background: linear-gradient(135deg, #123a2d 0%, #0b261e 100%); }
+.app-theme .lead-modal-close:hover { background: rgba(214, 69, 69, 0.18); color: #ffaaaa; }
+.app-theme .lead-modal-body,
+.app-theme .lead-modal-section-title { color: var(--app-ink-muted); }
+.app-theme .lead-modal-field div,
+.app-theme .lead-modal-about,
+.app-theme .lead-modal-contact-card { background: var(--app-surface-subtle); border-color: var(--app-border-subtle); color: var(--app-ink-muted); }
+.app-theme .profile-login-prompt,
+.app-theme .profile-toast,
+.app-theme .billing-error { background: var(--app-surface-subtle); border-color: var(--app-border); color: var(--app-ink-muted); }
+.app-theme .profile-toast.error { background: rgba(214, 69, 69, 0.14); border-color: rgba(255, 130, 130, 0.32); color: #ffb1b1; }
+.app-theme .fl-field > span,
+.app-theme .fl-interests-title,
+.app-theme .fl-location-summary-title,
+.app-theme .fl-map-hint,
+.app-theme .fl-attribution { color: var(--app-ink-muted); }
+.app-theme .fl-location-summary strong { color: var(--app-ink); }
+.app-theme .fl-search-results { background: var(--app-surface); border-color: var(--app-border); box-shadow: var(--app-shadow-lg); }
+.app-theme .fl-search-result { border-bottom-color: var(--app-border-subtle); }
+.app-theme .fl-search-result:hover { background: var(--app-surface-hover); }
+.app-theme .fl-map { border-color: var(--app-border); }
+.app-theme .billing-plan-card.current { border-color: var(--app-green); box-shadow: 0 0 0 1px var(--app-green), var(--app-shadow-md); }
+.app-theme .billing-plan-card.next { border-color: rgba(201, 242, 105, 0.54); }
+.app-theme .billing-plan-tag { background: var(--app-blue); color: #081625; }
+.app-theme .billing-plan-card.current .billing-plan-tag { background: var(--app-lime); color: #23441d; }
+.app-theme .billing-plan-features li { color: var(--app-ink-muted); border-color: var(--app-border-subtle); }
+.app-theme .billing-plan-features li svg { color: var(--app-green); }
+.app-theme .billing-btn-ghost { color: #ffaaaa; border-color: rgba(255, 130, 130, 0.34); background: transparent; }
+.app-theme .billing-btn-ghost:hover { background: rgba(214, 69, 69, 0.14); }
+.app-theme .billing-usage-item span,
+.app-theme .billing-usage-item small { color: var(--app-ink-muted); }
+.app-theme .billing-bar-fill-export { background: var(--app-blue); }
+
+/* AppShell also owns the marketing/pricing pages; keep those pages coherent. */
+.app-theme .landing,
+.app-theme .features-section,
+.app-theme .landing-section-alt,
+.app-theme .plans-page { background: var(--app-bg); color: var(--app-ink); }
+.app-theme .landing-hero { background: radial-gradient(circle at 82% 33%, rgba(201, 242, 105, 0.12), transparent 29%), radial-gradient(circle at 8% 18%, rgba(66, 189, 145, 0.1), transparent 25%); }
+.app-theme .hero-grid-bg { opacity: 0.16; background-image: linear-gradient(rgba(132, 185, 255, 0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(132, 185, 255, 0.16) 1px, transparent 1px); }
+.app-theme .landing .hero-badge,
+.app-theme .landing .feature-card,
+.app-theme .landing .step-card,
+.app-theme .landing .directory-card,
+.app-theme .landing .float-chip,
+.app-theme .landing .directory-search { background: var(--app-surface); border-color: var(--app-border); color: var(--app-ink-muted); }
+.app-theme .landing .hero-sub,
+.app-theme .landing .feature-card p,
+.app-theme .landing .step-card p,
+.app-theme .landing .section-heading p { color: var(--app-ink-muted); }
+.app-theme .landing .landing-hero h1,
+.app-theme .landing .section-heading h2,
+.app-theme .landing .directory-top h3,
+.app-theme .landing .feature-card h3,
+.app-theme .landing .step-card h3 { color: var(--app-ink); }
+.app-theme .landing .btn-ghost:hover { background: var(--app-surface-hover); color: var(--app-green-hover); }
+.app-theme .landing .btn-outline { color: var(--app-green-hover); border-color: var(--app-border); }
+.app-theme .landing .feature-icon { background: var(--app-green-light); color: var(--app-green); }
+.app-theme .landing .landing-cta { background: #123b2e; }
+.app-theme .landing .landing-cta p { color: #b8d5c5; }
+.app-theme .landing .stat-strip { border-color: var(--app-border); }
+.app-theme .landing .stat-strip small,
+.app-theme .landing .hero-proof { color: var(--app-ink-muted); }
+.app-theme .plans-page .billing-plan-card { background: var(--app-surface); border-color: var(--app-border); }
+
+@media (max-width: 720px) {
+  .app-theme .site-header { background: rgba(13, 23, 20, 0.96); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-theme * { scroll-behavior: auto; }
+}

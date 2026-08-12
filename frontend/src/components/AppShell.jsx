@@ -19,7 +19,7 @@ export default function AppShell() {
   }, [location.pathname]);
 
   return (
-    <div className="site-shell">
+    <div className="site-shell app-theme">
       <SiteHeader />
 
       <main className="site-main">

@@ -16,6 +16,7 @@ import "./styles/dashboard.css";
 import "./styles/app.css";
 import "./styles/site-layout.css";
 import "./styles/site-header.css";
+import "./styles/app-theme.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
