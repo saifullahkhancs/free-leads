@@ -415,6 +415,14 @@ section.block,
 /* Directory Card Visual in Hero */
 .hero-visual {
   position: relative;
+  perspective: 1200px;
+  animation: heroFloat 7s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes heroFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
 
 .directory-card {
@@ -424,7 +432,26 @@ section.block,
   padding: 22px;
   position: relative;
   box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.4);
-  transition: transform 0.3s ease;
+  transition: transform 0.25s ease-out, box-shadow 0.3s ease, border-color 0.3s ease;
+  transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) translateZ(0);
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.directory-card:hover {
+  border-color: var(--line-strong);
+  box-shadow: 0 40px 70px -20px rgba(0, 0, 0, 0.55), 0 0 40px rgba(75, 195, 140, 0.08);
+}
+
+/* Keep the cursor-follow highlight behind the card content. */
+.hero-visual .directory-card > .card-glow {
+  z-index: 0;
+  border-radius: var(--radius-lg);
+}
+
+.hero-visual .directory-card > *:not(.card-glow) {
+  position: relative;
+  z-index: 1;
 }
 
 .dir-top,
@@ -666,6 +693,11 @@ section.block,
   border-radius: 50%;
   background: var(--green);
   box-shadow: 0 0 6px var(--green);
+}
+
+.chip-ico {
+  color: var(--green-hover);
+  flex: none;
 }
 
 @keyframes chipFloat {

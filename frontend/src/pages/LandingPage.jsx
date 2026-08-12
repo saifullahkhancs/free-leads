@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, LayoutDashboard } from "lucide-react";
+import { ArrowRight, LayoutDashboard, MapPin } from "lucide-react";
 import * as api from "../api/client";
 import { useAuth } from "../context/AuthContext";
 
@@ -147,6 +147,29 @@ export default function LandingPage() {
   const { isAuthenticated, user } = useAuth();
   const isAdmin = user?.roles?.some((r) => ["admin", "super_admin"].includes(r));
   const [countries, setCountries] = useState(FALLBACK_COUNTRIES);
+  const heroVisualRef = useRef(null);
+
+  // Interactive 3D tilt for the hero directory card. Mouse position drives
+  // rotateX/rotateY + a moving highlight via CSS custom properties.
+  const handleHeroMove = (e) => {
+    const el = heroVisualRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const px = (e.clientX - rect.left) / rect.width;
+    const py = (e.clientY - rect.top) / rect.height;
+    el.style.setProperty("--tilt-y", `${(px - 0.5) * 10}deg`);
+    el.style.setProperty("--tilt-x", `${(0.5 - py) * 10}deg`);
+    el.style.setProperty("--glow-x", `${px * 100}%`);
+    el.style.setProperty("--glow-y", `${py * 100}%`);
+  };
+
+  const handleHeroLeave = () => {
+    const el = heroVisualRef.current;
+    if (!el) return;
+    el.style.setProperty("--tilt-y", "0deg");
+    el.style.setProperty("--tilt-x", "0deg");
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -211,8 +234,14 @@ export default function LandingPage() {
           </div>
         </div>
 
-        <div className="hero-visual">
+        <div
+          className="hero-visual"
+          ref={heroVisualRef}
+          onMouseMove={handleHeroMove}
+          onMouseLeave={handleHeroLeave}
+        >
           <div className="directory-card">
+            <div className="card-glow" />
             <div className="dir-top">
               <div>
                 <span className="eyebrow">DISCOVER</span>
@@ -266,6 +295,11 @@ export default function LandingPage() {
               <span>→</span>
             </div>
           </div>
+
+          <span className="float-chip chip-top"><span className="mini-green-dot" /> 5M+ leads ready</span>
+          <span className="float-chip chip-bottom">
+            <MapPin size={12} className="chip-ico" /> 195 countries
+          </span>
         </div>
       </section>
 
