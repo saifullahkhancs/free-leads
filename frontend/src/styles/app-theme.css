@@ -1,65 +1,42 @@
 /*
- * FreeLeads — app card refinement
+ * FreeLeads — App Card Refinement (Scoped Token Overrides)
  *
- * The dashboard is intentionally not targeted here. AppShell adds .app-theme
- * only to user-facing routes, so this stylesheet changes card surfaces while
- * preserving the existing layout, typography, spacing, and green accents.
+ * This approach preserves the existing design language by overriding the
+ * global background tokens only within the .app-theme scope.
+ * The dashboard remains untouched as it does not use the .app-theme class.
  */
 
 .app-theme {
-  --app-bg: #fbfcfa;
-  --app-surface: #f5f8f3;
-  --app-surface-subtle: #eef3ec;
-  --app-surface-hover: #e8f0e6;
-  --app-border: #dce6d9;
-  --app-border-focus: #789f55;
-  --app-border-subtle: #e7eee4;
-  --app-ink: #14201c;
-  --app-ink-muted: #5e6f67;
-  --app-ink-faint: #8d9e96;
-  --app-green-dark: #163c32;
-  --app-green: #1d4b3f;
-  --app-green-hover: #265d4f;
-  --app-green-light: #eaf3eb;
-  --app-lime: #c9f269;
-  --app-lime-light: #f2fadc;
-  --app-amber: #b7791f;
-  --app-amber-light: #fff7df;
-  --app-blue: #2563eb;
-  --app-blue-light: #eff6ff;
-  --app-shadow-xs: 0 1px 2px rgba(20, 32, 28, 0.04);
-  --app-shadow-sm: 0 2px 6px rgba(20, 32, 28, 0.04), 0 1px 2px rgba(20, 32, 28, 0.02);
-  --app-shadow-md: 0 8px 20px -4px rgba(20, 32, 28, 0.08), 0 2px 6px rgba(20, 32, 28, 0.04);
-  --app-shadow-lg: 0 16px 36px -8px rgba(20, 32, 28, 0.14), 0 4px 12px rgba(20, 32, 28, 0.05);
-  --app-shadow-hover: 0 16px 30px -8px rgba(20, 32, 28, 0.13), 0 3px 8px rgba(20, 32, 28, 0.04);
-  background: var(--app-bg);
+  /* Override global paper/background tokens with a subtle sage tint */
+  --fl-paper: #f5f8f3;
+  --fl-paper-subtle: #eef3ec;
+  --fl-paper-warm: #f1f7ee;
+  --fl-surface-hover: #e8f0e6;
+  --fl-line: #dce6d9;
+  --fl-line-subtle: #e7eee4;
+
+  /* Ensure the main shell background follows the new token */
+  background-color: var(--fl-paper);
+}
+
+.app-theme .site-shell {
+  background-color: var(--fl-paper);
 }
 
 .app-theme .site-main {
-  background: var(--app-bg);
+  background-color: var(--fl-paper);
 }
 
-/* User-facing app cards. The green design language, dimensions, and states
-   remain unchanged; only the white surfaces become a quiet sage tint. */
-.app-theme .app-hero-card,
-.app-theme .app-search-bar,
-.app-theme .lead-card,
-.app-theme .compact-card,
-.app-theme .app-table-wrapper,
-.app-theme .profile-card,
-.app-theme .billing-current-card,
-.app-theme .billing-usage,
-.app-theme .billing-plan-card,
-.app-theme .filter-panel,
-.app-theme .app-filter-rail,
-.app-theme .lead-modal-card {
-  background: var(--app-surface);
-  border-color: var(--app-border);
+/* Ensure the sticky header also respects the new tint while remaining translucent */
+.app-theme .site-header {
+  background: rgba(245, 248, 243, 0.92);
+  border-bottom-color: var(--fl-line);
 }
 
-.app-theme .app-hero-card {
-  background: linear-gradient(145deg, #f7faf4 0%, #eef5ea 100%);
-}
+/* 
+ * The following specific overrides ensure that any component hard-coded to 
+ * #ffffff (pure white) in app.css or site-header.css also picks up the tint.
+ */
 
 .app-theme .app-search-bar,
 .app-theme .lead-card,
@@ -71,152 +48,36 @@
 .app-theme .billing-plan-card,
 .app-theme .filter-panel,
 .app-theme .app-filter-rail,
-.app-theme .lead-modal-card {
-  box-shadow: var(--app-shadow-sm);
-}
-
-.app-theme .app-search-bar:focus-within,
-.app-theme .fl-search-box:focus-within {
-  border-color: var(--app-border-focus);
-  box-shadow: 0 0 0 3px rgba(120, 159, 85, 0.13), var(--app-shadow-md);
-}
-
-.app-theme .app-search-input,
-.app-theme .app-select-input,
-.app-theme .app-sort-select,
-.app-theme .fl-field input,
-.app-theme .fl-field select,
-.app-theme .fl-field textarea,
-.app-theme .fl-search-box,
-.app-theme .fl-search-box input {
-  background-color: var(--app-surface-subtle);
-  border-color: var(--app-border);
-}
-
-.app-theme .app-search-input::placeholder,
-.app-theme .fl-search-box input::placeholder { color: var(--app-ink-faint); }
-
-.app-theme .app-search-input:focus,
-.app-theme .app-select-input:focus,
-.app-theme .app-sort-select:focus,
-.app-theme .fl-field input:focus,
-.app-theme .fl-field select:focus,
-.app-theme .fl-field textarea:focus {
-  border-color: var(--app-border-focus);
-}
-
-.app-theme .app-search-clear,
-.app-theme .app-btn-geo,
-.app-theme .app-chip,
-.app-theme .app-sort-select,
-.app-theme .app-view-toggle,
-.app-theme .app-export-btn,
-.app-theme .lead-card-copy-btn,
-.app-theme .app-suggestion-chip,
-.app-theme .filter-toggle,
-.app-theme .fl-locate-btn,
-.app-theme .fl-clear-btn,
-.app-theme .billing-btn,
-.app-theme .billing-btn-outline {
-  background: var(--app-surface-subtle);
-  border-color: var(--app-border);
-}
-
-.app-theme .app-search-clear:hover,
-.app-theme .app-btn-geo:hover,
-.app-theme .app-chip:hover,
-.app-theme .app-export-btn:hover,
-.app-theme .lead-card-copy-btn:hover,
-.app-theme .app-suggestion-chip:hover,
-.app-theme .fl-locate-btn:hover,
-.app-theme .fl-clear-btn:hover,
-.app-theme .billing-btn-outline:hover {
-  background: var(--app-surface-hover);
-  border-color: var(--app-border-focus);
-}
-
-.app-theme .app-count-number,
-.app-theme .app-active-tag,
-.app-theme .app-suggestions span {
-  background: var(--app-green-light);
-  border-color: #cfe3cf;
-}
-
-.app-theme .app-demo-banner {
-  background: var(--app-lime-light);
-  border-color: #dce9ad;
-}
-
-.app-theme .app-clear-all-btn:hover { background: #fef2f2; }
-
-.app-theme .lead-card:hover,
-.app-theme .compact-card:hover,
-.app-theme .billing-plan-card:hover {
-  border-color: #b7cbaf;
-  box-shadow: var(--app-shadow-hover);
-}
-
-.app-theme .lead-card-contact-row,
-.app-theme .app-table th,
-.app-theme .app-table tr:hover,
-.app-theme .filter-group-head:hover:not(.static),
-.app-theme .fl-location-summary,
-.app-theme .fl-map-hint,
-.app-theme .billing-bar {
-  background: var(--app-surface-subtle);
-}
-
-.app-theme .app-table th,
-.app-theme .app-table td,
-.app-theme .lead-card-footer {
-  border-color: var(--app-border-subtle);
-}
-
-.app-theme .app-table tr:hover { background: var(--app-surface-hover); }
-.app-theme .lead-card-avatar-verified { border-color: var(--app-surface); }
-
-/* Detail modal and profile/billing nested panels. */
-.app-theme .lead-modal-overlay { background: rgba(14, 25, 20, 0.65); }
-.app-theme .lead-modal-field div,
-.app-theme .lead-modal-about,
-.app-theme .lead-modal-contact-card,
-.app-theme .profile-login-prompt,
-.app-theme .profile-toast,
-.app-theme .billing-error {
-  background: var(--app-surface-subtle);
-  border-color: var(--app-border-subtle);
-}
-
-.app-theme .fl-search-results {
-  background: var(--app-surface);
-  border-color: var(--app-border);
-  box-shadow: var(--app-shadow-lg);
-}
-
-.app-theme .fl-search-result:hover { background: var(--app-surface-hover); }
-.app-theme .fl-map { border-color: var(--app-border); }
-
-/* AppShell also contains public/pricing cards. Keep their original design,
-   but remove stark pure-white surfaces for visual consistency. */
+.app-theme .lead-modal-card,
+.app-theme .site-btn,
+.app-theme .site-user-pill,
+.app-theme .site-dropdown,
+.app-theme .site-drawer,
+.app-theme .auth-card,
 .app-theme .feature-card,
 .app-theme .step-card,
 .app-theme .directory-card,
 .app-theme .float-chip,
 .app-theme .directory-search,
 .app-theme .country-card,
-.app-theme .type-card,
-.app-theme .plans-page .billing-plan-card {
-  background: var(--app-surface);
-  border-color: var(--app-border);
+.app-theme .type-card {
+  background-color: var(--fl-paper) !important;
 }
 
-.app-theme .features-section,
-.app-theme .landing-section-alt,
-.app-theme .plans-page {
-  background: var(--app-bg);
+/* Maintain hover states with the new tinted palette */
+.app-theme .lead-card:hover,
+.app-theme .compact-card:hover,
+.app-theme .site-btn:hover,
+.app-theme .site-user-pill:hover,
+.app-theme .site-dropdown-item:hover,
+.app-theme .app-table tr:hover {
+  background-color: var(--fl-surface-hover) !important;
 }
 
-.app-theme .security-band {
-  background: #f1f7e4;
-  border-color: #d5e1c7;
+/* Fix shadows to look natural on the new background */
+.app-theme {
+  --fl-shadow-xs: 0 1px 2px rgba(20, 32, 28, 0.03);
+  --fl-shadow-sm: 0 2px 6px rgba(20, 32, 28, 0.03), 0 1px 2px rgba(20, 32, 28, 0.02);
+  --fl-shadow-md: 0 8px 20px -4px rgba(20, 32, 28, 0.06), 0 2px 6px rgba(20, 32, 28, 0.03);
+  --fl-shadow-lg: 0 16px 36px -8px rgba(20, 32, 28, 0.1), 0 4px 12px rgba(20, 32, 28, 0.04);
 }
