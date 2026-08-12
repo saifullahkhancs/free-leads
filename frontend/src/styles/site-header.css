@@ -7,11 +7,11 @@
   top: 0;
   z-index: 100;
   width: 100%;
-  background: rgba(28, 42, 36, 0.88);
+  background: rgba(244, 250, 246, 0.85);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   border-bottom: 1px solid var(--line);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 20px rgba(16, 40, 28, 0.08);
   font-family: var(--font-body);
 }
 
@@ -49,8 +49,8 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--lime);
-  box-shadow: 0 0 10px var(--lime);
+  background: var(--green);
+  box-shadow: 0 0 10px var(--green);
   display: inline-block;
 }
 
@@ -60,9 +60,9 @@
   border-radius: 9px;
   display: grid;
   place-items: center;
-  background: rgba(75, 195, 140, 0.14);
-  color: var(--lime);
-  border: 1px solid rgba(215, 255, 99, 0.2);
+  background: rgba(46, 168, 115, 0.12);
+  color: var(--green-hover);
+  border: 1px solid rgba(46, 168, 115, 0.25);
 }
 
 .site-brand-name {
@@ -123,14 +123,14 @@
 .site-nav-link.is-active,
 .site-nav-link.is-active:hover,
 .site-nav-link.is-active:focus {
-  color: var(--lime);
-  background-color: rgba(215, 255, 99, 0.08);
-  border-color: rgba(215, 255, 99, 0.25);
-  box-shadow: 0 0 14px rgba(215, 255, 99, 0.08);
+  color: var(--green-hover);
+  background-color: rgba(46, 168, 115, 0.10);
+  border-color: rgba(46, 168, 115, 0.3);
+  box-shadow: 0 0 14px rgba(46, 168, 115, 0.12);
 }
 
 .site-nav-link.is-active svg {
-  color: var(--lime);
+  color: var(--green-hover);
   opacity: 1;
 }
 
@@ -180,28 +180,28 @@
   color: var(--ink);
 }
 
-/* Primary lime button with dark text */
+/* Primary green button with white text */
 .site-btn-primary,
 .site-btn-primary:visited {
-  background: var(--lime);
-  color: var(--lime-ink) !important;
-  border: 1px solid var(--lime);
+  background: var(--green);
+  color: #ffffff !important;
+  border: 1px solid var(--green);
   font-weight: 700;
-  box-shadow: 0 4px 16px rgba(215, 255, 99, 0.25);
+  box-shadow: 0 4px 16px rgba(46, 168, 115, 0.25);
 }
 
 .site-btn-primary:hover {
-  background: var(--lime-hover);
-  border-color: var(--lime-hover);
-  color: var(--lime-ink) !important;
+  background: var(--green-hover);
+  border-color: var(--green-hover);
+  color: #ffffff !important;
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(215, 255, 99, 0.35);
+  box-shadow: 0 6px 20px rgba(46, 168, 115, 0.35);
 }
 
 /* Dashboard button */
 .site-btn-dashboard {
   background: var(--green);
-  color: #0c1a14 !important;
+  color: #ffffff !important;
   border: 1px solid var(--green);
   font-weight: 700;
   box-shadow: 0 4px 14px rgba(75, 195, 140, 0.25);
@@ -210,7 +210,7 @@
 .site-btn-dashboard:hover {
   background: var(--green-hover);
   border-color: var(--green-hover);
-  color: #0c1a14 !important;
+  color: #ffffff !important;
 }
 
 /* ---------- Account pill + dropdown ---------- */
@@ -247,7 +247,7 @@
   place-items: center;
   background: var(--panel-hover);
   border: 1px solid var(--line-strong);
-  color: var(--lime);
+  color: var(--green-hover);
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 700;
@@ -260,9 +260,9 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--lime);
+  background: var(--green);
   border: 2px solid var(--bg);
-  box-shadow: 0 0 6px var(--lime);
+  box-shadow: 0 0 6px var(--green);
 }
 
 .site-user-meta {
@@ -389,7 +389,7 @@
 .site-drawer-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(14, 24, 19, 0.75);
+  background: rgba(14, 30, 22, 0.45);
   backdrop-filter: blur(8px);
   z-index: 95;
 }
@@ -464,19 +464,19 @@
 
 .site-drawer-link.is-active,
 .site-drawer-link.is-active:hover {
-  background-color: rgba(215, 255, 99, 0.08);
-  border-color: rgba(215, 255, 99, 0.25);
-  color: var(--lime);
+  background-color: rgba(46, 168, 115, 0.10);
+  border-color: rgba(46, 168, 115, 0.3);
+  color: var(--green-hover);
 }
 
 .site-drawer-link.is-active svg {
-  color: var(--lime);
+  color: var(--green-hover);
 }
 
 .site-drawer-link.is-primary {
-  background-color: var(--lime);
-  border-color: var(--lime);
-  color: var(--lime-ink) !important;
+  background-color: var(--green);
+  border-color: var(--green);
+  color: #ffffff !important;
   font-weight: 700;
 }
 

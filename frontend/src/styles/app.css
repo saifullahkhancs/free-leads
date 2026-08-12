@@ -355,12 +355,12 @@
 .app-filter-profile-chip.active {
   background: var(--green);
   border-color: var(--green);
-  color: #0c1a14 !important;
+  color: #ffffff !important;
   font-weight: 700;
 }
 
 .app-filter-profile-chip.active svg {
-  color: #0c1a14;
+  color: #ffffff;
 }
 
 .app-filter-profile-chip-count {
@@ -371,7 +371,7 @@
 }
 
 .app-filter-profile-chip.active .app-filter-profile-chip-count {
-  color: #0c1a14;
+  color: #ffffff;
   opacity: 0.8;
 }
 
@@ -411,12 +411,12 @@
 .app-filter-geo-btn.active {
   background: var(--green);
   border-color: var(--green);
-  color: #0c1a14 !important;
+  color: #ffffff !important;
   font-weight: 700;
 }
 
 .app-filter-geo-btn.active svg {
-  color: #0c1a14;
+  color: #ffffff;
 }
 
 .app-filter-radius-group {
@@ -927,7 +927,7 @@
 .lead-card-copy-btn.copied {
   background: var(--green);
   border-color: var(--green);
-  color: #0c1a14;
+  color: #ffffff;
 }
 
 .lead-card-footer {
@@ -1372,7 +1372,7 @@
   border-radius: var(--radius-pill);
   border: 1px solid var(--green);
   background: var(--green);
-  color: #0c1a14 !important;
+  color: #ffffff !important;
   font-family: inherit;
   font-size: 13.5px;
   font-weight: 700;
@@ -1931,19 +1931,60 @@
 }
 
 .billing-plan-card.popular {
-  border-color: var(--lime);
-  box-shadow: 0 0 30px rgba(215, 255, 99, 0.12), 0 24px 48px -20px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
+  border-color: var(--green);
+  background: linear-gradient(180deg, #ffffff 0%, #f3fbf6 100%);
+  box-shadow:
+    0 0 0 2px rgba(46, 168, 115, 0.35),
+    0 30px 60px -20px rgba(46, 168, 115, 0.35),
+    0 0 60px rgba(46, 168, 115, 0.18);
+  overflow: visible;
+  animation: popularPulse 3s ease-in-out infinite;
+  z-index: 2;
+}
+
+@keyframes popularPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 2px rgba(46, 168, 115, 0.35),
+      0 30px 60px -20px rgba(46, 168, 115, 0.35),
+      0 0 60px rgba(46, 168, 115, 0.18);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px rgba(46, 168, 115, 0.5),
+      0 36px 70px -20px rgba(46, 168, 115, 0.45),
+      0 0 80px rgba(46, 168, 115, 0.28);
+  }
 }
 
 .billing-plan-card.popular::before {
   content: "";
   position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: calc(var(--radius-lg) + 2px);
+  background: linear-gradient(135deg, var(--green), var(--lime), var(--green-hover), var(--green));
+  background-size: 300% 300%;
+  animation: popularBorderFlow 6s ease infinite;
+  z-index: -1;
+}
+
+@keyframes popularBorderFlow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.billing-plan-card.popular::after {
+  content: "";
+  position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--lime), var(--green-hover), var(--lime));
+  height: 4px;
+  background: linear-gradient(90deg, var(--green), var(--lime), var(--green-hover));
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   z-index: 2;
 }
 
@@ -1953,11 +1994,22 @@
 
 @media (min-width: 1025px) {
   .billing-plan-card.popular {
-    transform: translateY(-12px);
+    transform: translateY(-16px) scale(1.03);
   }
   .billing-plan-card.popular:hover {
-    transform: translateY(-14px);
+    transform: translateY(-20px) scale(1.04);
   }
+}
+
+.billing-plan-card.popular .billing-plan-icon {
+  background: rgba(46, 168, 115, 0.14) !important;
+  color: var(--green-hover) !important;
+  border-color: rgba(46, 168, 115, 0.4);
+  box-shadow: 0 10px 22px -10px rgba(46, 168, 115, 0.45);
+}
+
+.billing-plan-card.popular .billing-price {
+  color: var(--green-hover);
 }
 
 /* Plan header: icon tile + name + tagline */
@@ -1988,30 +2040,33 @@
 
 .billing-plan-tag {
   position: absolute;
-  top: -12px;
+  top: -14px;
   right: 20px;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 12px;
+  padding: 5px 13px;
   border-radius: 100px;
   font-family: var(--font-mono);
   font-size: 10.5px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  z-index: 3;
+  letter-spacing: 0.05em;
+  z-index: 4;
 }
 
 .popular-tag {
-  background: var(--lime);
-  color: var(--lime-ink);
-  box-shadow: 0 0 12px var(--lime);
+  background: linear-gradient(90deg, var(--green), var(--green-hover));
+  color: #ffffff;
+  box-shadow: 0 8px 18px -6px rgba(46, 168, 115, 0.6);
+  padding: 6px 14px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
 }
 
 .current-tag {
   background: var(--green);
-  color: #0c1a14;
+  color: #ffffff;
 }
 
 .billing-plan-card h3 {

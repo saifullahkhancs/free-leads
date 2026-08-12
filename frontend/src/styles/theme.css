@@ -3,27 +3,28 @@
    ========================================================================== */
 
 :root {
-  /* ---------- Core Dark SaaS Palette ---------- */
-  --bg: #1c2a24;
-  --bg-gradient: radial-gradient(ellipse 900px 500px at 15% -5%, rgba(75, 195, 140, 0.14), transparent 60%),
-                 radial-gradient(ellipse 700px 500px at 100% 0%, rgba(215, 255, 99, 0.05), transparent 55%),
-                 #1c2a24;
-  --panel: #24352c;
-  --panel-hover: #2c4036;
-  --panel-subtle: #1e2e26;
-  --line: #3a4f43;
-  --line-strong: #4a6455;
-  --line-subtle: #2b3d33;
+  /* ---------- Core Lighter Green SaaS Palette ---------- */
+  --bg: #f4faf6;
+  --bg-gradient: radial-gradient(ellipse 900px 500px at 15% -5%, rgba(98, 214, 159, 0.22), transparent 60%),
+                 radial-gradient(ellipse 700px 500px at 100% 0%, rgba(170, 230, 190, 0.18), transparent 55%),
+                 linear-gradient(180deg, #f4faf6 0%, #ecf6f0 100%);
+  --panel: #ffffff;
+  --panel-hover: #f1f8f4;
+  --panel-subtle: #eaf3ed;
+  --line: #d6e6dc;
+  --line-strong: #b8d1c3;
+  --line-subtle: #e4efe7;
 
-  --green: #4bc38c;
-  --green-hover: #62d69f;
-  --green-dark: #122119;
-  --green-soft: rgba(75, 195, 140, 0.14);
+  --green: #2ea873;
+  --green-hover: #22905f;
+  --green-dark: #0e1f17;
+  --green-soft: rgba(46, 168, 115, 0.12);
 
-  --lime: #d7ff63;
-  --lime-hover: #e4ff8c;
-  --lime-ink: #1a2412;
-  --lime-soft: rgba(215, 255, 99, 0.12);
+  --lime: #8bc34a;
+  --lime-hover: #7cb342;
+  --lime-ink: #0f1f12;
+  --lime-text: #ffffff;
+  --lime-soft: rgba(139, 195, 74, 0.16);
 
   --coral: #ff9d73;
   --coral-soft: rgba(255, 157, 115, 0.14);
@@ -32,9 +33,9 @@
   --purple: #b79bff;
   --purple-soft: rgba(183, 155, 255, 0.14);
 
-  --ink: #f5f8f2;
-  --ink-muted: #b3c4b8;
-  --ink-faint: #82938a;
+  --ink: #0f1f17;
+  --ink-muted: #3f5a4b;
+  --ink-faint: #6b8275;
 
   --danger: #ff6b6b;
   --danger-soft: rgba(255, 107, 107, 0.15);
@@ -87,10 +88,10 @@
   --fl-radius-sm: var(--radius-sm);
   --fl-radius-full: var(--radius-pill);
 
-  --fl-shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.2);
-  --fl-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
-  --fl-shadow-md: 0 10px 24px -6px rgba(0, 0, 0, 0.35);
-  --fl-shadow-lg: 0 30px 60px -20px rgba(0, 0, 0, 0.5);
+  --fl-shadow-xs: 0 1px 3px rgba(16, 40, 28, 0.06);
+  --fl-shadow-sm: 0 4px 12px rgba(16, 40, 28, 0.08);
+  --fl-shadow-md: 0 14px 30px -10px rgba(16, 40, 28, 0.14);
+  --fl-shadow-lg: 0 30px 60px -20px rgba(16, 40, 28, 0.18);
 
   --fl-container-max: 1280px;
   --fl-container-pad: 28px;
