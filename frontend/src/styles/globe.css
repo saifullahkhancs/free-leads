@@ -44,6 +44,13 @@
     0 0 60px rgba(79,70,229,0.25);
   overflow: hidden;
   z-index: 2;
+}
+
+.globe-inner {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
   animation: globeSpin 30s linear infinite;
 }
 
@@ -52,31 +59,19 @@
   to { transform: rotate(360deg); }
 }
 
-.globe-inner {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  overflow: hidden;
-}
-
 .globe-grid {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  animation: gridSpin 30s linear infinite;
+  /* Grid rotates WITH the globe inner — no extra spin here (it used to
+     rotate twice as fast as the sphere which looked broken). */
 }
 
-@keyframes gridSpin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* Surface dots moving with globe rotation */
+/* Surface dots move with the globe rotation via the parent .globe-inner */
 .globe-surface-dots {
   position: absolute;
   inset: 0;
-  animation: globeSpin 30s linear infinite;
 }
 
 .surface-dot {
@@ -85,14 +80,14 @@
   height: 4px;
   margin: -2px 0 0 -2px;
   border-radius: 50%;
-  background: var(--green-hover);
-  box-shadow: 0 0 6px rgba(79,70,229,0.5);
+  background: var(--green);
+  box-shadow: 0 0 6px rgba(79,70,229,0.6);
   animation: dotPulse 2.4s ease-in-out infinite;
 }
 
 @keyframes dotPulse {
-  0%, 100% { transform: scale(1); opacity: 0.5; }
-  50% { transform: scale(1.6); opacity: 1; }
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }
 
 .globe-highlight {
@@ -105,9 +100,10 @@
   background: radial-gradient(ellipse at center, rgba(255,255,255,0.55), rgba(255,255,255,0) 70%);
   filter: blur(4px);
   pointer-events: none;
+  z-index: 3;
 }
 
-/* Orbit rings */
+/* Orbit rings ------------------------------------------------------------- */
 .globe-orbits {
   position: absolute;
   inset: 0;
@@ -118,37 +114,33 @@
 .orbit-ring {
   position: absolute;
   border-radius: 50%;
-  border: 1px dashed rgba(79,70,229,0.25);
-  animation: orbitSpin linear infinite;
+  border: 1px dashed rgba(79,70,229,0.22);
   transform-style: preserve-3d;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+  /* Default tilt — each ring overrides via inline CSS vars. */
+  --tilt-x: 65deg;
+  --tilt-y: 0deg;
+  transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+  will-change: transform;
 }
 
-.orbit-ring:nth-child(odd) {
-  transform: rotateX(62deg) rotateY(12deg);
-}
-.orbit-ring:nth-child(even) {
-  transform: rotateX(70deg) rotateY(-18deg);
-}
-
+/* Keyframes honor the per-ring tilt set through CSS variables, so rings
+   fan out in different planes instead of all lying on the same two angles. */
 @keyframes orbitSpin {
-  from { transform: rotateX(62deg) rotateY(12deg) rotateZ(0deg); }
-  to { transform: rotateX(62deg) rotateY(12deg) rotateZ(360deg); }
-}
-
-.orbit-ring:nth-child(even) {
-  animation-name: orbitSpinAlt;
+  from { transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) rotateZ(0deg); }
+  to   { transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) rotateZ(360deg); }
 }
 
 @keyframes orbitSpinAlt {
-  from { transform: rotateX(70deg) rotateY(-18deg) rotateZ(0deg); }
-  to { transform: rotateX(70deg) rotateY(-18deg) rotateZ(-360deg); }
+  from { transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) rotateZ(0deg); }
+  to   { transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) rotateZ(-360deg); }
 }
 
 .orbit-dot {
   position: absolute;
-  top: -14px;
+  top: 0;
   left: 50%;
-  transform: translateX(-50%);
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -156,15 +148,27 @@
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.02em;
+  /* Center the chip on the ring perimeter, and apply a per-orbit
+     --counter-tilt (injected inline) so the label stays upright. */
+  transform: translate(-50%, -50%) var(--counter-tilt, rotateX(0) rotateY(0));
+  backface-visibility: hidden;
+}
+
+.orbit-dot-inner {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
   animation: dotBob 3.2s ease-in-out infinite;
 }
 
 @keyframes dotBob {
-  0%, 100% { transform: translateX(-50%) translateY(0) scale(1); }
-  50% { transform: translateX(-50%) translateY(-3px) scale(1.08); }
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%      { transform: translateY(-3px) scale(1.08); }
 }
 
-/* Stat bubbles around globe */
+/* Stat bubbles around globe ---------------------------------------------- */
 .globe-stat {
   position: absolute;
   z-index: 5;
@@ -201,18 +205,15 @@
   height: 10px;
   border-radius: 50%;
   flex: none;
-  box-shadow: 0 0 0 4px currentColor;
 }
 
 .globe-stat-dot.leads {
-  background: #ffffff;
-  color: rgba(79,70,229,0.18);
+  background: var(--primary);
   box-shadow: 0 0 0 4px rgba(79,70,229,0.15), 0 0 14px rgba(79,70,229,0.5);
 }
 
 .globe-stat-dot.countries {
-  background: #ffffff;
-  color: rgba(37,99,235,0.18);
+  background: var(--secondary-blue);
   box-shadow: 0 0 0 4px rgba(37,99,235,0.15), 0 0 14px rgba(37,99,235,0.5);
 }
 
@@ -228,34 +229,38 @@
 .globe-stat small {
   font-family: var(--font-mono);
   font-size: 10px;
-  color: var(--green-hover);
+  color: var(--ink-faint);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-weight: 700;
 }
 
-/* Spark / connection lines */
+/* Spark / connection lines ------------------------------------------------
+   Each spark sets its own base rotation via --r inline, and the keyframe
+   references var(--r) so the line doesn't snap back to 0deg mid-animation. */
 .spark {
   position: absolute;
   width: 60px;
   height: 2px;
-  background: linear-gradient(90deg, transparent, var(--green), transparent);
+  background: linear-gradient(90deg, transparent, var(--primary), transparent);
   border-radius: 2px;
   opacity: 0.6;
+  --r: 0deg;
   animation: sparkMove 3s linear infinite;
+  transform-origin: center;
 }
 
-.spark.s1 { top: 25%; left: 18%; transform: rotate(-20deg); animation-delay: -0.5s; }
-.spark.s2 { top: 60%; right: 14%; transform: rotate(35deg); animation-delay: -1.8s; }
-.spark.s3 { top: 75%; left: 22%; transform: rotate(-12deg); animation-delay: -2.6s; width: 45px; }
+.spark.s1 { top: 25%; left: 18%; animation-delay: -0.5s; }
+.spark.s2 { top: 60%; right: 14%; animation-delay: -1.8s; }
+.spark.s3 { top: 75%; left: 22%; width: 45px; animation-delay: -2.6s; }
 
 @keyframes sparkMove {
-  0% { opacity: 0; transform: translateX(-10px) scaleX(0.4) rotate(var(--r, 0deg)); }
-  50% { opacity: 0.8; }
-  100% { opacity: 0; transform: translateX(30px) scaleX(1.2) rotate(var(--r, 0deg)); }
+  0%   { opacity: 0;   transform: translateX(-10px) scaleX(0.4) rotate(var(--r)); }
+  50%  { opacity: 0.8; transform: translateX(10px)  scaleX(1)   rotate(var(--r)); }
+  100% { opacity: 0;   transform: translateX(30px)  scaleX(1.2) rotate(var(--r)); }
 }
 
-/* Responsive */
+/* Responsive -------------------------------------------------------------- */
 @media (max-width: 768px) {
   .globe-sphere {
     width: 210px;
@@ -264,5 +269,10 @@
   }
   .globe-stat b { font-size: 14px; }
   .globe-stat small { font-size: 9px; }
-  .globe-stat { padding: 8px 12px; }
+  .globe-stat { padding: 8px 12px; gap: 8px; }
+  .orbit-dot { font-size: 9px; }
+}
+
+@media (max-width: 420px) {
+  .globe-wrap { max-width: 320px; }
 }
