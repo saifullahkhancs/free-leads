@@ -7,8 +7,8 @@ import { formatDate, initialsOf } from "../../utils/format";
 const ROLE_COLORS = {
   super_admin: { bg: "rgba(255, 107, 107, 0.15)", fg: "#ff6b6b" },
   admin: { bg: "rgba(255, 209, 102, 0.15)", fg: "#ffd166" },
-  editor: { bg: "rgba(127, 168, 255, 0.15)", fg: "#7fa8ff" },
-  user: { bg: "rgba(75, 195, 140, 0.15)", fg: "#62d69f" },
+  editor: { bg: "rgba(37, 99, 235, 0.15)", fg: "#2563EB" },
+  user: { bg: "rgba(16, 185, 129, 0.12)", fg: "#059669" },
 };
 
 export default function UsersPage() {

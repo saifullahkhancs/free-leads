@@ -1,8 +1,8 @@
 /*
- * FreeLeads — App-wide Dark SaaS Theme Enhancements
+ * FreeLeads — App-wide Blue / Indigo SaaS Theme Enhancements
  *
  * Ensures all surfaces, inputs, cards, tables, pills, dropdowns, and modals
- * adhere to the unified dark green SaaS design system.
+ * adhere to the unified light enterprise SaaS design system.
  */
 
 .app-theme {
@@ -25,9 +25,9 @@
   flex: 1;
 }
 
-/* Ensure sticky header uses frosted light green translucent blur */
+/* Keep the sticky header white with a restrained frosted effect. */
 .app-theme .site-header {
-  background: rgba(244, 250, 246, 0.85);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--line);
@@ -68,4 +68,10 @@
 .app-theme .feature-card:hover {
   background-color: var(--panel-hover) !important;
   border-color: var(--line-strong) !important;
+}
+
+/* Featured pricing remains a white card with an indigo border. */
+.app-theme .billing-plan-card.popular {
+  background: #ffffff !important;
+  border: 2px solid var(--primary) !important;
 }

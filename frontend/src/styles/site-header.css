@@ -1,5 +1,5 @@
 /* ==========================================================================
-   FreeLeads — Unified Site Header (Dark Theme)
+   FreeLeads — Unified Site Header (Blue / Indigo Theme)
    ========================================================================== */
 
 .site-header {
@@ -7,11 +7,11 @@
   top: 0;
   z-index: 100;
   width: 100%;
-  background: rgba(244, 250, 246, 0.85);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   border-bottom: 1px solid var(--line);
-  box-shadow: 0 4px 20px rgba(16, 40, 28, 0.08);
+  box-shadow: 0 4px 20px rgba(49, 46, 129, 0.06);
   font-family: var(--font-body);
 }
 
@@ -60,9 +60,9 @@
   border-radius: 9px;
   display: grid;
   place-items: center;
-  background: rgba(46, 168, 115, 0.12);
+  background: rgba(79, 70, 229, 0.12);
   color: var(--green-hover);
-  border: 1px solid rgba(46, 168, 115, 0.25);
+  border: 1px solid rgba(79, 70, 229, 0.25);
 }
 
 .site-brand-name {
@@ -124,9 +124,9 @@
 .site-nav-link.is-active:hover,
 .site-nav-link.is-active:focus {
   color: var(--green-hover);
-  background-color: rgba(46, 168, 115, 0.10);
-  border-color: rgba(46, 168, 115, 0.3);
-  box-shadow: 0 0 14px rgba(46, 168, 115, 0.12);
+  background-color: rgba(79, 70, 229, 0.10);
+  border-color: rgba(79, 70, 229, 0.3);
+  box-shadow: 0 0 14px rgba(79, 70, 229, 0.12);
 }
 
 .site-nav-link.is-active svg {
@@ -180,14 +180,14 @@
   color: var(--ink);
 }
 
-/* Primary green button with white text */
+/* Primary indigo button with white text */
 .site-btn-primary,
 .site-btn-primary:visited {
   background: var(--green);
   color: #ffffff !important;
   border: 1px solid var(--green);
   font-weight: 700;
-  box-shadow: 0 4px 16px rgba(46, 168, 115, 0.25);
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.25);
 }
 
 .site-btn-primary:hover {
@@ -195,7 +195,7 @@
   border-color: var(--green-hover);
   color: #ffffff !important;
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(46, 168, 115, 0.35);
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.35);
 }
 
 /* Dashboard button */
@@ -204,7 +204,7 @@
   color: #ffffff !important;
   border: 1px solid var(--green);
   font-weight: 700;
-  box-shadow: 0 4px 14px rgba(75, 195, 140, 0.25);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25);
 }
 
 .site-btn-dashboard:hover {
@@ -389,7 +389,7 @@
 .site-drawer-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(14, 30, 22, 0.45);
+  background: rgba(15, 23, 42, 0.38);
   backdrop-filter: blur(8px);
   z-index: 95;
 }
@@ -464,8 +464,8 @@
 
 .site-drawer-link.is-active,
 .site-drawer-link.is-active:hover {
-  background-color: rgba(46, 168, 115, 0.10);
-  border-color: rgba(46, 168, 115, 0.3);
+  background-color: rgba(79, 70, 229, 0.10);
+  border-color: rgba(79, 70, 229, 0.3);
   color: var(--green-hover);
 }
 

@@ -1,46 +1,60 @@
 /* ==========================================================================
-   FreeLeads — Global Dark SaaS Theme Tokens & Reset
+   FreeLeads — Global Blue / Indigo SaaS Theme Tokens & Reset
    ========================================================================== */
 
 :root {
-  /* ---------- Core Lighter Green SaaS Palette ---------- */
-  --bg: #f4faf6;
-  --bg-gradient: radial-gradient(ellipse 900px 500px at 15% -5%, rgba(98, 214, 159, 0.22), transparent 60%),
-                 radial-gradient(ellipse 700px 500px at 100% 0%, rgba(170, 230, 190, 0.18), transparent 55%),
-                 linear-gradient(180deg, #f4faf6 0%, #ecf6f0 100%);
+  /* ---------- Core Blue / Indigo SaaS Palette ---------- */
+  --primary: #4f46e5;
+  --primary-dark: #4338ca;
+  --primary-light: #eef2ff;
+  --secondary-blue: #2563eb;
+  --secondary-blue-light: #eff6ff;
+  --purple: #7c3aed;
+  --purple-soft: #f5f3ff;
+  --success: #10b981;
+  --success-dark: #059669;
+  --success-soft: #ecfdf5;
+  --warning: #f59e0b;
+  --warning-soft: #fff7ed;
+  --pink: #ec4899;
+  --pink-soft: #fdf2f8;
+
+  --bg: #f8faff;
+  --bg-gradient: radial-gradient(ellipse 900px 500px at 15% -5%, rgba(79, 70, 229, 0.08), transparent 60%),
+                 radial-gradient(ellipse 700px 500px at 100% 0%, rgba(37, 99, 235, 0.06), transparent 55%),
+                 linear-gradient(180deg, #fbfcff 0%, #f8faff 100%);
   --panel: #ffffff;
-  --panel-hover: #f1f8f4;
-  --panel-subtle: #eaf3ed;
-  --line: #d6e6dc;
-  --line-strong: #b8d1c3;
-  --line-subtle: #e4efe7;
+  --panel-hover: #f8faff;
+  --panel-subtle: #f5f7ff;
+  --line: #e5e7eb;
+  --line-strong: #d1d5db;
+  --line-subtle: #eef2f7;
 
-  --green: #2ea873;
-  --green-hover: #22905f;
-  --green-dark: #0e1f17;
-  --green-soft: rgba(46, 168, 115, 0.12);
-
-  --lime: #8bc34a;
-  --lime-hover: #7cb342;
-  --lime-ink: #0f1f12;
+  /* Legacy semantic aliases retained so existing components adopt the new
+     visual language without changing their behavior or component contracts. */
+  --green: var(--primary);
+  --green-hover: var(--primary-dark);
+  --green-dark: #312e81;
+  --green-soft: rgba(79, 70, 229, 0.10);
+  --lime: var(--primary);
+  --lime-hover: var(--primary-dark);
+  --lime-ink: #ffffff;
   --lime-text: #ffffff;
-  --lime-soft: rgba(139, 195, 74, 0.16);
+  --lime-soft: rgba(79, 70, 229, 0.10);
 
-  --coral: #ff9d73;
-  --coral-soft: rgba(255, 157, 115, 0.14);
-  --blue: #7fa8ff;
-  --blue-soft: rgba(127, 168, 255, 0.14);
-  --purple: #b79bff;
-  --purple-soft: rgba(183, 155, 255, 0.14);
+  --coral: #f59e0b;
+  --coral-soft: #fff7ed;
+  --blue: var(--secondary-blue);
+  --blue-soft: var(--secondary-blue-light);
 
-  --ink: #0f1f17;
-  --ink-muted: #3f5a4b;
-  --ink-faint: #6b8275;
+  --ink: #111827;
+  --ink-muted: #4b5563;
+  --ink-faint: #6b7280;
 
-  --danger: #ff6b6b;
-  --danger-soft: rgba(255, 107, 107, 0.15);
-  --warn: #ffd166;
-  --warn-soft: rgba(255, 209, 102, 0.15);
+  --danger: #ef4444;
+  --danger-soft: #fef2f2;
+  --warn: var(--warning);
+  --warn-soft: #fffbeb;
 
   --radius-xl: 24px;
   --radius-lg: 20px;
@@ -88,10 +102,15 @@
   --fl-radius-sm: var(--radius-sm);
   --fl-radius-full: var(--radius-pill);
 
-  --fl-shadow-xs: 0 1px 3px rgba(16, 40, 28, 0.06);
-  --fl-shadow-sm: 0 4px 12px rgba(16, 40, 28, 0.08);
-  --fl-shadow-md: 0 14px 30px -10px rgba(16, 40, 28, 0.14);
-  --fl-shadow-lg: 0 30px 60px -20px rgba(16, 40, 28, 0.18);
+  --light-indigo-border: #c7d2fe;
+  --shadow-xs: 0 1px 3px rgba(17, 24, 39, 0.04);
+  --shadow-sm: 0 4px 14px rgba(17, 24, 39, 0.06);
+  --shadow-md: 0 16px 34px -16px rgba(49, 46, 129, 0.18);
+  --shadow-lg: 0 28px 64px -24px rgba(49, 46, 129, 0.24);
+  --fl-shadow-xs: var(--shadow-xs);
+  --fl-shadow-sm: var(--shadow-sm);
+  --fl-shadow-md: var(--shadow-md);
+  --fl-shadow-lg: var(--shadow-lg);
 
   --fl-container-max: 1280px;
   --fl-container-pad: 28px;
@@ -131,7 +150,7 @@
   --app-green: var(--green);
   --app-green-hover: var(--green-hover);
   --app-green-light: var(--green-soft);
-  --app-green-glow: rgba(75, 195, 140, 0.2);
+  --app-green-glow: rgba(79, 70, 229, 0.2);
   --app-lime: var(--lime);
   --app-lime-light: var(--lime-soft);
   --app-lime-dark: var(--lime-ink);

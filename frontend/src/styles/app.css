@@ -1,5 +1,5 @@
 /* ==========================================================================
-   FreeLeads — Modern App View Design System (Dark Theme)
+   FreeLeads — Modern App View Design System (Blue / Indigo Theme)
    ========================================================================== */
 
 :root {
@@ -17,7 +17,7 @@
   --app-green: var(--green);
   --app-green-hover: var(--green-hover);
   --app-green-light: var(--green-soft);
-  --app-green-glow: rgba(75, 195, 140, 0.2);
+  --app-green-glow: rgba(79, 70, 229, 0.2);
   --app-lime: var(--lime);
   --app-lime-light: var(--lime-soft);
   --app-lime-dark: var(--lime-ink);
@@ -65,14 +65,14 @@
   border-color: var(--lime);
   color: var(--lime-ink) !important;
   font-weight: 700;
-  box-shadow: 0 4px 14px rgba(215, 255, 99, 0.25);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25);
 }
 
 .app-header-btn-primary:hover {
   background: var(--lime-hover);
   border-color: var(--lime-hover);
   color: var(--lime-ink) !important;
-  box-shadow: 0 6px 18px rgba(215, 255, 99, 0.35);
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.35);
 }
 
 /* ==========================================================================
@@ -170,7 +170,7 @@
 
 .app-filter-search-input:focus {
   border-color: var(--green);
-  box-shadow: 0 0 0 3px rgba(75, 195, 140, 0.18);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.18);
 }
 
 .app-filter-search-clear {
@@ -210,7 +210,7 @@
   font-weight: 700;
   font-size: 14px;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(215, 255, 99, 0.25);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25);
   transition: all 0.18s ease;
 }
 
@@ -218,7 +218,7 @@
   background: var(--lime-hover);
   border-color: var(--lime-hover);
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(215, 255, 99, 0.35);
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.35);
 }
 
 .app-filter-btn-reset {
@@ -292,7 +292,7 @@
 
 .app-filter-verify-toggle.active {
   border-color: var(--green);
-  background: rgba(75, 195, 140, 0.12);
+  background: rgba(79, 70, 229, 0.12);
 }
 
 .app-filter-verify-toggle.active .app-filter-verify-track {
@@ -321,7 +321,7 @@
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--lime);
-  background: rgba(215, 255, 99, 0.1);
+  background: rgba(79, 70, 229, 0.1);
   padding: 2px 6px;
   border-radius: 100px;
 }
@@ -569,8 +569,8 @@
   gap: 6px;
   padding: 5px 12px;
   border-radius: var(--radius-pill);
-  background: rgba(215, 255, 99, 0.08);
-  border: 1px solid rgba(215, 255, 99, 0.25);
+  background: rgba(79, 70, 229, 0.08);
+  border: 1px solid rgba(79, 70, 229, 0.25);
   color: var(--lime);
   font-size: 12px;
   font-weight: 600;
@@ -662,8 +662,8 @@
   gap: 6px;
   padding: 6px 12px;
   border-radius: var(--radius-pill);
-  background: rgba(215, 255, 99, 0.08);
-  border: 1px solid rgba(215, 255, 99, 0.2);
+  background: rgba(79, 70, 229, 0.08);
+  border: 1px solid rgba(79, 70, 229, 0.2);
   color: var(--lime);
   font-size: 12px;
   font-family: var(--font-mono);
@@ -702,8 +702,8 @@
   gap: 10px;
   padding: 12px 18px;
   border-radius: var(--radius-md);
-  background: rgba(215, 255, 99, 0.08);
-  border: 1px solid rgba(215, 255, 99, 0.25);
+  background: rgba(79, 70, 229, 0.08);
+  border: 1px solid rgba(79, 70, 229, 0.25);
   color: var(--ink);
   font-size: 13px;
   margin-bottom: 20px;
@@ -851,20 +851,20 @@
 }
 
 .lead-pill-category {
-  background: rgba(75, 195, 140, 0.12);
-  border: 1px solid rgba(75, 195, 140, 0.25);
+  background: rgba(79, 70, 229, 0.12);
+  border: 1px solid rgba(79, 70, 229, 0.25);
   color: var(--green-hover);
 }
 
 .lead-pill-industry {
-  background: rgba(127, 168, 255, 0.12);
-  border: 1px solid rgba(127, 168, 255, 0.25);
+  background: rgba(37, 99, 235, 0.12);
+  border: 1px solid rgba(37, 99, 235, 0.25);
   color: var(--blue);
 }
 
 .lead-pill-verified {
-  background: rgba(215, 255, 99, 0.12);
-  border: 1px solid rgba(215, 255, 99, 0.3);
+  background: rgba(79, 70, 229, 0.12);
+  border: 1px solid rgba(79, 70, 229, 0.3);
   color: var(--lime);
   font-weight: 600;
 }
@@ -1101,7 +1101,7 @@
 .lead-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(14, 24, 19, 0.85);
+  background: rgba(15, 23, 42, 0.72);
   backdrop-filter: blur(10px);
   z-index: 200;
   display: flex;
@@ -1125,7 +1125,7 @@
 
 .lead-modal-banner {
   height: 90px;
-  background: linear-gradient(135deg, rgba(75, 195, 140, 0.25) 0%, rgba(215, 255, 99, 0.12) 100%);
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.25) 0%, rgba(79, 70, 229, 0.12) 100%);
   border-bottom: 1px solid var(--line);
   position: relative;
 }
@@ -1288,8 +1288,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(75, 195, 140, 0.08);
-  border: 1px solid rgba(75, 195, 140, 0.25);
+  background: rgba(79, 70, 229, 0.08);
+  border: 1px solid rgba(79, 70, 229, 0.25);
   border-radius: var(--radius-sm);
   padding: 14px 16px;
   font-size: 13px;
@@ -1315,7 +1315,7 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: rgba(75, 195, 140, 0.14);
+  background: rgba(79, 70, 229, 0.14);
   color: var(--green-hover);
   display: grid;
   place-items: center;
@@ -1377,7 +1377,7 @@
   font-size: 13.5px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 10px 26px -8px rgba(75, 195, 140, 0.55);
+  box-shadow: 0 10px 26px -8px rgba(79, 70, 229, 0.55);
   transition: all 0.2s ease;
 }
 
@@ -1469,7 +1469,7 @@
 .profile-toast {
   background: var(--green-soft);
   color: var(--green-hover);
-  border: 1px solid rgba(75, 195, 140, 0.3);
+  border: 1px solid rgba(79, 70, 229, 0.3);
   padding: 12px 18px;
   border-radius: var(--radius-md);
   display: flex;
@@ -1626,7 +1626,7 @@
   font-size: 14.5px;
   border: none;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(215, 255, 99, 0.25);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25);
   transition: all 0.18s ease;
 }
 
@@ -1854,7 +1854,7 @@
   gap: 6px;
   padding: 6px 14px;
   border-radius: 100px;
-  background: rgba(215, 255, 99, 0.12);
+  background: rgba(79, 70, 229, 0.12);
   color: var(--lime);
   font-size: 14px;
   font-weight: 700;
@@ -1931,62 +1931,13 @@
 }
 
 .billing-plan-card.popular {
-  border-color: var(--green);
-  background: linear-gradient(180deg, #ffffff 0%, #f3fbf6 100%);
-  box-shadow:
-    0 0 0 2px rgba(46, 168, 115, 0.35),
-    0 30px 60px -20px rgba(46, 168, 115, 0.35),
-    0 0 60px rgba(46, 168, 115, 0.18);
+  border: 2px solid var(--primary);
+  background: #ffffff;
+  box-shadow: 0 18px 44px -22px rgba(79, 70, 229, 0.38), 0 0 0 4px rgba(79, 70, 229, 0.05);
   overflow: visible;
-  animation: popularPulse 3s ease-in-out infinite;
   z-index: 2;
 }
 
-@keyframes popularPulse {
-  0%, 100% {
-    box-shadow:
-      0 0 0 2px rgba(46, 168, 115, 0.35),
-      0 30px 60px -20px rgba(46, 168, 115, 0.35),
-      0 0 60px rgba(46, 168, 115, 0.18);
-  }
-  50% {
-    box-shadow:
-      0 0 0 3px rgba(46, 168, 115, 0.5),
-      0 36px 70px -20px rgba(46, 168, 115, 0.45),
-      0 0 80px rgba(46, 168, 115, 0.28);
-  }
-}
-
-.billing-plan-card.popular::before {
-  content: "";
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  border-radius: calc(var(--radius-lg) + 2px);
-  background: linear-gradient(135deg, var(--green), var(--lime), var(--green-hover), var(--green));
-  background-size: 300% 300%;
-  animation: popularBorderFlow 6s ease infinite;
-  z-index: -1;
-}
-
-@keyframes popularBorderFlow {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-.billing-plan-card.popular::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, var(--green), var(--lime), var(--green-hover));
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  z-index: 2;
-}
 
 .billing-plan-card.current {
   border-color: var(--green);
@@ -2002,10 +1953,10 @@
 }
 
 .billing-plan-card.popular .billing-plan-icon {
-  background: rgba(46, 168, 115, 0.14) !important;
+  background: rgba(79, 70, 229, 0.14) !important;
   color: var(--green-hover) !important;
-  border-color: rgba(46, 168, 115, 0.4);
-  box-shadow: 0 10px 22px -10px rgba(46, 168, 115, 0.45);
+  border-color: rgba(79, 70, 229, 0.4);
+  box-shadow: 0 10px 22px -10px rgba(79, 70, 229, 0.45);
 }
 
 .billing-plan-card.popular .billing-price {
@@ -2058,7 +2009,7 @@
 .popular-tag {
   background: linear-gradient(90deg, var(--green), var(--green-hover));
   color: #ffffff;
-  box-shadow: 0 8px 18px -6px rgba(46, 168, 115, 0.6);
+  box-shadow: 0 8px 18px -6px rgba(79, 70, 229, 0.6);
   padding: 6px 14px;
   font-size: 11px;
   letter-spacing: 0.08em;
@@ -2151,7 +2102,7 @@
   background: var(--lime);
   border: 1px solid var(--lime);
   color: var(--lime-ink) !important;
-  box-shadow: 0 4px 14px rgba(215, 255, 99, 0.25);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25);
 }
 
 .billing-btn-primary:hover {
@@ -2226,7 +2177,7 @@
 
 /* Alternate section background band used between marketing sections. */
 .landing-section-alt {
-  background: linear-gradient(180deg, transparent, rgba(75, 195, 140, 0.05), transparent);
+  background: linear-gradient(180deg, transparent, rgba(79, 70, 229, 0.05), transparent);
 }
 
 /* Narrow centered inner container for the closing CTA band. */
@@ -2332,7 +2283,7 @@
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: rgba(75, 195, 140, 0.14);
+  background: rgba(79, 70, 229, 0.14);
   color: var(--green-hover);
   display: grid;
   place-items: center;
@@ -2381,7 +2332,7 @@
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: rgba(215, 255, 99, 0.1);
+  background: rgba(79, 70, 229, 0.1);
   color: var(--lime);
   display: grid;
   place-items: center;
@@ -2531,7 +2482,7 @@
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: rgba(75, 195, 140, 0.14);
+  background: rgba(79, 70, 229, 0.14);
   color: var(--green-hover);
   display: grid;
   place-items: center;
@@ -2693,7 +2644,7 @@
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--lime);
-  background: rgba(215, 255, 99, 0.12);
+  background: rgba(79, 70, 229, 0.12);
   padding: 4px 10px;
   border-radius: 100px;
   text-transform: uppercase;
@@ -2900,4 +2851,101 @@
   .blog-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ==========================================================================
+   Blue / Indigo visual language — functional states remain semantic
+   ========================================================================== */
+
+/* Search controls */
+.app-filter-search-input { background: #ffffff; }
+.app-filter-search-input:focus,
+.contact-form-row input:focus,
+.contact-form-field input:focus,
+.contact-form-field textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+.app-filter-btn-search,
+.billing-btn-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff !important;
+  box-shadow: 0 7px 18px rgba(79, 70, 229, 0.20);
+}
+
+.app-filter-btn-search:hover,
+.billing-btn-primary:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+/* Verification communicates success, not brand selection. */
+.app-filter-verify-toggle.active {
+  border-color: #a7f3d0;
+  background: var(--success-soft);
+}
+.app-filter-verify-toggle.active .app-filter-verify-track { background: var(--success); }
+.app-filter-verify-text svg { color: var(--success-dark); }
+.app-filter-verify-count { color: var(--success-dark); background: var(--success-soft); }
+.lead-card-avatar-verified { background: var(--success); color: #ffffff; }
+.lead-pill-verified {
+  background: var(--success-soft);
+  border-color: #a7f3d0;
+  color: var(--success-dark);
+}
+
+/* Restrained information badges. */
+.lead-pill-category {
+  background: var(--primary-light);
+  border-color: var(--light-indigo-border, #c7d2fe);
+  color: var(--primary);
+}
+.lead-pill-industry {
+  background: var(--secondary-blue-light);
+  border-color: #bfdbfe;
+  color: var(--secondary-blue);
+}
+.app-table th { background: #f5f7ff; }
+.app-table tbody tr:hover { background: #f8faff; }
+
+/* Pricing: the featured plan stays white and is identified by its border. */
+.billing-plan-card.popular,
+.billing-plan-card.popular:hover { background: #ffffff; }
+.billing-plan-card.popular .billing-plan-icon {
+  background: var(--primary-light) !important;
+  color: var(--primary) !important;
+  border-color: var(--light-indigo-border, #c7d2fe);
+  box-shadow: none;
+}
+.billing-plan-card.popular .billing-price { color: var(--primary); }
+.popular-tag {
+  background: var(--primary);
+  box-shadow: 0 7px 16px rgba(79, 70, 229, 0.24);
+}
+.plans-page {
+  background-image:
+    linear-gradient(rgba(79, 70, 229, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(79, 70, 229, 0.025) 1px, transparent 1px);
+  background-size: 42px 42px;
+}
+
+/* Contact */
+.contact-info-icon,
+.contact-card-icon,
+.contact-why-icon {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+.contact-card { box-shadow: 0 18px 50px -28px rgba(49, 46, 129, 0.24); }
+.contact-form-row input,
+.contact-form-field input,
+.contact-form-field textarea { background: #ffffff; }
+.contact-success-icon { background: var(--success-soft); color: var(--success-dark); }
+
+.lead-card-copy-btn.copied {
+  background: var(--success);
+  border-color: var(--success);
+  color: #ffffff;
 }

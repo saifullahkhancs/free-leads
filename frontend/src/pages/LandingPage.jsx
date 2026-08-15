@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, LayoutDashboard, MapPin } from "lucide-react";
+import { ArrowRight, BriefcaseBusiness, Gift, Globe2, LayoutDashboard, MapPin, Users } from "lucide-react";
 import * as api from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import GlobeAnimation from "../components/GlobeAnimation";
@@ -11,15 +11,15 @@ const LEAD_TYPES = [
     title: "B2B Leads",
     text: "Connect with decision-makers across various industries.",
     available: "12.5M+",
-    accent: "#4bc38c",
-    soft: "rgba(75,195,140,0.14)",
+    accent: "#4F46E5",
+    soft: "rgba(79,70,229,0.14)",
   },
   {
     icon: "👥",
     title: "B2C Leads",
     text: "Reach individual consumers with verified contact data.",
     available: "28M+",
-    accent: "#ff9d73",
+    accent: "#F59E0B",
     soft: "rgba(255,157,115,0.14)",
   },
   {
@@ -27,32 +27,32 @@ const LEAD_TYPES = [
     title: "International",
     text: "Expand globally with leads from 50+ countries.",
     available: "15M+",
-    accent: "#7fa8ff",
-    soft: "rgba(127,168,255,0.14)",
+    accent: "#2563EB",
+    soft: "rgba(37,99,235,0.14)",
   },
   {
     icon: "💻",
     title: "Technology",
     text: "Target tech companies and IT decision-makers.",
     available: "5.2M+",
-    accent: "#b79bff",
-    soft: "rgba(183,155,255,0.14)",
+    accent: "#7C3AED",
+    soft: "rgba(124,58,237,0.14)",
   },
   {
     icon: "🩺",
     title: "Healthcare",
     text: "Connect with healthcare professionals and clinics.",
     available: "3.8M+",
-    accent: "#4bc38c",
-    soft: "rgba(75,195,140,0.14)",
+    accent: "#4F46E5",
+    soft: "rgba(79,70,229,0.14)",
   },
   {
     icon: "🏛️",
     title: "Finance",
     text: "Reach banking professionals and investors.",
     available: "4.1M+",
-    accent: "#d7ff63",
-    soft: "rgba(215,255,99,0.14)",
+    accent: "#4F46E5",
+    soft: "rgba(79,70,229,0.14)",
   },
 ];
 
@@ -229,10 +229,10 @@ export default function LandingPage() {
 
       {/* STAT STRIP */}
       <div className="stats">
-        <div className="stat bold-stat stat-highlight"><b>5 million</b><span>Verified lead records</span></div>
-        <div className="stat bold-stat stat-highlight"><b>196</b><span>Countries around the world</span></div>
-        <div className="stat"><b>150+</b><span>Industries to explore</span></div>
-        <div className="stat"><b>Free</b><span>A calm place for better outreach</span></div>
+        <div className="stat stat-indigo"><span className="stat-icon-wrap"><Users size={21} /></span><div><b>5 million</b><span>Verified lead records</span></div></div>
+        <div className="stat stat-blue"><span className="stat-icon-wrap"><Globe2 size={21} /></span><div><b>196</b><span>Countries around the world</span></div></div>
+        <div className="stat stat-orange"><span className="stat-icon-wrap"><BriefcaseBusiness size={21} /></span><div><b>150+</b><span>Industries to explore</span></div></div>
+        <div className="stat stat-pink"><span className="stat-icon-wrap"><Gift size={21} /></span><div><b>Free</b><span>A calm place for better outreach</span></div></div>
       </div>
 
       {/* COVERAGE / COUNTRIES */}

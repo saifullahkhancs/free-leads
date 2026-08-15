@@ -19,13 +19,13 @@ export default function GlobeAnimation() {
 
   // Orbiting leads: each dot represents a "lead" circling the globe.
   const orbits = [
-    { size: 12, color: "#2ea873", ring: 70, duration: 14, delay: 0, top: "6%", label: "AR" },
-    { size: 10, color: "#7fa8ff", ring: 62, duration: 18, delay: -4, top: "18%", label: "DK" },
-    { size: 11, color: "#ff9d73", ring: 82, duration: 22, delay: -8, top: "32%", label: "MS" },
-    { size: 9, color: "#b79bff", ring: 58, duration: 12, delay: -2, top: "48%", label: "JP" },
-    { size: 12, color: "#8bc34a", ring: 88, duration: 26, delay: -10, top: "62%", label: "NG" },
-    { size: 10, color: "#2ea873", ring: 66, duration: 16, delay: -6, top: "76%", label: "BR" },
-    { size: 8, color: "#ff9d73", ring: 52, duration: 20, delay: -3, top: "88%", label: "DE" },
+    { size: 12, color: "#4F46E5", ring: 70, duration: 14, delay: 0, top: "6%", label: "AR" },
+    { size: 10, color: "#2563EB", ring: 62, duration: 18, delay: -4, top: "18%", label: "DK" },
+    { size: 11, color: "#F59E0B", ring: 82, duration: 22, delay: -8, top: "32%", label: "MS" },
+    { size: 9, color: "#7C3AED", ring: 58, duration: 12, delay: -2, top: "48%", label: "JP" },
+    { size: 12, color: "#4F46E5", ring: 88, duration: 26, delay: -10, top: "62%", label: "NG" },
+    { size: 10, color: "#4F46E5", ring: 66, duration: 16, delay: -6, top: "76%", label: "BR" },
+    { size: 8, color: "#F59E0B", ring: 52, duration: 20, delay: -3, top: "88%", label: "DE" },
   ];
 
   return (
@@ -41,8 +41,8 @@ export default function GlobeAnimation() {
             <defs>
               <radialGradient id="globeShade" cx="35%" cy="30%" r="75%">
                 <stop offset="0%" stopColor="rgba(255,255,255,0.55)" />
-                <stop offset="55%" stopColor="rgba(98,214,159,0.15)" />
-                <stop offset="100%" stopColor="rgba(15,31,23,0.25)" />
+                <stop offset="55%" stopColor="rgba(99,102,241,0.18)" />
+                <stop offset="100%" stopColor="rgba(49,46,129,0.20)" />
               </radialGradient>
             </defs>
             {/* Meridians (vertical ellipses) */}
@@ -54,7 +54,7 @@ export default function GlobeAnimation() {
                 rx={Math.abs(100 - cx) < 2 ? 92 : Math.max(6, 92 - Math.abs(100 - cx))}
                 ry="92"
                 fill="none"
-                stroke="rgba(46,168,115,0.35)"
+                stroke="rgba(79,70,229,0.35)"
                 strokeWidth="1"
                 strokeDasharray="2 4"
               />
@@ -71,7 +71,7 @@ export default function GlobeAnimation() {
                   rx={rx}
                   ry={Math.max(3, rx * 0.22)}
                   fill="none"
-                  stroke="rgba(46,168,115,0.30)"
+                  stroke="rgba(79,70,229,0.30)"
                   strokeWidth="1"
                   strokeDasharray="2 4"
                 />
@@ -91,8 +91,8 @@ export default function GlobeAnimation() {
                 cx={c.cx}
                 cy={c.cy}
                 r={c.r}
-                fill="rgba(46,168,115,0.12)"
-                stroke="rgba(46,168,115,0.35)"
+                fill="rgba(79,70,229,0.12)"
+                stroke="rgba(79,70,229,0.35)"
                 strokeWidth="1"
                 strokeDasharray="1 3"
               />
@@ -100,7 +100,7 @@ export default function GlobeAnimation() {
             {/* Shading overlay */}
             <circle cx="100" cy="100" r="94" fill="url(#globeShade)" />
             {/* Outline */}
-            <circle cx="100" cy="100" r="94" fill="none" stroke="rgba(46,168,115,0.45)" strokeWidth="1.5" />
+            <circle cx="100" cy="100" r="94" fill="none" stroke="rgba(79,70,229,0.45)" strokeWidth="1.5" />
           </svg>
 
           {/* Rotating dotted surface dots */}
