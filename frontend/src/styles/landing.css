@@ -31,9 +31,9 @@
   font-size: 12px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--green-hover);
-  background: rgba(79, 70, 229, 0.10);
-  border: 1px solid rgba(79, 70, 229, 0.25);
+  color: var(--primary);
+  background: var(--primary-light);
+  border: 1px solid var(--light-indigo-border);
   padding: 6px 14px;
   border-radius: 100px;
   margin-bottom: 22px;
@@ -59,7 +59,7 @@
 .section-kicker {
   font-family: var(--font-mono);
   font-size: 11.5px;
-  color: var(--coral);
+  color: var(--primary);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   margin-bottom: 12px;
@@ -77,10 +77,10 @@
   z-index: 0;
   pointer-events: none;
   background-image:
-    radial-gradient(ellipse 900px 500px at 15% -5%, rgba(79, 70, 229, 0.18), transparent 60%),
-    radial-gradient(ellipse 700px 500px at 100% 0%, rgba(124, 58, 237, 0.10), transparent 55%),
-    linear-gradient(rgba(184, 209, 195, 0.45) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(184, 209, 195, 0.45) 1px, transparent 1px);
+    radial-gradient(ellipse 900px 500px at 15% -5%, rgba(79, 70, 229, 0.10), transparent 60%),
+    radial-gradient(ellipse 700px 500px at 100% 0%, rgba(124, 58, 237, 0.07), transparent 55%),
+    linear-gradient(rgba(232, 234, 248, 0.9) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(232, 234, 248, 0.9) 1px, transparent 1px);
   background-size: auto, auto, 46px 46px, 46px 46px;
   -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, #000 25%, transparent 80%);
   mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, #000 25%, transparent 80%);
@@ -101,9 +101,9 @@
   font-size: 12px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--green-hover);
-  background: rgba(79, 70, 229, 0.10);
-  border: 1px solid rgba(79, 70, 229, 0.25);
+  color: var(--primary);
+  background: var(--primary-light);
+  border: 1px solid var(--light-indigo-border);
   padding: 6px 14px;
   border-radius: 100px;
   margin-bottom: 22px;
@@ -126,7 +126,7 @@
 
 /* Accent inline emphasis inside headings. */
 .accent {
-  color: var(--green-hover);
+  color: var(--primary);
 }
 
 /* Center utility for heading / button groups. */
@@ -195,7 +195,7 @@ section.block,
 
 .btn-primary,
 .landing .btn-primary {
-  background: var(--green);
+  background: var(--primary);
   color: #ffffff !important;
   padding: 13px 26px;
   border-radius: 100px;
@@ -207,23 +207,23 @@ section.block,
   justify-content: center;
   gap: 8px;
   border: none;
-  box-shadow: 0 10px 26px -8px rgba(79, 70, 229, 0.35);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.20);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color var(--t-base) var(--ease), box-shadow var(--t-base) var(--ease), transform var(--t-base) var(--ease);
 }
 
 .btn-primary:hover,
 .landing .btn-primary:hover {
   background: var(--green-hover);
   transform: translateY(-2px);
-  box-shadow: 0 14px 30px -8px rgba(34, 144, 95, 0.45);
+  box-shadow: 0 8px 22px rgba(79, 70, 229, 0.24);
   color: #ffffff !important;
 }
 
 .btn-outline,
 .landing .btn-outline {
-  border: 1px solid var(--line-strong);
-  background: transparent;
+  border: 1px solid var(--line);
+  background: var(--card);
   color: var(--ink);
   padding: 12px 24px;
   border-radius: 100px;
@@ -240,10 +240,11 @@ section.block,
 
 .btn-outline:hover,
 .landing .btn-outline:hover {
-  background: var(--panel-hover);
-  border-color: var(--green);
-  color: var(--ink);
-  transform: translateY(-2px);
+  background: var(--primary-light);
+  border-color: var(--light-indigo-border);
+  color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .btn-lime,
@@ -261,9 +262,9 @@ section.block,
   justify-content: center;
   gap: 8px;
   border: none;
-  box-shadow: 0 10px 24px -6px rgba(79, 70, 229, 0.35);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.20);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color var(--t-base) var(--ease), box-shadow var(--t-base) var(--ease), transform var(--t-base) var(--ease);
 }
 
 .btn-lime:hover,
@@ -271,12 +272,12 @@ section.block,
 .landing .btn-light:hover {
   background: var(--green-hover);
   transform: translateY(-2px);
-  box-shadow: 0 14px 30px -6px rgba(79, 70, 229, 0.45);
+  box-shadow: 0 8px 22px rgba(79, 70, 229, 0.24);
   color: #ffffff !important;
 }
 
 .btn-ghost {
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--line);
   color: var(--ink);
   padding: 9px 18px;
   border-radius: 100px;
@@ -291,15 +292,15 @@ section.block,
 }
 
 .btn-ghost:hover {
-  background: var(--panel-hover);
-  border-color: var(--line-strong);
-  color: var(--ink);
+  background: var(--primary-light);
+  border-color: var(--light-indigo-border);
+  color: var(--primary);
 }
 
 .btn-outline-light,
 .landing .btn-outline-light {
-  border: 1px solid var(--line-strong);
-  background: transparent;
+  border: 1px solid var(--line);
+  background: var(--card);
   color: var(--ink);
   padding: 12px 24px;
   border-radius: 100px;
@@ -316,8 +317,8 @@ section.block,
 
 .btn-outline-light:hover,
 .landing .btn-outline-light:hover {
-  background: var(--panel-hover);
-  border-color: var(--green);
+  background: var(--primary-light);
+  border-color: var(--light-indigo-border);
   color: var(--ink);
   transform: translateY(-2px);
 }
@@ -334,10 +335,21 @@ section.block,
 .landing-hero {
   padding: 56px 0 44px;
   display: grid;
-  grid-template-columns: 1.05fr 0.95fr;
-  gap: 54px;
+  /* Copy keeps the majority; the globe occupies ~45% of the hero width. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.82fr);
+  gap: 48px;
   align-items: center;
   position: relative;
+}
+
+/* Very light blue/indigo wash behind the whole hero — never dark. Painted on
+   the hero itself (not a full-bleed pseudo) so it can never introduce
+   horizontal overflow. */
+.hero,
+.landing-hero {
+  background:
+    radial-gradient(ellipse 820px 480px at 26% 12%, rgba(238, 242, 255, 0.85), transparent 66%),
+    radial-gradient(ellipse 700px 480px at 82% 0%, rgba(239, 246, 255, 0.8), transparent 64%);
 }
 
 .hero-h1,
@@ -382,8 +394,8 @@ section.block,
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: var(--panel-hover);
-  border: 2px solid var(--bg);
+  background: var(--card-hover);
+  border: 2px solid #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -396,28 +408,40 @@ section.block,
 
 .proof-avatars span:first-child {
   margin-left: 0;
-  background: #d96b4d;
+  background: var(--primary);
   color: #fff;
 }
 .proof-avatars span:nth-child(2) {
-  background: #4667d8;
+  background: var(--secondary-blue);
   color: #fff;
 }
 .proof-avatars span:nth-child(3) {
-  background: #b18b40;
+  background: var(--cyan, #06b6d4);
   color: #fff;
 }
 .proof-avatars span:last-child {
-  background: var(--green-soft);
-  color: var(--green-dark);
+  background: var(--primary-light);
+  color: var(--primary);
 }
 
 /* Directory Card Visual in Hero */
 .hero-visual {
   position: relative;
+  min-width: 0;
   perspective: 1200px;
   animation: heroFloat 7s ease-in-out infinite;
   will-change: transform;
+}
+
+/* The globe is a standalone visual: no card, no frame, no float animation of
+   its own (the component already bobs gently). */
+.hero-globe-visual {
+  animation: none;
+  perspective: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: visible;
 }
 
 @keyframes heroFloat {
@@ -720,17 +744,18 @@ section.block,
 .stat-strip {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1px;
-  background: var(--line);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  overflow: hidden;
+  gap: 14px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
   margin: 50px 0;
 }
 
 .stat,
 .stat-strip > div {
-  background: var(--panel);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
   padding: 22px 20px;
   display: flex;
   flex-direction: column;
@@ -738,8 +763,8 @@ section.block,
 }
 
 .stat.bold-stat {
-  background: linear-gradient(135deg, rgba(79,70,229,0.12), rgba(124,58,237,0.08));
-  border-top: 2px solid var(--green);
+  background: var(--card-indigo);
+  border-color: var(--light-indigo-border);
 }
 
 .stat b,
@@ -754,8 +779,7 @@ section.block,
 }
 
 .stat.bold-stat b {
-  color: var(--green-hover);
-  text-shadow: 0 0 18px rgba(79, 70, 229, 0.25);
+  color: var(--primary);
 }
 
 .stat span,
@@ -776,11 +800,12 @@ section.block,
 }
 
 .country-card {
-  background: var(--panel);
+  background: var(--card-country);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   padding: 18px;
-  transition: border-color 0.25s ease, transform 0.3s cubic-bezier(.2,.8,.2,1), box-shadow 0.3s ease;
+  transition: background-color var(--t-slow) var(--ease), border-color var(--t-slow) var(--ease),
+              transform var(--t-slow) var(--ease), box-shadow var(--t-slow) var(--ease);
   position: relative;
   opacity: 0;
   transform: translateY(16px);
@@ -811,7 +836,7 @@ section.block,
   right: 18px;
   bottom: 12px;
   height: 2px;
-  background: linear-gradient(90deg, transparent, var(--green-hover), transparent);
+  background: linear-gradient(90deg, transparent, var(--primary), transparent);
   opacity: 0;
   transform: scaleX(0.4);
   transition: opacity 0.3s ease, transform 0.3s ease;
@@ -819,9 +844,10 @@ section.block,
 }
 
 .country-card:hover {
-  border-color: var(--green);
-  transform: translateY(-6px) scale(1.015);
-  box-shadow: 0 24px 40px -18px rgba(79,70,229,0.3);
+  background: var(--card-blue);
+  border-color: var(--light-indigo-border);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .country-card:hover::after {
@@ -830,7 +856,7 @@ section.block,
 }
 
 .country-card:hover .country-flag {
-  transform: scale(1.15) rotate(-4deg);
+  transform: scale(1.08);
 }
 
 .country-flag {
@@ -874,14 +900,14 @@ section.block,
 .country-card .cnt b,
 .country-card-copy p strong {
   color: var(--ink);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .vol-bar,
 .country-volume {
   height: 4px;
   border-radius: 100px;
-  background: var(--bg);
+  background: var(--primary-light);
   overflow: hidden;
   margin-bottom: 10px;
 }
@@ -890,7 +916,7 @@ section.block,
 .country-volume span {
   display: block;
   height: 100%;
-  background: var(--green);
+  background: var(--primary);
   border-radius: 100px;
 }
 
@@ -921,7 +947,7 @@ section.block,
 
 .footnote a,
 .coverage-footnote a {
-  color: var(--green-hover);
+  color: var(--primary);
   text-decoration: none;
   font-weight: 600;
   display: inline-flex;
@@ -932,7 +958,7 @@ section.block,
 
 .footnote a:hover,
 .coverage-footnote a:hover {
-  color: var(--green-hover);
+  color: var(--primary-dark);
 }
 
 /* ==========================================================================
@@ -946,16 +972,17 @@ section.block,
 }
 
 .type-card {
-  background: var(--panel);
+  background: var(--card-tint, var(--card));
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   padding: 24px;
   position: relative;
   overflow: hidden;
   opacity: 0;
-  transform: translateY(20px) scale(0.98);
+  transform: translateY(20px);
   animation: cardRise 0.7s cubic-bezier(.2,.8,.2,1) forwards;
-  transition: transform 0.35s cubic-bezier(.2,.8,.2,1), border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: background-color var(--t-slow) var(--ease), transform var(--t-slow) var(--ease),
+              border-color var(--t-slow) var(--ease), box-shadow var(--t-slow) var(--ease);
 }
 
 .types-grid .type-card:nth-child(1) { animation-delay: 0.10s; }
@@ -972,28 +999,29 @@ section.block,
   left: 0;
   right: 0;
   height: 3px;
-  background: var(--accent, var(--green));
-  transition: height 0.3s ease;
+  background: var(--accent, var(--primary));
+  transition: height var(--t-slow) var(--ease);
 }
 
 .type-card::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at var(--mx,50%) var(--my,0%), var(--soft, rgba(79,70,229,0.12)), transparent 55%);
+  background: radial-gradient(circle at var(--mx,50%) var(--my,0%), var(--soft, rgba(79,70,229,0.10)), transparent 55%);
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity var(--t-slow) var(--ease);
   pointer-events: none;
 }
 
 .type-card:hover {
-  transform: translateY(-8px) scale(1.02);
-  border-color: var(--accent, var(--green));
-  box-shadow: 0 26px 44px -20px var(--soft, rgba(79,70,229,0.35));
+  background: var(--card-tint-hover, var(--card-hover));
+  transform: translateY(-3px);
+  border-color: var(--light-indigo-border);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .type-card:hover::before {
-  height: 5px;
+  height: 4px;
 }
 
 .type-card:hover::after {
@@ -1001,8 +1029,7 @@ section.block,
 }
 
 .type-card:hover .type-ic {
-  transform: translateY(-3px) rotate(-6deg) scale(1.08);
-  box-shadow: 0 10px 20px -8px var(--soft, rgba(79,70,229,0.5));
+  transform: scale(1.06);
 }
 
 .type-ic {
@@ -1034,8 +1061,8 @@ section.block,
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--soft, rgba(79, 70, 229, 0.14));
-  color: var(--accent, var(--green));
+  background: var(--icon-tint, var(--icon-indigo));
+  color: var(--accent, var(--primary));
   font-size: 18px;
 }
 
@@ -1082,7 +1109,7 @@ section.block,
 .type-avail .arr,
 .type-card-available svg {
   margin-left: auto;
-  color: var(--accent, var(--green));
+  color: var(--accent, var(--primary));
 }
 
 /* ==========================================================================
@@ -1097,14 +1124,15 @@ section.block,
 
 .feat-card,
 .feature-card {
-  background: var(--panel);
+  background: var(--card-tint, var(--card-lavender));
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   padding: 24px;
   opacity: 0;
   transform: translateY(20px);
   animation: cardRise 0.7s cubic-bezier(.2,.8,.2,1) forwards;
-  transition: transform 0.35s cubic-bezier(.2,.8,.2,1), border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: background-color var(--t-slow) var(--ease), transform var(--t-slow) var(--ease),
+              border-color var(--t-slow) var(--ease), box-shadow var(--t-slow) var(--ease);
 }
 
 .feat-grid .feat-card:nth-child(1) { animation-delay: 0.08s; }
@@ -1116,13 +1144,14 @@ section.block,
 
 .feat-card:hover,
 .feature-card:hover {
-  transform: translateY(-8px) scale(1.015);
-  border-color: var(--green);
-  box-shadow: 0 26px 44px -20px rgba(79,70,229,0.28);
+  background: var(--card-tint-hover, var(--card-lavender-hover));
+  transform: translateY(-3px);
+  border-color: var(--light-indigo-border);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .feat-card:hover .feat-ic {
-  transform: rotate(-8deg) scale(1.1);
+  transform: scale(1.06);
 }
 
 .feat-ic {
@@ -1141,12 +1170,12 @@ section.block,
 .feature-icon {
   width: 38px;
   height: 38px;
-  border-radius: 9px;
-  background: rgba(79, 70, 229, 0.14);
+  border-radius: 10px;
+  background: var(--icon-tint, var(--icon-indigo));
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--green-hover);
+  color: var(--icon-color, var(--primary));
   font-size: 16px;
 }
 
@@ -1184,7 +1213,7 @@ section.block,
 }
 
 .step-card {
-  background: var(--panel);
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   padding: 26px 22px;
@@ -1200,13 +1229,14 @@ section.block,
 .steps-row .step-card:nth-child(3) { animation-delay: 0.44s; }
 
 .step-card:hover {
-  transform: translateY(-8px) scale(1.02);
-  border-color: var(--green);
-  box-shadow: 0 28px 48px -22px rgba(79,70,229,0.35);
+  background: var(--card-indigo);
+  transform: translateY(-3px);
+  border-color: var(--light-indigo-border);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .step-card:hover .step-ic {
-  transform: translateY(-4px) scale(1.12) rotate(-6deg);
+  transform: scale(1.06);
 }
 
 .step-ic {
@@ -1217,7 +1247,7 @@ section.block,
 .step-number {
   font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--green-hover);
+  color: var(--primary);
   margin-bottom: 14px;
 }
 
@@ -1225,12 +1255,12 @@ section.block,
 .step-icon {
   width: 38px;
   height: 38px;
-  border-radius: 9px;
-  background: var(--panel-hover);
+  border-radius: 10px;
+  background: var(--icon-indigo);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--green-hover);
+  color: var(--primary);
   margin-bottom: 14px;
   font-size: 16px;
 }
@@ -1265,7 +1295,7 @@ section.block,
   display: flex;
   align-items: center;
   gap: 24px;
-  background: var(--panel);
+  background: var(--card-indigo);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   padding: 30px 34px;
@@ -1276,11 +1306,11 @@ section.block,
   width: 52px;
   height: 52px;
   border-radius: 14px;
-  background: rgba(79, 70, 229, 0.14);
+  background: var(--icon-indigo);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--green-hover);
+  color: var(--primary);
   flex-shrink: 0;
   font-size: 22px;
 }
@@ -1302,7 +1332,7 @@ section.block,
 
 .sec-check,
 .security-check {
-  color: var(--green-hover);
+  color: var(--success);
   flex-shrink: 0;
 }
 
@@ -1313,7 +1343,7 @@ section.block,
 .landing-cta {
   padding: 80px 0;
   text-align: center;
-  background: linear-gradient(180deg, transparent, rgba(79, 70, 229, 0.10));
+  background: linear-gradient(180deg, transparent, rgba(79, 70, 229, 0.06));
 }
 
 .cta-section h2,
@@ -1344,6 +1374,10 @@ section.block,
     grid-template-columns: 1fr;
     gap: 40px;
     padding: 36px 0;
+  }
+  /* Globe stacks *below* the hero copy on tablet / mobile. */
+  .hero-globe-visual {
+    order: 2;
   }
   .country-grid,
   .country-leads-grid {
@@ -1404,14 +1438,15 @@ section.block,
   flex-direction: row;
   align-items: center;
   gap: 16px;
-  background: #ffffff;
   border-top: 0;
-  transition: transform 180ms ease, box-shadow 180ms ease;
+  transition: background-color var(--t-base) var(--ease), border-color var(--t-base) var(--ease),
+              transform var(--t-base) var(--ease), box-shadow var(--t-base) var(--ease);
 }
 
 .stats .stat:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(79, 70, 229, 0.08);
+  border-color: var(--light-indigo-border);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .stats .stat > div {
@@ -1432,14 +1467,25 @@ section.block,
   text-shadow: none;
 }
 
+.stats .stat-indigo { background: var(--card-indigo); }
 .stats .stat-indigo .stat-icon-wrap { background: #eef2ff; color: #4f46e5; }
 .stats .stat-indigo b { color: #4f46e5; }
+.stats .stat-indigo:hover { background: var(--card-indigo-hover); }
+
+.stats .stat-blue { background: var(--card-blue); }
 .stats .stat-blue .stat-icon-wrap { background: #eff6ff; color: #2563eb; }
 .stats .stat-blue b { color: #2563eb; }
+.stats .stat-blue:hover { background: var(--card-blue-hover); }
+
+.stats .stat-orange { background: var(--card-orange); }
 .stats .stat-orange .stat-icon-wrap { background: #fff7ed; color: #f59e0b; }
 .stats .stat-orange b { color: #d97706; }
+.stats .stat-orange:hover { background: var(--card-orange-hover); }
+
+.stats .stat-pink { background: var(--card-pink); }
 .stats .stat-pink .stat-icon-wrap { background: #fdf2f8; color: #ec4899; }
 .stats .stat-pink b { color: #db2777; }
+.stats .stat-pink:hover { background: var(--card-pink-hover); }
 
 @media (max-width: 640px) {
   .stats .stat { padding: 18px; }

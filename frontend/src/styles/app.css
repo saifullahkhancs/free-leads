@@ -2854,34 +2854,131 @@
 }
 
 /* ==========================================================================
-   Blue / Indigo visual language — functional states remain semantic
+   Indigo design-system layer
+
+   Loaded after the structural rules above, this block harmonises every app
+   surface with the shared tokens: light page, subtly tinted cards, dark text,
+   indigo primary, and colour reserved for semantics (green = verified).
    ========================================================================== */
 
-/* Search controls */
-.app-filter-search-input { background: #ffffff; }
+/* ---------- Search Leads: the filter hub ---------- */
+.app-main-filter-panel {
+  background: var(--card);
+  border-color: var(--line);
+  box-shadow: var(--shadow-sm);
+}
+
+.app-filter-search-input {
+  background: #ffffff;
+  border-color: var(--line);
+  transition: border-color var(--t-base) var(--ease), box-shadow var(--t-base) var(--ease);
+}
+
 .app-filter-search-input:focus,
+.app-filter-dropdown-select:focus,
 .contact-form-row input:focus,
 .contact-form-field input:focus,
 .contact-form-field textarea:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+  box-shadow: var(--ring-focus);
 }
 
+.app-filter-search-clear:hover {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+/* Primary actions across the app */
 .app-filter-btn-search,
-.billing-btn-primary {
+.billing-btn-primary,
+.app-header-btn-primary,
+.app-export-btn:not(:disabled):hover {
   background: var(--primary);
   border-color: var(--primary);
   color: #ffffff !important;
-  box-shadow: 0 7px 18px rgba(79, 70, 229, 0.20);
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.18);
 }
 
 .app-filter-btn-search:hover,
-.billing-btn-primary:hover {
+.billing-btn-primary:hover,
+.app-header-btn-primary:hover {
   background: var(--primary-dark);
   border-color: var(--primary-dark);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.24);
+  transform: none;
 }
 
-/* Verification communicates success, not brand selection. */
+.app-filter-btn-reset {
+  background: var(--card);
+  border-color: var(--line);
+}
+
+.app-filter-btn-reset:hover {
+  background: var(--primary-light);
+  border-color: var(--light-indigo-border);
+  color: var(--primary);
+}
+
+/* Filter surfaces: light tints + subtle borders */
+.app-filter-profile-chip,
+.app-filter-geo-btn,
+.app-filter-verify-toggle,
+.app-filter-radius-group,
+.app-filter-dropdown-select {
+  background: var(--card);
+  border-color: var(--line);
+}
+
+.app-filter-profile-chip:hover,
+.app-filter-geo-btn:hover,
+.app-filter-dropdown-select:hover {
+  background: var(--primary-light);
+  border-color: var(--light-indigo-border);
+  color: var(--primary);
+}
+
+.app-filter-profile-chip svg,
+.app-filter-dropdown-label {
+  color: var(--primary);
+}
+
+/* Active filters read indigo-on-light, not solid indigo blocks. */
+.app-filter-profile-chip.active {
+  background: var(--primary-light);
+  border-color: var(--light-indigo-border);
+  color: var(--primary) !important;
+  font-weight: 700;
+}
+
+.app-filter-profile-chip.active svg,
+.app-filter-profile-chip.active .app-filter-profile-chip-count {
+  color: var(--primary);
+  opacity: 1;
+}
+
+/* "Near Me" is a location/blue-indigo affordance. */
+.app-filter-geo-btn svg {
+  color: var(--secondary-blue);
+}
+
+.app-filter-geo-btn.active {
+  background: var(--primary-light);
+  border-color: var(--light-indigo-border);
+  color: var(--primary) !important;
+  font-weight: 700;
+}
+
+.app-filter-geo-btn.active svg {
+  color: var(--primary);
+}
+
+.app-filter-radius-pill.active {
+  background: var(--primary);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* "Verified" is a success state, so it stays green. */
 .app-filter-verify-toggle.active {
   border-color: #a7f3d0;
   background: var(--success-soft);
@@ -2889,63 +2986,374 @@
 .app-filter-verify-toggle.active .app-filter-verify-track { background: var(--success); }
 .app-filter-verify-text svg { color: var(--success-dark); }
 .app-filter-verify-count { color: var(--success-dark); background: var(--success-soft); }
-.lead-card-avatar-verified { background: var(--success); color: #ffffff; }
-.lead-pill-verified {
-  background: var(--success-soft);
-  border-color: #a7f3d0;
-  color: var(--success-dark);
+
+/* ---------- Results toolbar ---------- */
+.app-count-badge,
+.app-sort-select,
+.app-view-toggle,
+.app-export-btn,
+.app-quota-pill {
+  background: var(--card);
+  border-color: var(--line);
 }
 
-/* Restrained information badges. */
-.lead-pill-category {
-  background: var(--primary-light);
-  border-color: var(--light-indigo-border, #c7d2fe);
-  color: var(--primary);
-}
-.lead-pill-industry {
-  background: var(--secondary-blue-light);
-  border-color: #bfdbfe;
-  color: var(--secondary-blue);
-}
-.app-table th { background: #f5f7ff; }
-.app-table tbody tr:hover { background: #f8faff; }
-
-/* Pricing: the featured plan stays white and is identified by its border. */
-.billing-plan-card.popular,
-.billing-plan-card.popular:hover { background: #ffffff; }
-.billing-plan-card.popular .billing-plan-icon {
-  background: var(--primary-light) !important;
-  color: var(--primary) !important;
-  border-color: var(--light-indigo-border, #c7d2fe);
-  box-shadow: none;
-}
-.billing-plan-card.popular .billing-price { color: var(--primary); }
-.popular-tag {
-  background: var(--primary);
-  box-shadow: 0 7px 16px rgba(79, 70, 229, 0.24);
-}
-.plans-page {
-  background-image:
-    linear-gradient(rgba(79, 70, 229, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(79, 70, 229, 0.025) 1px, transparent 1px);
-  background-size: 42px 42px;
-}
-
-/* Contact */
-.contact-info-icon,
-.contact-card-icon,
-.contact-why-icon {
+.app-view-btn.active {
   background: var(--primary-light);
   color: var(--primary);
 }
-.contact-card { box-shadow: 0 18px 50px -28px rgba(49, 46, 129, 0.24); }
-.contact-form-row input,
-.contact-form-field input,
-.contact-form-field textarea { background: #ffffff; }
-.contact-success-icon { background: var(--success-soft); color: var(--success-dark); }
+
+.app-active-tag {
+  background: var(--primary-light);
+  border-color: var(--light-indigo-border);
+  color: var(--primary);
+}
+
+.app-suggestion-chip:hover {
+  background: var(--primary-light);
+  border-color: var(--light-indigo-border);
+  color: var(--primary);
+}
+
+.app-demo-banner {
+  background: var(--card-indigo);
+  border-color: var(--light-indigo-border);
+}
+.app-demo-banner svg,
+.app-demo-banner strong { color: var(--primary); }
+
+/* ---------- Lead cards ---------- */
+.lead-card {
+  background: var(--card);
+  border-color: var(--line);
+  box-shadow: var(--shadow-xs);
+  transition: background-color var(--t-slow) var(--ease), border-color var(--t-slow) var(--ease),
+              transform var(--t-slow) var(--ease), box-shadow var(--t-slow) var(--ease);
+}
+
+.lead-card:hover {
+  background: var(--card-hover);
+  border-color: var(--light-indigo-border);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.lead-card-avatar-verified {
+  background: var(--success);
+  color: #ffffff;
+  border-color: #ffffff;
+}
+
+.lead-card-bookmark-btn:hover,
+.lead-card-bookmark-btn.saved,
+.lead-card-view-link,
+.lead-card-distance {
+  color: var(--primary);
+}
+
+.lead-card-contact-row {
+  background: var(--primary-light);
+  border-color: var(--line);
+}
+
+.lead-card-copy-btn {
+  background: #ffffff;
+  border-color: var(--line);
+}
+
+.lead-card-copy-btn:hover {
+  background: var(--primary-light);
+  border-color: var(--light-indigo-border);
+  color: var(--primary);
+}
 
 .lead-card-copy-btn.copied {
   background: var(--success);
   border-color: var(--success);
   color: #ffffff;
+}
+
+/* ---------- Badges: small, professional, semantic ---------- */
+.lead-pill {
+  border: 1px solid transparent;
+}
+
+.lead-pill-company {
+  background: var(--panel-subtle);
+  border-color: var(--line);
+  color: var(--ink-muted);
+}
+
+/* Category badge — colour communicates the category, nothing else. */
+.lead-pill-category,
+.lead-pill-category.is-indigo {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+  color: #4f46e5;
+}
+.lead-pill-category.is-blue {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #2563eb;
+}
+.lead-pill-category.is-green {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #059669;
+}
+.lead-pill-category.is-pink {
+  background: #fdf2f8;
+  border-color: #fbcfe8;
+  color: #db2777;
+}
+.lead-pill-category.is-cyan {
+  background: #ecfeff;
+  border-color: #a5f3fc;
+  color: #0891b2;
+}
+.lead-pill-category.is-orange {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #d97706;
+}
+.lead-pill-category.is-purple {
+  background: #f5f3ff;
+  border-color: #ddd6fe;
+  color: #7c3aed;
+}
+
+.lead-pill-industry {
+  background: var(--secondary-blue-light);
+  border-color: #bfdbfe;
+  color: var(--secondary-blue);
+}
+
+.lead-pill-verified {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #059669;
+  font-weight: 600;
+}
+
+/* ---------- Lead table ---------- */
+.app-table-wrapper {
+  background: var(--card);
+  border-color: var(--line);
+  box-shadow: var(--shadow-xs);
+}
+
+.app-table th {
+  background: #f2f5ff;
+  border-bottom-color: var(--line);
+  color: var(--ink-muted);
+}
+
+.app-table td {
+  border-bottom-color: var(--line-subtle);
+}
+
+.app-table tbody tr {
+  transition: background-color var(--t-fast) var(--ease);
+}
+
+.app-table tbody tr:hover {
+  background-color: var(--primary-light);
+}
+
+.compact-card {
+  background: var(--card);
+  border-color: var(--line);
+  transition: background-color var(--t-base) var(--ease), border-color var(--t-base) var(--ease),
+              transform var(--t-base) var(--ease), box-shadow var(--t-base) var(--ease);
+}
+
+.compact-card:hover {
+  background: var(--card-hover);
+  border-color: var(--light-indigo-border);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* ---------- Pricing ---------- */
+.plans-grid-container .billing-plan-card:nth-child(1) { background: var(--card-blue); }
+.plans-grid-container .billing-plan-card:nth-child(2) { background: var(--card-indigo); }
+.plans-grid-container .billing-plan-card:nth-child(4) { background: var(--card-lavender); }
+
+.billing-plan-card {
+  background: var(--card);
+  border-color: var(--line);
+  box-shadow: var(--shadow-xs);
+  transition: background-color var(--t-slow) var(--ease), border-color var(--t-slow) var(--ease),
+              transform var(--t-slow) var(--ease), box-shadow var(--t-slow) var(--ease);
+}
+
+.billing-plan-card:hover {
+  background: var(--card-hover);
+  border-color: var(--light-indigo-border);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* The featured plan is a LIGHT card identified by a 2px indigo border and a
+   soft indigo glow — never a solid purple block. */
+.billing-plan-card.popular,
+.billing-plan-card.popular:hover {
+  background: #ffffff;
+  border: 2px solid #6366f1;
+  box-shadow: 0 8px 30px rgba(79, 70, 229, 0.10);
+}
+
+.billing-plan-card.popular .billing-plan-icon {
+  background: var(--primary-light) !important;
+  color: var(--primary) !important;
+  border-color: var(--light-indigo-border);
+  box-shadow: none;
+}
+
+.billing-plan-card.popular .billing-price { color: var(--primary); }
+.billing-plan-card.popular h3 { color: var(--ink); }
+.billing-plan-card.popular .billing-plan-desc,
+.billing-plan-card.popular .billing-plan-features li { color: var(--ink-muted); }
+
+.billing-plan-card.current { border-color: var(--light-indigo-border); }
+
+.popular-tag {
+  background: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.22);
+}
+
+.current-tag {
+  background: var(--success);
+  color: #ffffff;
+}
+
+/* Very subtle grid pattern behind the pricing page, kept behind the cards. */
+.plans-page {
+  position: relative;
+}
+
+.plans-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(#e8eaf8 1px, transparent 1px),
+    linear-gradient(90deg, #e8eaf8 1px, transparent 1px);
+  background-size: 44px 44px;
+  opacity: 0.5;
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 92%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 92%);
+}
+
+.plans-page > * {
+  position: relative;
+  z-index: 1;
+}
+
+.faq-item {
+  background: var(--card-lavender);
+  border-color: var(--line);
+  transition: background-color var(--t-base) var(--ease), border-color var(--t-base) var(--ease),
+              box-shadow var(--t-base) var(--ease);
+}
+
+.faq-item:hover {
+  background: var(--card-lavender-hover);
+  border-color: var(--light-indigo-border);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.faq-item h3 svg { color: var(--primary); }
+
+/* ---------- Contact ---------- */
+.contact-info-card {
+  background: var(--card-indigo);
+  border-color: var(--line);
+  transition: background-color var(--t-base) var(--ease), border-color var(--t-base) var(--ease),
+              box-shadow var(--t-base) var(--ease);
+}
+
+.contact-info-card:nth-child(2) { background: var(--card-blue); }
+.contact-info-card:nth-child(3) { background: var(--card-cyan); }
+
+.contact-info-card:hover {
+  border-color: var(--light-indigo-border);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.contact-info-icon,
+.contact-card-icon,
+.contact-why-icon {
+  background: var(--icon-indigo);
+  color: var(--primary);
+}
+
+.contact-info-card:nth-child(2) .contact-info-icon {
+  background: var(--icon-blue);
+  color: var(--secondary-blue);
+}
+.contact-info-card:nth-child(3) .contact-info-icon {
+  background: var(--icon-cyan);
+  color: #0891b2;
+}
+
+.contact-card {
+  background: var(--card);
+  border-color: var(--line);
+  box-shadow: var(--shadow-sm);
+}
+
+.contact-form-row input,
+.contact-form-field input,
+.contact-form-field textarea {
+  background: #ffffff;
+  border-color: var(--line);
+  transition: border-color var(--t-base) var(--ease), box-shadow var(--t-base) var(--ease);
+}
+
+.contact-form-link { color: var(--primary); }
+
+.contact-success-icon {
+  background: var(--success-soft);
+  color: var(--success-dark);
+}
+
+.contact-why-card {
+  background: var(--card-lavender);
+  border-color: var(--line);
+  transition: background-color var(--t-base) var(--ease), border-color var(--t-base) var(--ease),
+              box-shadow var(--t-base) var(--ease);
+}
+
+.contact-why-card:nth-child(2) { background: var(--card-blue); }
+.contact-why-card:nth-child(3) { background: var(--card-cyan); }
+
+.contact-why-card:hover {
+  border-color: var(--light-indigo-border);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.contact-why-card:nth-child(2) .contact-why-icon {
+  background: var(--icon-blue);
+  color: var(--secondary-blue);
+}
+.contact-why-card:nth-child(3) .contact-why-icon {
+  background: var(--icon-cyan);
+  color: #0891b2;
+}
+
+/* ---------- Modal / misc shared surfaces ---------- */
+.lead-modal-card,
+.profile-card,
+.billing-current-card,
+.billing-usage {
+  background: var(--card);
+  border-color: var(--line);
+}
+
+.lead-modal-contact-card {
+  background: var(--primary-light);
+  border-color: var(--light-indigo-border);
 }

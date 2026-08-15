@@ -12,7 +12,10 @@ const LEAD_TYPES = [
     text: "Connect with decision-makers across various industries.",
     available: "12.5M+",
     accent: "#4F46E5",
-    soft: "rgba(79,70,229,0.14)",
+    soft: "rgba(79,70,229,0.10)",
+    tint: "#F5F3FF",
+    tintHover: "#EFEBFF",
+    iconTint: "#E9E7FF",
   },
   {
     icon: "👥",
@@ -20,7 +23,10 @@ const LEAD_TYPES = [
     text: "Reach individual consumers with verified contact data.",
     available: "28M+",
     accent: "#F59E0B",
-    soft: "rgba(255,157,115,0.14)",
+    soft: "rgba(245,158,11,0.10)",
+    tint: "#FFF8F2",
+    tintHover: "#FFF2E8",
+    iconTint: "#FFEDD5",
   },
   {
     icon: "🌐",
@@ -28,7 +34,10 @@ const LEAD_TYPES = [
     text: "Expand globally with leads from 50+ countries.",
     available: "15M+",
     accent: "#2563EB",
-    soft: "rgba(37,99,235,0.14)",
+    soft: "rgba(37,99,235,0.10)",
+    tint: "#F2F7FF",
+    tintHover: "#EAF2FF",
+    iconTint: "#DBEAFE",
   },
   {
     icon: "💻",
@@ -36,15 +45,21 @@ const LEAD_TYPES = [
     text: "Target tech companies and IT decision-makers.",
     available: "5.2M+",
     accent: "#7C3AED",
-    soft: "rgba(124,58,237,0.14)",
+    soft: "rgba(124,58,237,0.10)",
+    tint: "#F6F3FF",
+    tintHover: "#EEE9FF",
+    iconTint: "#EDE9FE",
   },
   {
     icon: "🩺",
     title: "Healthcare",
     text: "Connect with healthcare professionals and clinics.",
     available: "3.8M+",
-    accent: "#4F46E5",
-    soft: "rgba(79,70,229,0.14)",
+    accent: "#06B6D4",
+    soft: "rgba(6,182,212,0.10)",
+    tint: "#F2FAFF",
+    tintHover: "#E9F6FF",
+    iconTint: "#CFFAFE",
   },
   {
     icon: "🏛️",
@@ -52,7 +67,10 @@ const LEAD_TYPES = [
     text: "Reach banking professionals and investors.",
     available: "4.1M+",
     accent: "#4F46E5",
-    soft: "rgba(79,70,229,0.14)",
+    soft: "rgba(79,70,229,0.10)",
+    tint: "#F7F5FF",
+    tintHover: "#F0EDFF",
+    iconTint: "#E9E7FF",
   },
 ];
 
@@ -62,36 +80,60 @@ const FEATURES = [
     num: "01",
     title: "Search with intent",
     text: "Find the right people fast with flexible filters for role, company, industry and more.",
+    tint: "#F7F6FF",
+    tintHover: "#F1EFFF",
+    iconTint: "#E9E7FF",
+    iconColor: "#4F46E5",
   },
   {
     icon: "📍",
     num: "02",
     title: "Go local or global",
     text: "Pinpoint ideal prospects by city, region or country with accurate geo search.",
+    tint: "#F3F7FF",
+    tintHover: "#EAF2FF",
+    iconTint: "#DBEAFE",
+    iconColor: "#2563EB",
   },
   {
     icon: "🛡️",
     num: "03",
     title: "Privacy built in",
     text: "Server-side masking keeps personal details protected until you are ready to connect.",
+    tint: "#F5F3FF",
+    tintHover: "#EFEBFF",
+    iconTint: "#E9E7FF",
+    iconColor: "#4F46E5",
   },
   {
     icon: "👥",
     num: "04",
     title: "Built for teams",
     text: "Simple role-based access gives every teammate the right level of visibility.",
+    tint: "#F7F5FF",
+    tintHover: "#F0EDFF",
+    iconTint: "#EDE9FE",
+    iconColor: "#7C3AED",
   },
   {
     icon: "⚡",
     num: "05",
     title: "Move at your speed",
     text: "Fast, index-backed queries and keyset pagination make every search feel instant.",
+    tint: "#FFF8F3",
+    tintHover: "#FFF2E8",
+    iconTint: "#FFEDD5",
+    iconColor: "#F59E0B",
   },
   {
     icon: "🌐",
     num: "06",
     title: "A world of opportunity",
     text: "Explore profiles across 195 countries and 150+ industries from one place.",
+    tint: "#F2F8FF",
+    tintHover: "#E9F3FF",
+    iconTint: "#CFFAFE",
+    iconColor: "#06B6D4",
   },
 ];
 
@@ -277,7 +319,13 @@ export default function LandingPage() {
             <div
               key={type.title}
               className="type-card"
-              style={{ "--accent": type.accent, "--soft": type.soft }}
+              style={{
+                "--accent": type.accent,
+                "--soft": type.soft,
+                "--card-tint": type.tint,
+                "--card-tint-hover": type.tintHover,
+                "--icon-tint": type.iconTint,
+              }}
               onMouseMove={handleTypeCardMove}
             >
               <div className="type-head">
@@ -305,7 +353,16 @@ export default function LandingPage() {
         </div>
         <div className="feat-grid">
           {FEATURES.map((f) => (
-            <div className="feat-card" key={f.title}>
+            <div
+              className="feat-card"
+              key={f.title}
+              style={{
+                "--card-tint": f.tint,
+                "--card-tint-hover": f.tintHover,
+                "--icon-tint": f.iconTint,
+                "--icon-color": f.iconColor,
+              }}
+            >
               <div className="feat-top">
                 <span className="feat-ic">{f.icon}</span>
                 <span className="feat-num">{f.num}</span>

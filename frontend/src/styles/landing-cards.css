@@ -39,9 +39,9 @@
   margin-bottom: 48px;
 }
 
-.coverage-heading .section-kicker { color: var(--coral); }
+.coverage-heading .section-kicker { color: var(--primary); }
 .coverage-heading h2 { color: var(--ink); }
-.coverage-heading h2 em { color: var(--green-hover); }
+.coverage-heading h2 em { color: var(--primary); }
 .coverage-heading p { color: var(--ink-muted); max-width: 580px; margin-inline: auto; }
 
 .country-leads-grid {
@@ -83,7 +83,7 @@
   pointer-events: none;
   background: radial-gradient(
     circle at var(--glow-x, 50%) var(--glow-y, 50%),
-    rgba(79, 70, 229, 0.18),
+    rgba(79, 70, 229, 0.10),
     transparent 50%
   );
   transition: opacity 0.25s ease;
@@ -97,15 +97,17 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   color: var(--ink);
-  background: var(--panel);
-  box-shadow: 0 10px 24px -10px rgba(49, 46, 129, 0.08);
-  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  background: var(--card-country);
+  box-shadow: var(--shadow-xs);
+  transition: background-color var(--t-slow) var(--ease), border-color var(--t-slow) var(--ease),
+              transform var(--t-slow) var(--ease), box-shadow var(--t-slow) var(--ease);
 }
 
 .country-card:hover,
 .country-card-scene:hover .country-card {
-  border-color: var(--line-strong);
-  background: var(--panel-hover);
+  border-color: var(--light-indigo-border);
+  background: var(--card-blue);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .country-card > *:not(.card-glow),
@@ -158,7 +160,7 @@
 .country-volume {
   height: 4px;
   border-radius: 100px;
-  background: var(--bg);
+  background: var(--primary-light);
   overflow: hidden;
   margin-bottom: 10px;
 }
@@ -166,7 +168,7 @@
 .country-volume span {
   display: block;
   height: 100%;
-  background: var(--green);
+  background: var(--primary);
   border-radius: 100px;
 }
 
@@ -194,7 +196,7 @@
 }
 
 .coverage-footnote a {
-  color: var(--green-hover);
+  color: var(--primary);
   text-decoration: none;
   font-weight: 600;
   display: inline-flex;
@@ -203,7 +205,7 @@
   transition: color 0.15s ease;
 }
 
-.coverage-footnote a:hover { color: var(--lime); }
+.coverage-footnote a:hover { color: var(--primary-dark); }
 
 .lead-types-section {
   padding: 80px 0;
@@ -224,10 +226,11 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   color: var(--ink);
-  background: var(--panel);
+  background: var(--card-tint, var(--card));
   position: relative;
   overflow: hidden;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition: background-color var(--t-slow) var(--ease), transform var(--t-slow) var(--ease),
+              border-color var(--t-slow) var(--ease), box-shadow var(--t-slow) var(--ease);
 }
 
 .type-card::before {
@@ -237,13 +240,15 @@
   left: 0;
   right: 0;
   height: 3px;
-  background: var(--card-accent, var(--green));
+  background: var(--card-accent, var(--primary));
 }
 
 .type-card-scene:hover .type-card,
 .type-card:hover {
+  background: var(--card-tint-hover, var(--card-hover));
   transform: translateY(-3px);
-  border-color: var(--line-strong);
+  border-color: var(--light-indigo-border);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .type-card-head {
@@ -260,8 +265,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--card-accent, var(--green));
-  background: var(--card-soft, rgba(79, 70, 229, 0.14));
+  color: var(--card-accent, var(--primary));
+  background: var(--icon-tint, var(--card-soft, var(--icon-indigo)));
   font-size: 18px;
 }
 
@@ -305,7 +310,7 @@
 
 .type-card-available svg {
   margin-left: auto;
-  color: var(--card-accent, var(--green));
+  color: var(--card-accent, var(--primary));
 }
 
 @media (max-width: 900px) {
