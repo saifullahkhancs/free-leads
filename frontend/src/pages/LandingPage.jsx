@@ -158,6 +158,19 @@ const STEPS = [
   },
 ];
 
+// Light pastel palette reused across the country cards (same family of tints
+// as the lead-type cards) so the coverage grid feels colourful but calm.
+const COUNTRY_TINTS = [
+  { accent: "#4F46E5", soft: "rgba(79,70,229,0.10)", tint: "#F5F3FF", tintHover: "#EFEBFF", iconTint: "#E9E7FF" },
+  { accent: "#F59E0B", soft: "rgba(245,158,11,0.10)", tint: "#FFF8F2", tintHover: "#FFF2E8", iconTint: "#FFEDD5" },
+  { accent: "#2563EB", soft: "rgba(37,99,235,0.10)", tint: "#F2F7FF", tintHover: "#EAF2FF", iconTint: "#DBEAFE" },
+  { accent: "#06B6D4", soft: "rgba(6,182,212,0.10)", tint: "#F2FAFF", tintHover: "#E9F6FF", iconTint: "#CFFAFE" },
+  { accent: "#7C3AED", soft: "rgba(124,58,237,0.10)", tint: "#F6F3FF", tintHover: "#EEE9FF", iconTint: "#EDE9FE" },
+  { accent: "#10B981", soft: "rgba(16,185,129,0.10)", tint: "#F1FDF8", tintHover: "#E7FAF1", iconTint: "#D1FAE5" },
+  { accent: "#EC4899", soft: "rgba(236,72,153,0.10)", tint: "#FFF4F9", tintHover: "#FFEBF4", iconTint: "#FCE7F3" },
+  { accent: "#0EA5E9", soft: "rgba(14,165,233,0.10)", tint: "#F1F9FF", tintHover: "#E6F4FF", iconTint: "#E0F2FE" },
+];
+
 const FALLBACK_COUNTRIES = [
   { code: "US", name: "United States", count: "8.4M+", verified: "7.2M verified", cities: "312 cities", share: 100 },
   { code: "IN", name: "India", count: "6.2M+", verified: "5.1M verified", cities: "248 cities", share: 74 },
@@ -285,8 +298,21 @@ export default function LandingPage() {
           <p>Explore the 12 countries with the most available leads in our global directory.</p>
         </div>
         <div className="country-grid">
-          {countries.map((c, i) => (
-            <div className="country-card" key={c.code || c.name}>
+          {countries.map((c, i) => {
+            const tone = COUNTRY_TINTS[i % COUNTRY_TINTS.length];
+            return (
+            <div
+              className="country-card"
+              key={c.code || c.name}
+              style={{
+                "--accent": tone.accent,
+                "--soft": tone.soft,
+                "--card-tint": tone.tint,
+                "--card-tint-hover": tone.tintHover,
+                "--icon-tint": tone.iconTint,
+              }}
+              onMouseMove={handleTypeCardMove}
+            >
               <div className="country-top">
                 <span className="country-flag">{flag(c.code)}</span>
                 <span className="country-rank">#{String(i + 1).padStart(2, "0")}</span>
@@ -299,7 +325,8 @@ export default function LandingPage() {
                 <span>{c.verified}</span>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
         <div className="footnote">
           <span><span className="live-pulse" />Ranked by available lead volume</span>
