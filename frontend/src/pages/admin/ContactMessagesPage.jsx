@@ -18,9 +18,9 @@ import { useAuth } from "../../context/AuthContext";
 import { formatDate, initialsOf } from "../../utils/format";
 
 const STATUS_COLORS = {
-  new: { bg: "rgba(127, 168, 255, 0.15)", fg: "#7fa8ff", label: "New" },
+  new: { bg: "rgba(37, 99, 235, 0.15)", fg: "#2563EB", label: "New" },
   read: { bg: "rgba(255, 209, 102, 0.15)", fg: "#ffd166", label: "Read" },
-  replied: { bg: "rgba(75, 195, 140, 0.15)", fg: "#62d69f", label: "Replied" },
+  replied: { bg: "rgba(16, 185, 129, 0.12)", fg: "#059669", label: "Replied" },
   closed: { bg: "rgba(255, 255, 255, 0.08)", fg: "#82938a", label: "Closed" },
 };
 

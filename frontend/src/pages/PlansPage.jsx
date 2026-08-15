@@ -19,10 +19,10 @@ import PlanFeaturesList from "../components/PlanFeaturesList";
 // Visual identity per tier (accent colour + icon). Purely presentational —
 // no pricing/billing data is fabricated here.
 const PLAN_META = {
-  free: { icon: Zap, accent: "#4bc38c", soft: "rgba(75,195,140,0.14)", tag: "For trying it out" },
-  starter: { icon: Rocket, accent: "#7fa8ff", soft: "rgba(127,168,255,0.14)", tag: "For solo founders" },
-  growth: { icon: TrendingUp, accent: "#d7ff63", soft: "rgba(215,255,99,0.12)", tag: "For growing teams" },
-  pro: { icon: Crown, accent: "#b79bff", soft: "rgba(183,155,255,0.14)", tag: "For power users" },
+  free: { icon: Zap, accent: "#4F46E5", soft: "rgba(79,70,229,0.14)", tag: "For trying it out" },
+  starter: { icon: Rocket, accent: "#2563EB", soft: "rgba(37,99,235,0.14)", tag: "For solo founders" },
+  growth: { icon: TrendingUp, accent: "#4F46E5", soft: "rgba(79,70,229,0.12)", tag: "For growing teams" },
+  pro: { icon: Crown, accent: "#7C3AED", soft: "rgba(124,58,237,0.14)", tag: "For power users" },
 };
 
 const TRUST_ROW = [

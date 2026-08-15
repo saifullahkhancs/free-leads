@@ -1,5 +1,5 @@
 /* ==========================================================================
-   FreeLeads — Dashboard / CMS Design System (Dark Theme)
+   FreeLeads — Dashboard / CMS Design System (White Theme)
    ========================================================================== */
 
 .dash {
@@ -8,8 +8,31 @@
   --dash-sidebar-w: 268px;
   --dash-topbar-h: 68px;
 
+  /* Keep the admin workspace intentionally white, independent of the public
+     app's marketing background. Components below already consume the shared
+     token names, so scoping the light palette here covers every admin route. */
+  --bg: #ffffff;
+  --bg-gradient: #ffffff;
+  --panel: #ffffff;
+  --panel-hover: #f8faff;
+  --panel-subtle: #f5f7ff;
+  --line: #e5e7eb;
+  --line-strong: #d1d5db;
+  --line-subtle: #eef2f7;
+  --ink: #111827;
+  --ink-muted: #4b5563;
+  --ink-faint: #6b7280;
+  --green: #4F46E5;
+  --green-hover: #4338CA;
+  --green-soft: rgba(79, 70, 229, 0.1);
+  --lime: #4F46E5;
+  --lime-hover: #4338CA;
+  --lime-ink: #ffffff;
+  --lime-soft: rgba(79, 70, 229, 0.1);
+  --shadow-sm: 0 1px 2px rgba(17, 24, 39, 0.03), 0 8px 24px rgba(17, 24, 39, 0.04);
+
   min-height: 100vh;
-  background: var(--bg-gradient);
+  background: #ffffff;
   color: var(--ink);
   font-family: var(--font-body);
   font-size: 14px;
@@ -76,9 +99,9 @@
   border-radius: 9px;
   display: grid;
   place-items: center;
-  background: rgba(75, 195, 140, 0.14);
+  background: rgba(79, 70, 229, 0.14);
   color: var(--lime);
-  border: 1px solid rgba(215, 255, 99, 0.2);
+  border: 1px solid rgba(79, 70, 229, 0.20);
 }
 
 .dash-brand-name {
@@ -142,10 +165,10 @@
 }
 
 .dash-nav-item.active {
-  background: rgba(215, 255, 99, 0.08);
+  background: rgba(79, 70, 229, 0.08);
   color: var(--lime);
-  border-color: rgba(215, 255, 99, 0.25);
-  box-shadow: 0 0 12px rgba(215, 255, 99, 0.06);
+  border-color: rgba(79, 70, 229, 0.24);
+  box-shadow: 0 0 12px rgba(79, 70, 229, 0.08);
 }
 
 .dash-nav-item.active svg {
@@ -217,7 +240,7 @@
 .dash-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(14, 24, 19, 0.75);
+  background: rgba(15, 23, 42, 0.58);
   backdrop-filter: blur(8px);
   z-index: 55;
   opacity: 0;
@@ -243,7 +266,7 @@
   position: sticky;
   top: 0;
   height: var(--dash-topbar-h);
-  background: rgba(28, 42, 36, 0.88);
+  background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--line);
@@ -379,7 +402,7 @@
   border: 1px solid var(--lime);
   color: var(--lime-ink) !important;
   font-weight: 700;
-  box-shadow: 0 4px 14px rgba(215, 255, 99, 0.25);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.24);
 }
 
 .dash-btn-primary:hover,
@@ -387,7 +410,7 @@
   background: var(--lime-hover);
   border-color: var(--lime-hover);
   color: var(--lime-ink) !important;
-  box-shadow: 0 6px 18px rgba(215, 255, 99, 0.35);
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.30);
 }
 
 .dash-btn-block {
@@ -457,12 +480,12 @@
 }
 
 .stat-icon.green {
-  background: rgba(75, 195, 140, 0.14);
+  background: rgba(79, 70, 229, 0.14);
   color: var(--green-hover);
 }
 
 .stat-icon.blue {
-  background: rgba(127, 168, 255, 0.14);
+  background: rgba(37, 99, 235, 0.14);
   color: var(--blue);
 }
 
@@ -472,7 +495,7 @@
 }
 
 .stat-icon.lime {
-  background: rgba(215, 255, 99, 0.12);
+  background: rgba(79, 70, 229, 0.10);
   color: var(--lime);
 }
 
@@ -738,23 +761,23 @@
 
 .badge-green,
 .dash-badge-green {
-  background: rgba(75, 195, 140, 0.14);
+  background: rgba(79, 70, 229, 0.14);
   color: var(--green-hover);
-  border: 1px solid rgba(75, 195, 140, 0.25);
+  border: 1px solid rgba(79, 70, 229, 0.25);
 }
 
 .badge-lime,
 .dash-badge-lime {
-  background: rgba(215, 255, 99, 0.12);
+  background: rgba(79, 70, 229, 0.10);
   color: var(--lime);
-  border: 1px solid rgba(215, 255, 99, 0.25);
+  border: 1px solid rgba(79, 70, 229, 0.24);
 }
 
 .badge-blue,
 .dash-badge-blue {
-  background: rgba(127, 168, 255, 0.14);
+  background: rgba(37, 99, 235, 0.14);
   color: var(--blue);
-  border: 1px solid rgba(127, 168, 255, 0.25);
+  border: 1px solid rgba(37, 99, 235, 0.25);
 }
 
 .badge-orange,
@@ -773,7 +796,7 @@
 
 .badge-gray,
 .dash-badge-gray {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(17, 24, 39, 0.05);
   color: var(--ink-faint);
   border: 1px solid var(--line);
 }
@@ -825,14 +848,14 @@
 .upload-zone:hover,
 .upload-zone.dragging {
   border-color: var(--green);
-  background: rgba(75, 195, 140, 0.04);
+  background: rgba(79, 70, 229, 0.04);
 }
 
 .upload-zone-icon {
   width: 52px;
   height: 52px;
   border-radius: 14px;
-  background: rgba(75, 195, 140, 0.14);
+  background: rgba(79, 70, 229, 0.14);
   color: var(--green-hover);
   display: grid;
   place-items: center;
@@ -907,8 +930,8 @@
 }
 
 .contact-thread-reply {
-  background: rgba(75, 195, 140, 0.06);
-  border-color: rgba(75, 195, 140, 0.25);
+  background: rgba(79, 70, 229, 0.06);
+  border-color: rgba(79, 70, 229, 0.25);
   margin-left: 20px;
 }
 
@@ -1014,7 +1037,7 @@
 
 .admin-plan-card.popular {
   border-color: var(--lime);
-  box-shadow: 0 0 24px rgba(215, 255, 99, 0.1);
+  box-shadow: 0 0 24px rgba(79, 70, 229, 0.10);
 }
 
 .admin-plan-title-row {
@@ -1054,7 +1077,7 @@
 }
 
 .admin-plan-badge.default {
-  background: rgba(75, 195, 140, 0.14);
+  background: rgba(79, 70, 229, 0.14);
   color: var(--green-hover);
 }
 
@@ -1128,13 +1151,13 @@
 }
 
 .admin-chip.enabled {
-  background: rgba(75, 195, 140, 0.12);
+  background: rgba(79, 70, 229, 0.12);
   color: var(--green-hover);
-  border: 1px solid rgba(75, 195, 140, 0.25);
+  border: 1px solid rgba(79, 70, 229, 0.25);
 }
 
 .admin-chip.disabled {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(17, 24, 39, 0.03);
   color: var(--ink-faint);
   border: 1px solid var(--line);
   opacity: 0.5;
@@ -1189,7 +1212,7 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: rgba(215, 255, 99, 0.12);
+  background: rgba(79, 70, 229, 0.10);
   color: var(--lime);
   display: grid;
   place-items: center;
@@ -1335,7 +1358,7 @@
 
 .toggle-card.active {
   border-color: var(--green);
-  background: rgba(75, 195, 140, 0.08);
+  background: rgba(79, 70, 229, 0.08);
 }
 
 .toggle-card input {
@@ -1352,12 +1375,12 @@
 }
 
 .toggle-card-icon.popular {
-  background: rgba(215, 255, 99, 0.12);
+  background: rgba(79, 70, 229, 0.10);
   color: var(--lime);
 }
 
 .toggle-card-icon.default {
-  background: rgba(75, 195, 140, 0.14);
+  background: rgba(79, 70, 229, 0.14);
   color: var(--green-hover);
 }
 
@@ -1438,7 +1461,7 @@
 .format-card.active,
 .visibility-card.active {
   border-color: var(--green);
-  background: rgba(75, 195, 140, 0.08);
+  background: rgba(79, 70, 229, 0.08);
 }
 
 .visibility-card.off {
@@ -1491,12 +1514,12 @@
 }
 
 .vis-badge.on {
-  background: rgba(75, 195, 140, 0.15);
+  background: rgba(79, 70, 229, 0.15);
   color: var(--green-hover);
 }
 
 .vis-badge.off {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(17, 24, 39, 0.05);
   color: var(--ink-faint);
 }
 
@@ -1585,7 +1608,7 @@
 .dash-alert-success {
   background: var(--green-soft);
   color: var(--green-hover);
-  border: 1px solid rgba(75, 195, 140, 0.3);
+  border: 1px solid rgba(79, 70, 229, 0.3);
 }
 
 .dash-alert-warn {
@@ -1613,7 +1636,7 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: rgba(75, 195, 140, 0.14);
+  background: rgba(79, 70, 229, 0.14);
   color: var(--green-hover);
   display: grid;
   place-items: center;
@@ -1682,4 +1705,11 @@
   .quota-preview-row {
     grid-template-columns: 1fr;
   }
+}
+
+/* Semantic success feedback remains green in the indigo brand theme. */
+.dash-alert-success {
+  background: var(--success-soft);
+  color: var(--success-dark);
+  border-color: #a7f3d0;
 }
