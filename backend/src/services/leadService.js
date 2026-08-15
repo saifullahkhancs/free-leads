@@ -845,28 +845,43 @@ const importLeadsCsv = async (csvText, source = "csv_upload", fieldMapping = nul
  * Apply field mapping to CSV records
  */
 function applyFieldMapping(records, mapping) {
-  return records.map(record => {
+  const allowedFields = new Set([
+    "full_name", "headline", "about", "email", "phone", "linkedin_url",
+    "twitter_url", "facebook_url", "website_url", "company_name", "job_title",
+    "industry", "country", "country_code", "region", "city", "lat", "lon",
+  ]);
+
+  if (!mapping || typeof mapping !== "object" || Array.isArray(mapping)) {
+    throw new ApiError(400, "Field mapping must be an object");
+  }
+
+  const entries = Object.entries(mapping);
+  if (!entries.some(([field]) => field === "full_name")) {
+    throw new ApiError(400, "The required full_name field must be mapped");
+  }
+
+  return records.map((record) => {
     const mapped = {};
-    
-    for (const [dbField, csvConfig] of Object.entries(mapping)) {
-      if (csvConfig.type === 'single') {
-        // Single field mapping
+
+    for (const [dbField, csvConfig] of entries) {
+      if (!allowedFields.has(dbField) || !csvConfig || typeof csvConfig !== "object") continue;
+
+      if (csvConfig.type === "single" && typeof csvConfig.csvField === "string") {
         mapped[dbField] = record[csvConfig.csvField];
-      } else if (csvConfig.type === 'combined') {
-        // Combined field mapping
-        const separator = csvConfig.separator === 'comma' ? ', ' : ' ';
-        const values = csvConfig.csvFields.map(field => record[field]).filter(v => v != null);
+      } else if (csvConfig.type === "combined" && Array.isArray(csvConfig.csvFields)) {
+        const separator = csvConfig.separator === "comma" ? ", " : " ";
+        const values = csvConfig.csvFields
+          .slice(0, 50)
+          .map((field) => record[field])
+          .filter((value) => value != null && String(value).trim() !== "")
+          .map((value) => String(value).trim());
         mapped[dbField] = values.join(separator);
       }
     }
-    
-    // Add any unmapped fields with their original values
-    for (const [key, value] of Object.entries(record)) {
-      if (!mapped[key]) {
-        mapped[key] = value;
-      }
-    }
-    
+
+    // When a mapping is supplied, only explicitly mapped destination fields
+    // are imported. This prevents a deliberately unmapped CSV column whose
+    // header happens to match a database field from leaking into the import.
     return mapped;
   });
 }

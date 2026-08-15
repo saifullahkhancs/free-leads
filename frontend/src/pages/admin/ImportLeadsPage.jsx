@@ -35,7 +35,6 @@ export default function ImportLeadsPage() {
   const [result, setResult] = useState(null);
   const [showMapping, setShowMapping] = useState(false);
   const [csvData, setCsvData] = useState(null);
-  const [fieldMapping, setFieldMapping] = useState(null);
 
   const acceptFile = (f) => {
     setError(null);
@@ -64,23 +63,13 @@ export default function ImportLeadsPage() {
     try {
       const text = await file.text();
       
-      // Try to parse CSV to get headers and sample data
-      try {
-        const parseRes = await api.parseCsv(text);
-        setCsvData({
-          text,
-          headers: parseRes.data.headers,
-          sampleData: parseRes.data.sampleData
-        });
-        
-        // Show mapping modal
-        setShowMapping(true);
-      } catch (parseErr) {
-        console.error('Parse error, falling back to direct import:', parseErr);
-        // If parsing fails, fall back to direct import without mapping
-        const res = await api.importLeadsCsv(text, "csv_upload");
-        setResult(res.data);
-      }
+      const parseRes = await api.parseCsv(text);
+      setCsvData({
+        text,
+        headers: parseRes.data.headers,
+        sampleData: parseRes.data.sampleData
+      });
+      setShowMapping(true);
     } catch (err) {
       console.error('Import error:', err);
       setError(err.message || 'Failed to import CSV. Please check the file format.');
@@ -98,7 +87,6 @@ export default function ImportLeadsPage() {
       setResult(res.data);
       setShowMapping(false);
       setCsvData(null);
-      setFieldMapping(null);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -109,7 +97,6 @@ export default function ImportLeadsPage() {
   const handleMappingCancel = () => {
     setShowMapping(false);
     setCsvData(null);
-    setFieldMapping(null);
   };
 
   return (
@@ -188,28 +175,7 @@ export default function ImportLeadsPage() {
               <div style={{ display: "flex", gap: 10 }}>
                 <button className="dash-btn dash-btn-primary" onClick={handleImport} disabled={importing}>
                   {importing ? <Loader2 className="spin" size={16} /> : <UploadCloud size={16} />}
-                  {importing ? "Importing…" : `Import ${file.name}`}
-                </button>
-                <button 
-                  className="dash-btn dash-btn-ghost" 
-                  onClick={async () => {
-                    if (!file) return;
-                    setImporting(true);
-                    setError(null);
-                    setResult(null);
-                    try {
-                      const text = await file.text();
-                      const res = await api.importLeadsCsv(text, "csv_upload");
-                      setResult(res.data);
-                    } catch (err) {
-                      setError(err.message);
-                    } finally {
-                      setImporting(false);
-                    }
-                  }}
-                  disabled={importing}
-                >
-                  Import Direct (Skip Mapping)
+                  {importing ? "Reading CSV…" : "Continue to field mapping"}
                 </button>
                 <button className="dash-btn dash-btn-ghost" onClick={() => fileInputRef.current?.click()}>
                   Choose another file
@@ -281,6 +247,8 @@ export default function ImportLeadsPage() {
           sampleData={csvData.sampleData}
           onConfirm={handleMappingConfirm}
           onCancel={handleMappingCancel}
+          submitting={importing}
+          error={error}
         />
       )}
     </>
