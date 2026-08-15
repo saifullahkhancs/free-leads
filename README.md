@@ -30,9 +30,14 @@ the "Leads Directory Web App" dev document (Module 1 — Foundation + Auth).
     non-paid tiers)
   - `GET /api/leads/stats` — dashboard overview numbers + industry list
   - `POST /api/leads` — create a single lead manually (editor/admin/super_admin)
-  - `POST /api/leads/import` — bulk import leads from raw CSV text
-    (editor/admin/super_admin); rows are geo-mapped and inserted in UNNEST
-    batches, with a per-row error report
+  - `POST /api/leads/import` — bulk import leads (editor/admin/super_admin);
+    rows are geo-mapped and inserted in UNNEST batches, with a per-row error
+    report. The CSV is **streamed** into the parser (never loaded fully into
+    memory) so multi-million-row files won't run out of memory. Accepts
+    either `multipart/form-data` (`file` field) or JSON `{ csv }`. Optional
+    `limit` / `offset` query-or-body fields import only a window of rows
+    (e.g. `limit=50000` reads the first 50 000 rows; `offset=100000&limit=50000`
+    reads rows 100 001–150 000).
   - `GET /api/leads/:id`, `POST /api/leads/export`
 - Postgres migrations + a seed script for default roles/permissions
 

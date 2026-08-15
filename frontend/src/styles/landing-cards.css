@@ -97,7 +97,7 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   color: var(--ink);
-  background: var(--card-tint, var(--card-country);
+  background: var(--card-tint, var(--card-country));
   box-shadow: var(--shadow-xs);
   position: relative;
   overflow: hidden;
@@ -142,7 +142,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--icon-tint, var(--card-soft, var(--icon-indigo));
+  background: var(--icon-tint, var(--card-soft, var(--icon-indigo)));
   font-size: 18px;
 }
 

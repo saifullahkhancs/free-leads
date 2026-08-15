@@ -33,6 +33,7 @@ export default function ImportLeadsPage() {
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
+  const [maxRows, setMaxRows] = useState("");
   const [showMapping, setShowMapping] = useState(false);
   const [csvData, setCsvData] = useState(null);
 
@@ -49,6 +50,12 @@ export default function ImportLeadsPage() {
     setFile(f);
   };
 
+  const parsedLimit = (() => {
+    if (maxRows === "" || maxRows == null) return undefined;
+    const n = Number.parseInt(maxRows, 10);
+    return Number.isNaN(n) || n < 1 ? undefined : n;
+  })();
+
   const handleDrop = (e) => {
     e.preventDefault();
     setDragging(false);
@@ -61,18 +68,19 @@ export default function ImportLeadsPage() {
     setError(null);
     setResult(null);
     try {
-      const text = await file.text();
-      
-      const parseRes = await api.parseCsv(text);
+      // Read only a small prefix for the five-row mapping preview. The final
+      // import still streams the complete file to avoid loading large CSVs in memory.
+      const previewBytes = 2 * 1024 * 1024;
+      const previewText = await file.slice(0, previewBytes).text();
+      const parseRes = await api.parseCsv(previewText);
       setCsvData({
-        text,
         headers: parseRes.data.headers,
-        sampleData: parseRes.data.sampleData
+        sampleData: parseRes.data.sampleData,
       });
       setShowMapping(true);
     } catch (err) {
-      console.error('Import error:', err);
-      setError(err.message || 'Failed to import CSV. Please check the file format.');
+      console.error("CSV preview error:", err);
+      setError(err.message || "Could not read the CSV. Please check its format.");
     } finally {
       setImporting(false);
     }
@@ -83,7 +91,11 @@ export default function ImportLeadsPage() {
     setError(null);
     setResult(null);
     try {
-      const res = await api.importLeadsCsv(csvData.text, "csv_upload", mapping);
+      const res = await api.importLeadsFile(file, {
+        source: "csv_upload",
+        limit: parsedLimit,
+        fieldMapping: mapping,
+      });
       setResult(res.data);
       setShowMapping(false);
       setCsvData(null);
@@ -171,6 +183,25 @@ export default function ImportLeadsPage() {
                 >
                   Remove
                 </button>
+              </div>
+              <div className="import-row-limit">
+                <label htmlFor="max-rows" style={{ fontWeight: 700, fontSize: 13 }}>
+                  Max rows to import
+                </label>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <input
+                    id="max-rows"
+                    type="number"
+                    min="1"
+                    placeholder="All rows"
+                    value={maxRows}
+                    onChange={(e) => setMaxRows(e.target.value)}
+                    style={{ width: 160, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--dash-border, #d4d4d8)" }}
+                  />
+                  <span style={{ fontSize: 12, color: "var(--dash-muted)" }}>
+                    {maxRows ? "Import only the first rows from the file." : "Leave empty to import the whole file."}
+                  </span>
+                </div>
               </div>
               <div style={{ display: "flex", gap: 10 }}>
                 <button className="dash-btn dash-btn-primary" onClick={handleImport} disabled={importing}>

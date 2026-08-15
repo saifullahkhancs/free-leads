@@ -1,5 +1,8 @@
 const { pool, query, withTransaction } = require("../config/db");
-const { parse } = require("csv-parse/sync");
+// Use the *streaming* parser (not csv-parse/sync) so we never materialize the
+// whole file into an array of objects in memory. That full-array parse was the
+// primary cause of "out of memory" crashes on large (1M+ row) uploads.
+const { parse } = require("csv-parse");
 const ApiError = require("../utils/ApiError");
 const GeoMapper = require("../utils/GeoMapper");
 const dedupService = require("./dedupService");
@@ -562,11 +565,11 @@ const resolveLocation = async (geoMapper, { country, country_code, region, city,
   const countryId = country ? await geoMapper.getCountryId(country, country_code) : null;
   const regionId = countryId && region ? await geoMapper.getRegionId(countryId, region) : null;
   const cityId = countryId && city ? await geoMapper.getCityId(countryId, regionId, city) : null;
-  
+
   // Use coordinates from record if provided, otherwise null
   let lat = recordLat ? parseFloat(recordLat) : null;
   let lon = recordLon ? parseFloat(recordLon) : null;
-  
+
   return { cityId, regionId, countryId, lat, lon };
 };
 
@@ -740,10 +743,31 @@ const recordHashesBatch = async (client, ids, fingerprints) => {
 /**
  * Shared bulk-insert pipeline: geo-mapping + global dedup + UNNEST batch insert,
  * all inside one transaction. Used by both CSV import and the external ingest API.
- * records: array of flat objects with lead fields (email/phone/website_url/etc.).
- * Returns { imported, skipped, failed, total, errors }.
+ *
+ * Records are consumed from a caller-provided (async) iterable and only one
+ * batch is held in memory at a time, so memory use stays bounded no matter how
+ * large the source file is.
+ *
+ * options:
+ *   - limit:  maximum number of DATA rows to import (counted after `offset`).
+ *             0 / Infinity means "import everything".
+ *   - offset: number of DATA rows to skip from the start of the source
+ *             (lets you re-import a range, e.g. rows 100001–200000).
+ *   - onProgress: optional callback(rowsAttempted) fired per imported row.
+ *
+ * Returns { imported, skipped, failed, total, errors } where `total` is the
+ * number of data rows in the whole source (not just the imported window).
  */
-const bulkInsertRecords = async (records, source = "csv_upload") => {
+const bulkInsertFromIterable = async (
+  getIterator,
+  source = "csv_upload",
+  { limit = Infinity, offset = 0, fieldMapping = null, onProgress } = {}
+) => {
+  // A non-positive limit means "no limit" (import everything).
+  if (!(limit > 0)) limit = Infinity;
+  if (!(offset > 0)) offset = 0;
+  const validatedMapping = fieldMapping ? validateFieldMapping(fieldMapping) : null;
+
   const geoMapper = new GeoMapper();
   await geoMapper.init();
 
@@ -753,31 +777,53 @@ const bulkInsertRecords = async (records, source = "csv_upload") => {
   let batch = [];
   let imported = 0;
   let skipped = 0;
+  let dataRows = 0;   // every data row seen in the source (drives `total`)
+  let attempted = 0;  // rows we actually tried to import (after offset, before limit)
+  let offsetLeft = offset;
 
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
 
-    for (const [index, record] of records.entries()) {
-      if (!record.full_name || !String(record.full_name).trim()) {
-        errors.push({ row: index + 2, error: "missing full_name" });
+    for await (const record of getIterator()) {
+      dataRows += 1;
+      const displayRow = dataRows + 1; // +1 because row 1 is the header
+
+      // Skip the first `offset` data rows (they do NOT count against `limit`).
+      if (offsetLeft > 0) {
+        offsetLeft -= 1;
+        continue;
+      }
+
+      // Once the requested `limit` has been reached, stop importing but keep
+      // counting so the response's `total` still reflects the whole file.
+      if (attempted >= limit) continue;
+      attempted += 1;
+      if (onProgress) onProgress(attempted);
+
+      // Re-map arbitrary CSV columns to the standard lead fields when a
+      // field mapping was provided.
+      const mapped = validatedMapping ? mapRecord(record, validatedMapping) : record;
+
+      if (!mapped.full_name || !String(mapped.full_name).trim()) {
+        errors.push({ row: displayRow, error: "missing full_name" });
         continue;
       }
       try {
         const { cityId, regionId, countryId, lat, lon } = await resolveLocation(geoMapper, {
-          country: record.country,
-          country_code: record.country_code,
-          region: record.region,
-          city: record.city,
-          lat: record.lat,
-          lon: record.lon
+          country: mapped.country,
+          country_code: mapped.country_code,
+          region: mapped.region,
+          city: mapped.city,
+          lat: mapped.lat,
+          lon: mapped.lon
         });
-        batch.push({ record: { ...record, source }, cityId, regionId, countryId, lat, lon });
+        batch.push({ record: { ...mapped, source }, cityId, regionId, countryId, lat, lon });
         if (batch.length >= BATCH_SIZE) {
           await flushBatch(client);
         }
       } catch (err) {
-        errors.push({ row: index + 2, error: err.message });
+        errors.push({ row: displayRow, error: err.message });
       }
     }
     await flushBatch(client);
@@ -810,105 +856,176 @@ const bulkInsertRecords = async (records, source = "csv_upload") => {
     batch = [];
   }
 
-  return { imported, skipped, failed: errors.length, total: records.length, errors };
+  return { imported, skipped, failed: errors.length, total: dataRows, errors };
+};
+
+/**
+ * Insert records from an in-memory array (used by the external ingest API).
+ */
+const bulkInsertRecords = async (records, source = "csv_upload", options = {}) => {
+  return bulkInsertFromIterable(
+    function* () {
+      yield* records;
+    },
+    source,
+    options
+  );
 };
 
 /**
  * Import leads from raw CSV text (editor/admin/super_admin).
- * Supports field mapping configuration.
+ * The CSV is parsed as a stream (row-by-row) rather than `csv-parse/sync`,
+ * which used to build an array of every row in memory — the cause of
+ * "out of memory" on large uploads. `limit`/`offset` let you read only a
+ * window of rows from the file (e.g. the first 50 000 rows, or rows
+ * 100001–200000). `fieldMapping` (optional) re-maps arbitrary CSV columns
+ * to the standard lead fields before import.
  */
-const importLeadsCsv = async (csvText, source = "csv_upload", fieldMapping = null) => {
-  let records;
-  try {
-    records = parse(csvText, {
-      columns: true,
-      skip_empty_lines: true,
-      trim: true,
-      relax_column_count: true,
-    });
-  } catch (err) {
-    throw new ApiError(400, `Could not parse CSV: ${err.message}`);
+const importLeadsCsv = async (csvText, source = "csv_upload", options = {}) => {
+  if (!csvText || typeof csvText !== "string" || !csvText.trim()) {
+    throw new ApiError(400, "CSV content is required (send { csv: '<text>' })");
   }
 
-  if (!Array.isArray(records) || records.length === 0) {
-    throw new ApiError(400, "CSV file is empty or has no data rows");
-  }
-
-  // Apply field mapping if provided
-  const mappedRecords = fieldMapping ? applyFieldMapping(records, fieldMapping) : records;
-
-  const result = await bulkInsertRecords(mappedRecords, source);
-  return result;
-};
-
-/**
- * Apply field mapping to CSV records
- */
-function applyFieldMapping(records, mapping) {
-  const allowedFields = new Set([
-    "full_name", "headline", "about", "email", "phone", "linkedin_url",
-    "twitter_url", "facebook_url", "website_url", "company_name", "job_title",
-    "industry", "country", "country_code", "region", "city", "lat", "lon",
-  ]);
-
-  if (!mapping || typeof mapping !== "object" || Array.isArray(mapping)) {
-    throw new ApiError(400, "Field mapping must be an object");
-  }
-
-  const entries = Object.entries(mapping);
-  if (!entries.some(([field]) => field === "full_name")) {
-    throw new ApiError(400, "The required full_name field must be mapped");
-  }
-
-  return records.map((record) => {
-    const mapped = {};
-
-    for (const [dbField, csvConfig] of entries) {
-      if (!allowedFields.has(dbField) || !csvConfig || typeof csvConfig !== "object") continue;
-
-      if (csvConfig.type === "single" && typeof csvConfig.csvField === "string") {
-        mapped[dbField] = record[csvConfig.csvField];
-      } else if (csvConfig.type === "combined" && Array.isArray(csvConfig.csvFields)) {
-        const separator = csvConfig.separator === "comma" ? ", " : " ";
-        const values = csvConfig.csvFields
-          .slice(0, 50)
-          .map((field) => record[field])
-          .filter((value) => value != null && String(value).trim() !== "")
-          .map((value) => String(value).trim());
-        mapped[dbField] = values.join(separator);
-      }
-    }
-
-    // When a mapping is supplied, only explicitly mapped destination fields
-    // are imported. This prevents a deliberately unmapped CSV column whose
-    // header happens to match a database field from leaking into the import.
-    return mapped;
-  });
-}
-
-/**
- * Parse CSV and return column headers and sample data
- */
-const parseCsvHeaders = async (csvText) => {
-  const records = parse(csvText, {
+  const parser = parse(csvText, {
     columns: true,
     skip_empty_lines: true,
     trim: true,
     relax_column_count: true,
   });
 
-  if (!Array.isArray(records) || records.length === 0) {
-    throw new ApiError(400, "CSV file is empty or no data rows");
+  async function* records() {
+    try {
+      for await (const record of parser) {
+        yield record;
+      }
+    } catch (err) {
+      throw new ApiError(400, `Could not parse CSV: ${err.message}`);
+    }
   }
 
-  const headers = Object.keys(records[0]);
-  const sampleData = records.slice(0, 5); // First 5 rows as sample
+  return bulkInsertFromIterable(records, source, options);
+};
 
-  return {
-    headers,
-    sampleData,
-    totalRows: records.length
-  };
+/**
+ * Import leads from a Readable stream (multipart file upload). The file is
+ * streamed straight into the CSV parser — it is never buffered in memory.
+ */
+const importLeadsFromStream = async (input, source = "csv_upload", options = {}) => {
+  const parser = input.pipe(
+    parse({
+      columns: true,
+      skip_empty_lines: true,
+      trim: true,
+      relax_column_count: true,
+    })
+  );
+
+  async function* records() {
+    try {
+      for await (const record of parser) {
+        yield record;
+      }
+    } catch (err) {
+      throw new ApiError(400, `Could not parse CSV: ${err.message}`);
+    }
+  }
+
+  return bulkInsertFromIterable(records, source, options);
+};
+
+/** Standard destination fields accepted by the lead importer. */
+const IMPORTABLE_FIELDS = new Set([
+  "full_name", "headline", "about", "email", "phone", "linkedin_url",
+  "twitter_url", "facebook_url", "website_url", "company_name", "job_title",
+  "industry", "country", "country_code", "region", "city", "lat", "lon",
+]);
+
+/** Validate and normalize mapping once before the streaming row loop. */
+function validateFieldMapping(mapping) {
+  if (!mapping || typeof mapping !== "object" || Array.isArray(mapping)) {
+    throw new ApiError(400, "Field mapping must be an object");
+  }
+
+  const validated = {};
+  for (const [dbField, config] of Object.entries(mapping)) {
+    if (!IMPORTABLE_FIELDS.has(dbField) || !config || typeof config !== "object") continue;
+    if (config.type === "single" && typeof config.csvField === "string" && config.csvField) {
+      validated[dbField] = { type: "single", csvField: config.csvField };
+    } else if (config.type === "combined" && Array.isArray(config.csvFields)) {
+      const csvFields = config.csvFields.filter((field) => typeof field === "string" && field).slice(0, 50);
+      if (csvFields.length) {
+        validated[dbField] = {
+          type: "combined",
+          csvFields,
+          separator: config.separator === "comma" ? "comma" : "space",
+        };
+      }
+    }
+  }
+
+  if (!validated.full_name) {
+    throw new ApiError(400, "The required full_name field must be mapped");
+  }
+  return validated;
+}
+
+/** Map one arbitrary CSV record to explicitly selected database fields. */
+function mapRecord(record, mapping) {
+  const mapped = {};
+  for (const [dbField, config] of Object.entries(mapping)) {
+    if (config.type === "single") {
+      mapped[dbField] = record[config.csvField];
+      continue;
+    }
+    const separator = config.separator === "comma" ? ", " : " ";
+    mapped[dbField] = config.csvFields
+      .map((field) => record[field])
+      .filter((value) => value != null && String(value).trim() !== "")
+      .map((value) => String(value).trim())
+      .join(separator);
+  }
+  return mapped;
+}
+
+/** Apply mapping to an in-memory array (used by legacy callers). */
+function applyFieldMapping(records, mapping) {
+  const validated = validateFieldMapping(mapping);
+  return records.map((record) => mapRecord(record, validated));
+}
+
+/**
+ * Parse CSV and return column headers and sample data
+ */
+const parseCsvHeaders = async (csvText) => {
+  if (!csvText || typeof csvText !== "string" || !csvText.trim()) {
+    throw new ApiError(400, "CSV content is required");
+  }
+
+  const parser = parse(csvText, {
+    columns: true,
+    skip_empty_lines: true,
+    trim: true,
+    relax_column_count: true,
+    // The browser may send only a prefix of a very large file for preview;
+    // ignore a final partial record cut at that preview boundary.
+    skip_records_with_error: true,
+  });
+  const sampleData = [];
+  let headers = [];
+  let totalRows = 0;
+
+  try {
+    for await (const record of parser) {
+      if (!headers.length) headers = Object.keys(record);
+      if (sampleData.length < 5) sampleData.push(record);
+      totalRows += 1;
+    }
+  } catch (err) {
+    throw new ApiError(400, `Could not parse CSV: ${err.message}`);
+  }
+
+  if (!totalRows) throw new ApiError(400, "CSV file is empty or has no data rows");
+  return { headers, sampleData, totalRows };
 };
 
 /**
@@ -1028,6 +1145,7 @@ module.exports = {
   exportLeads,
   createLead,
   importLeadsCsv,
+  importLeadsFromStream,
   ingestLeads,
   parseCsvHeaders,
   getLandingStats,
