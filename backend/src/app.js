@@ -8,6 +8,7 @@ const env = require("./config/env");
 const routes = require("./routes");
 const { globalLimiter } = require("./middleware/rateLimiter");
 const { errorHandler, notFoundHandler } = require("./middleware/errorHandler");
+const requestLogger = require("./middleware/logging");
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use(
 app.use(express.json({ limit: "10mb" })); // 10mb so CSV bulk imports fit in the JSON body
 app.use(cookieParser());
 app.use(morgan(env.NODE_ENV === "production" ? "combined" : "dev"));
+app.use(requestLogger); // Custom request/response logging
 app.use(globalLimiter);
 
 app.get("/health", (req, res) => res.json({ status: "ok" }));
