@@ -1,8 +1,10 @@
 /*
- * FreeLeads — App-wide Blue / Indigo SaaS Theme Enhancements
+ * FreeLeads — App-wide Indigo SaaS Theme Layer
  *
- * Ensures all surfaces, inputs, cards, tables, pills, dropdowns, and modals
- * adhere to the unified light enterprise SaaS design system.
+ * Loaded last, this file maps the shared surface/card tokens onto the app
+ * shell so every page inherits the same light-page → tinted-card → dark-text
+ * hierarchy. It intentionally assigns *tints by purpose* rather than forcing
+ * one flat panel colour on every card.
  */
 
 .app-theme {
@@ -25,53 +27,51 @@
   flex: 1;
 }
 
-/* Keep the sticky header white with a restrained frosted effect. */
+/* Keep the sticky header near-white with a restrained frosted effect. */
 .app-theme .site-header {
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--line);
 }
 
-/* Unified dark panel backgrounds for all components */
-.app-theme .app-search-bar,
+/* ---------- Neutral surfaces: subtly tinted, never pure white ---------- */
 .app-theme .lead-card,
 .app-theme .compact-card,
 .app-theme .app-table-wrapper,
 .app-theme .profile-card,
 .app-theme .billing-current-card,
 .app-theme .billing-usage,
-.app-theme .billing-plan-card,
 .app-theme .filter-panel,
 .app-theme .app-filter-rail,
+.app-theme .app-main-filter-panel,
 .app-theme .lead-modal-card,
 .app-theme .site-dropdown,
 .app-theme .site-drawer,
 .app-theme .auth-card,
-.app-theme .feature-card,
 .app-theme .step-card,
 .app-theme .directory-card,
 .app-theme .float-chip,
-.app-theme .country-card,
-.app-theme .type-card {
-  background-color: var(--panel) !important;
-  border-color: var(--line) !important;
-  color: var(--ink) !important;
+.app-theme .contact-card,
+.app-theme .app-search-bar {
+  background-color: var(--card);
+  border-color: var(--line);
+  color: var(--ink);
 }
 
-/* Hover states */
+/* Shared, restrained hover: a touch more tint + light indigo border. */
 .app-theme .lead-card:hover,
-.app-theme .compact-card:hover,
-.app-theme .site-dropdown-item:hover,
-.app-theme .app-table tbody tr:hover,
-.app-theme .country-card:hover,
-.app-theme .feature-card:hover {
-  background-color: var(--panel-hover) !important;
-  border-color: var(--line-strong) !important;
+.app-theme .compact-card:hover {
+  background-color: var(--card-hover);
+  border-color: var(--light-indigo-border);
 }
 
-/* Featured pricing remains a white card with an indigo border. */
+.app-theme .app-table tbody tr:hover {
+  background-color: var(--primary-light);
+}
+
+/* Featured pricing remains a light card identified by its indigo border. */
 .app-theme .billing-plan-card.popular {
-  background: #ffffff !important;
-  border: 2px solid var(--primary) !important;
+  background: #ffffff;
+  border: 2px solid #6366f1;
 }

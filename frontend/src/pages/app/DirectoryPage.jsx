@@ -30,7 +30,7 @@ import * as api from "../../api/client";
 import LeadDetailModal from "../../components/LeadDetailModal";
 import LeadFilterPanel from "../../components/LeadFilterPanel";
 import { useAuth } from "../../context/AuthContext";
-import { avatarColor, formatDate, initialsOf, locationString } from "../../utils/format";
+import { avatarColor, categoryBadgeVariant, formatDate, initialsOf, locationString } from "../../utils/format";
 import { DEFAULT_MOCK_LEADS } from "../../utils/mockLeads";
 import {
   applyLocalFilters,
@@ -1402,7 +1402,11 @@ export default function DirectoryPage() {
                         </span>
                       )}
                       {categoryOf(lead) && (
-                        <span className="lead-pill lead-pill-category">
+                        <span
+                          className={`lead-pill lead-pill-category is-${categoryBadgeVariant(
+                            categoryOf(lead)
+                          )}`}
+                        >
                           <Layers size={12} /> {categoryOf(lead)}
                         </span>
                       )}
@@ -1504,7 +1508,11 @@ export default function DirectoryPage() {
                           </span>
                         </td>
                         <td>
-                          <span className="lead-pill lead-pill-category">
+                          <span
+                            className={`lead-pill lead-pill-category is-${categoryBadgeVariant(
+                              categoryOf(lead)
+                            )}`}
+                          >
                             {categoryOf(lead) || "—"}
                           </span>
                         </td>

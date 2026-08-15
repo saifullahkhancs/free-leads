@@ -1,4 +1,7 @@
-const AVATAR_COLORS = ["#3fae8a", "#4667d8", "#d96b4d", "#b18b40", "#8b5ec7", "#2d9db8", "#c2546b", "#5a8a3f"];
+/* Avatar palette drawn from the brand accents: indigo, blue, purple, cyan,
+   pink and orange. Deterministic per name, so an avatar never changes colour
+   between renders. */
+const AVATAR_COLORS = ["#4F46E5", "#2563EB", "#7C3AED", "#06B6D4", "#EC4899", "#F59E0B", "#6366F1", "#0EA5E9"];
 
 export function initialsOf(person = {}) {
   const p = person || {};
@@ -38,4 +41,28 @@ export function formatDate(value) {
 
 export function roleLabel(role = "") {
   return role.replace(/_/g, " ").toUpperCase();
+}
+
+/**
+ * Presentational tint for a lead category badge.
+ *
+ * Purely visual: it maps a category name onto one of the design-system badge
+ * variants. Unknown categories fall back to the neutral indigo badge, so new
+ * categories coming from the API always render correctly.
+ */
+const CATEGORY_BADGE_VARIANTS = [
+  { match: /(design|creative|art|media|brand)/i, variant: "indigo" },
+  { match: /(finance|bank|account|invest|insur)/i, variant: "green" },
+  { match: /(tech|software|it|engineer|data|develop)/i, variant: "blue" },
+  { match: /(marketing|advertis|growth|sales|pr\b)/i, variant: "pink" },
+  { match: /(health|medical|clinic|pharma|care)/i, variant: "cyan" },
+  { match: /(retail|commerce|consumer|hospitality|food)/i, variant: "orange" },
+  { match: /(education|legal|nonprofit|government|real estate)/i, variant: "purple" },
+];
+
+export function categoryBadgeVariant(category = "") {
+  const name = String(category || "");
+  if (!name) return "indigo";
+  const hit = CATEGORY_BADGE_VARIANTS.find((c) => c.match.test(name));
+  return hit ? hit.variant : "indigo";
 }

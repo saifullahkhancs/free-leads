@@ -1,248 +1,327 @@
-import { useEffect, useRef } from "react";
+import { useMemo } from "react";
 
 /**
  * GlobeAnimation
- * Lightweight pure-CSS/SVG animated globe with orbiting "lead" profile dots.
- * - The globe rotates via CSS keyframes.
- * - Profile dots orbit the globe at different radii, speeds, tilts and colors.
- * - A subtle glow and latitude/longitude grid gives it a modern SaaS feel.
+ *
+ * A premium, self-contained hero illustration of a global lead network.
+ *
+ * Still the same dependency-free CSS/SVG component it always was — it just
+ * renders a far more refined composition:
+ *   - a translucent 3D digital earth with a dotted world map
+ *   - thin orbital connector paths and curved global connection lines
+ *   - small glowing nodes on the surface
+ *   - 7-9 profile markers (generic white person silhouettes) in the brand
+ *     accent colours, each tethered to the globe by a subtle connector
+ *
+ * The whole thing is transparent-edged: no card, no rectangle, no labels, so
+ * it drops straight onto the light hero background.
  */
-export default function GlobeAnimation() {
-  const rafRef = useRef(null);
 
-  // Random small twinkle for profile dots — purely decorative.
-  useEffect(() => {
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
+/* Profile markers. Angles are degrees clockwise from 12 o'clock; radius is a
+   fraction of half the composition, so everything scales with the container. */
+const MARKERS = [
+  { color: "#4F46E5", angle: -28, radius: 0.94, size: 46, delay: 0 },
+  { color: "#2563EB", angle: 24, radius: 0.99, size: 42, delay: -1.1 },
+  { color: "#06B6D4", angle: 74, radius: 0.9, size: 38, delay: -2.2 },
+  { color: "#EC4899", angle: 128, radius: 0.97, size: 42, delay: -0.6 },
+  { color: "#7C3AED", angle: 178, radius: 0.88, size: 44, delay: -1.7 },
+  { color: "#F59E0B", angle: 224, radius: 0.99, size: 38, delay: -2.8 },
+  { color: "#10B981", angle: 272, radius: 0.92, size: 40, delay: -1.4 },
+  { color: "#4F46E5", angle: 318, radius: 1.0, size: 36, delay: -0.3 },
+];
+
+/* Deterministic pseudo-random so the dotted map is stable between renders. */
+function seeded(i) {
+  const x = Math.sin(i * 127.1) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+/**
+ * Build a dotted "world map" over a sphere: dots are laid out on a lat/long
+ * grid, projected orthographically, and kept only where they fall inside one
+ * of a few broad landmass blobs. Abstract by design — no country outlines.
+ */
+function useMapDots() {
+  return useMemo(() => {
+    // Rough landmass blobs in (long, lat) degrees: [lon, lat, radiusLon, radiusLat]
+    const land = [
+      [-100, 45, 34, 26], // North America
+      [-80, 8, 16, 16], // Central America
+      [-60, -18, 20, 26], // South America
+      [12, 50, 26, 18], // Europe
+      [20, 5, 26, 30], // Africa
+      [78, 26, 26, 20], // South / Central Asia
+      [110, 42, 30, 20], // East Asia
+      [135, -26, 18, 14], // Oceania
+    ];
+
+    const inLand = (lon, lat) =>
+      land.some(([cl, ca, rl, ra]) => {
+        const dl = (lon - cl) / rl;
+        const da = (lat - ca) / ra;
+        return dl * dl + da * da <= 1;
+      });
+
+    const dots = [];
+    let i = 0;
+    for (let lat = -78; lat <= 78; lat += 6) {
+      const latRad = (lat * Math.PI) / 180;
+      // Constant surface spacing: fewer longitude steps near the poles.
+      const step = 6 / Math.max(0.25, Math.cos(latRad));
+      for (let lon = -180; lon < 180; lon += step) {
+        i += 1;
+        if (!inLand(lon, lat)) continue;
+        const lonRad = (lon * Math.PI) / 180;
+        // Orthographic projection of a sphere of radius 92 centred at 100,100.
+        const x = Math.cos(latRad) * Math.sin(lonRad);
+        const y = Math.sin(latRad);
+        const z = Math.cos(latRad) * Math.cos(lonRad);
+        if (z < 0.06) continue; // back of the globe
+        dots.push({
+          cx: 100 + x * 92,
+          cy: 100 - y * 92,
+          // Dots shrink and fade toward the limb for a rounded, 3D read.
+          r: 1.05 + z * 0.75,
+          o: 0.2 + z * 0.6,
+          twinkle: seeded(i) > 0.93,
+        });
+      }
+    }
+    return dots;
   }, []);
+}
 
-  // Orbiting leads: each chip represents a "lead" circling the globe.
-  // ring  = orbit radius (px) measured from globe center.
-  // tiltX / tiltY = per-orbit 3D tilt so the rings fan out instead of stacking.
-  const orbits = [
-    { size: 12, color: "#4F46E5", ring: 62, duration: 14, delay: 0,  tiltX: 68, tiltY:   8, direction:  1, label: "AR" },
-    { size: 10, color: "#2563EB", ring: 72, duration: 18, delay: -4, tiltX: 74, tiltY: -20, direction: -1, label: "DK" },
-    { size: 11, color: "#F59E0B", ring: 84, duration: 22, delay: -8, tiltX: 60, tiltY:  25, direction:  1, label: "MS" },
-    { size: 9,  color: "#7C3AED", ring: 56, duration: 12, delay: -2, tiltX: 80, tiltY:  -5, direction: -1, label: "JP" },
-    { size: 12, color: "#4F46E5", ring: 92, duration: 26, delay: -10, tiltX: 55, tiltY:  35, direction:  1, label: "NG" },
-    { size: 10, color: "#4F46E5", ring: 66, duration: 16, delay: -6, tiltX: 72, tiltY: -30, direction: -1, label: "BR" },
-    { size: 8,  color: "#F59E0B", ring: 50, duration: 20, delay: -3, tiltX: 82, tiltY:  15, direction:  1, label: "DE" },
-  ];
+export default function GlobeAnimation() {
+  const mapDots = useMapDots();
 
-  // Distribute surface dots around the sphere using spherical coordinates
-  // so they actually sit on the globe instead of scribbling a lissajous.
-  const DOT_COUNT = 40;
-  const surfaceDots = Array.from({ length: DOT_COUNT }).map((_, i) => {
-    // Fibonacci-like distribution for even coverage.
-    const golden = Math.PI * (3 - Math.sqrt(5));
-    const y = 1 - (i / (DOT_COUNT - 1)) * 2; // -1..1
-    const radius = Math.sqrt(1 - y * y);
-    const theta = golden * i;
-    const x = Math.cos(theta) * radius;
-    const z = Math.sin(theta) * radius;
-    // Project to the 260px globe (radius 122 leaves room inside the 260px circle).
-    const R = 122;
-    const px = x * R;
-    const py = -y * R; // invert y (screen down is +y, sphere up is +y)
-    // Shrink/clip dots that are on the far side of the sphere.
-    const facing = z; // -1 (back) .. 1 (front)
-    const scale = 0.55 + Math.max(0, facing) * 0.55;
-    const opacity = 0.35 + Math.max(0, facing) * 0.65;
-    return { px, py, scale, opacity, delay: -(i * 0.35) % 2.4 };
-  });
+  /* Glowing network nodes sitting on the globe surface. */
+  const nodes = useMemo(
+    () => [
+      { x: 62, y: 74, c: "#4F46E5" },
+      { x: 120, y: 60, c: "#2563EB" },
+      { x: 148, y: 104, c: "#06B6D4" },
+      { x: 88, y: 132, c: "#7C3AED" },
+      { x: 54, y: 116, c: "#EC4899" },
+      { x: 132, y: 148, c: "#10B981" },
+      { x: 104, y: 92, c: "#4F46E5" },
+    ],
+    []
+  );
+
+  /* Curved great-circle style arcs between surface nodes. */
+  const arcs = useMemo(
+    () => [
+      { d: "M62,74 Q100,40 148,104", delay: 0 },
+      { d: "M54,116 Q104,150 148,104", delay: -1.6 },
+      { d: "M120,60 Q150,110 132,148", delay: -3.2 },
+      { d: "M62,74 Q60,120 88,132", delay: -2.4 },
+      { d: "M104,92 Q140,70 148,104", delay: -0.8 },
+    ],
+    []
+  );
 
   return (
     <div className="globe-wrap" aria-hidden="true">
-      {/* Soft outer glow */}
+      {/* Soft radial illumination behind the sphere — no rectangle, no card. */}
       <div className="globe-glow" />
 
-      {/* The globe itself */}
-      <div className="globe-sphere">
-        <div className="globe-inner">
-          {/* Latitude / longitude dotted grid */}
-          <svg className="globe-grid" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+      <div className="globe-stage">
+        {/* ---------- The digital earth ---------- */}
+        <div className="globe-sphere">
+          <svg
+            className="globe-svg"
+            viewBox="0 0 200 200"
+            xmlns="http://www.w3.org/2000/svg"
+          >
             <defs>
-              <radialGradient id="globeShade" cx="35%" cy="30%" r="75%">
-                <stop offset="0%" stopColor="rgba(255,255,255,0.55)" />
-                <stop offset="55%" stopColor="rgba(99,102,241,0.18)" />
-                <stop offset="100%" stopColor="rgba(49,46,129,0.20)" />
+              {/* Translucent glass body with a lavender illuminated side. */}
+              <radialGradient id="fl-globe-body" cx="34%" cy="28%" r="82%">
+                <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
+                <stop offset="42%" stopColor="#EEF0FF" stopOpacity="0.8" />
+                <stop offset="78%" stopColor="#D8DCFB" stopOpacity="0.62" />
+                <stop offset="100%" stopColor="#BFC6F5" stopOpacity="0.42" />
               </radialGradient>
-              <clipPath id="globeClip">
-                <circle cx="100" cy="100" r="94" />
+
+              {/* Inner shading that darkens the lower-right limb. */}
+              <radialGradient id="fl-globe-shade" cx="70%" cy="76%" r="72%">
+                <stop offset="0%" stopColor="#4F46E5" stopOpacity="0.16" />
+                <stop offset="60%" stopColor="#4F46E5" stopOpacity="0.05" />
+                <stop offset="100%" stopColor="#4F46E5" stopOpacity="0" />
+              </radialGradient>
+
+              {/* Top-left specular sheen. */}
+              <radialGradient id="fl-globe-sheen" cx="30%" cy="22%" r="42%">
+                <stop offset="0%" stopColor="#ffffff" stopOpacity="0.75" />
+                <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+              </radialGradient>
+
+              <linearGradient id="fl-arc" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#4F46E5" stopOpacity="0" />
+                <stop offset="50%" stopColor="#6366F1" stopOpacity="0.85" />
+                <stop offset="100%" stopColor="#06B6D4" stopOpacity="0" />
+              </linearGradient>
+
+              <clipPath id="fl-globe-clip">
+                <circle cx="100" cy="100" r="93" />
               </clipPath>
             </defs>
 
-            {/* Grid clipped to the sphere so it reads as a globe, not floating ellipses */}
-            <g clipPath="url(#globeClip)">
-              {/* Meridians — ellipses centered on cx=100 with decreasing rx. */}
-              {[0, 30, 60, 90, 120, 150, 180].map((deg) => {
-                const angle = (deg - 90) * (Math.PI / 180);
-                const rx = Math.round(Math.abs(Math.cos(angle)) * 92);
-                return (
+            {/* Glass body */}
+            <circle cx="100" cy="100" r="93" fill="url(#fl-globe-body)" />
+
+            <g clipPath="url(#fl-globe-clip)">
+              {/* Meridians / parallels — thin, dotted, very light */}
+              <g className="globe-graticule">
+                {[0.28, 0.55, 0.8, 0.96].map((k, i) => (
                   <ellipse
-                    key={`m-${deg}`}
+                    key={`m-${i}`}
                     cx="100"
                     cy="100"
-                    rx={Math.max(2, rx)}
+                    rx={92 * k}
                     ry="92"
                     fill="none"
-                    stroke="rgba(79,70,229,0.32)"
-                    strokeWidth="1"
-                    strokeDasharray="2 4"
+                    stroke="rgba(79,70,229,0.20)"
+                    strokeWidth="0.7"
+                    strokeDasharray="1.5 4"
                   />
-                );
-              })}
-              {/* Parallels — horizontal ellipses. */}
-              {[40, 60, 80, 120, 140, 160].map((cy) => {
-                const dy = Math.abs(100 - cy);
-                const rx = Math.round(Math.sqrt(Math.max(0, 92 * 92 - dy * dy)));
-                return (
-                  <ellipse
-                    key={`p-${cy}`}
-                    cx="100"
-                    cy={cy}
-                    rx={rx}
-                    ry={Math.max(2.5, rx * 0.18)}
-                    fill="none"
-                    stroke="rgba(79,70,229,0.28)"
-                    strokeWidth="1"
-                    strokeDasharray="2 4"
+                ))}
+                {[-58, -30, 0, 30, 58].map((lat) => {
+                  const latRad = (lat * Math.PI) / 180;
+                  const cy = 100 - Math.sin(latRad) * 92;
+                  const rx = Math.cos(latRad) * 92;
+                  return (
+                    <ellipse
+                      key={`p-${lat}`}
+                      cx="100"
+                      cy={cy}
+                      rx={rx}
+                      ry={Math.max(2, rx * 0.16)}
+                      fill="none"
+                      stroke="rgba(79,70,229,0.16)"
+                      strokeWidth="0.7"
+                      strokeDasharray="1.5 4"
+                    />
+                  );
+                })}
+              </g>
+
+              {/* Dotted world map */}
+              <g className="globe-map">
+                {mapDots.map((d, i) => (
+                  <circle
+                    key={`d-${i}`}
+                    cx={d.cx}
+                    cy={d.cy}
+                    r={d.r}
+                    fill={i % 7 === 0 ? "#2563EB" : "#4F46E5"}
+                    opacity={d.o}
+                    className={d.twinkle ? "map-dot-twinkle" : undefined}
+                    style={d.twinkle ? { animationDelay: `${(i % 9) * 0.4}s` } : undefined}
                   />
-                );
-              })}
-              {/* Equator slightly emphasized */}
-              <ellipse
-                cx="100"
-                cy="100"
-                rx="92"
-                ry="6"
-                fill="none"
-                stroke="rgba(79,70,229,0.45)"
-                strokeWidth="1"
-                strokeDasharray="3 4"
-              />
-              {/* Continents — abstract dotted clusters */}
-              {[
-                { cx: 70, cy: 70, r: 18 },
-                { cx: 110, cy: 62, r: 14 },
-                { cx: 130, cy: 95, r: 16 },
-                { cx: 60, cy: 110, r: 14 },
-                { cx: 95, cy: 125, r: 12 },
-                { cx: 140, cy: 135, r: 10 },
-              ].map((c, i) => (
-                <circle
-                  key={`c-${i}`}
-                  cx={c.cx}
-                  cy={c.cy}
-                  r={c.r}
-                  fill="rgba(79,70,229,0.12)"
-                  stroke="rgba(79,70,229,0.35)"
-                  strokeWidth="1"
-                  strokeDasharray="1 3"
-                />
-              ))}
+                ))}
+              </g>
+
+              {/* Curved global connection lines */}
+              <g className="globe-arcs" fill="none" strokeLinecap="round">
+                {arcs.map((a, i) => (
+                  <path
+                    key={`a-${i}`}
+                    d={a.d}
+                    stroke="url(#fl-arc)"
+                    strokeWidth="1.1"
+                    className="globe-arc"
+                    style={{ animationDelay: `${a.delay}s` }}
+                  />
+                ))}
+              </g>
+
+              {/* Small glowing surface nodes */}
+              <g className="globe-nodes">
+                {nodes.map((n, i) => (
+                  <g key={`n-${i}`} style={{ animationDelay: `${-i * 0.7}s` }} className="globe-node">
+                    <circle cx={n.x} cy={n.y} r="5.4" fill={n.c} opacity="0.14" />
+                    <circle cx={n.x} cy={n.y} r="2.4" fill={n.c} opacity="0.95" />
+                  </g>
+                ))}
+              </g>
+
+              {/* Shading + sheen keep the sphere reading as glass */}
+              <circle cx="100" cy="100" r="93" fill="url(#fl-globe-shade)" />
+              <circle cx="100" cy="100" r="93" fill="url(#fl-globe-sheen)" />
             </g>
 
-            {/* Shading overlay */}
-            <circle cx="100" cy="100" r="94" fill="url(#globeShade)" pointerEvents="none" />
-            {/* Outline */}
-            <circle cx="100" cy="100" r="94" fill="none" stroke="rgba(79,70,229,0.45)" strokeWidth="1.5" />
+            {/* Rim light */}
+            <circle
+              cx="100"
+              cy="100"
+              r="93"
+              fill="none"
+              stroke="rgba(79,70,229,0.30)"
+              strokeWidth="0.9"
+            />
           </svg>
-
-          {/* Rotating surface dots (evenly distributed on the sphere) */}
-          <div className="globe-surface-dots">
-            {surfaceDots.map((d, i) => (
-              <span
-                key={i}
-                className="surface-dot"
-                style={{
-                  left: `calc(50% + ${d.px}px)`,
-                  top: `calc(50% + ${d.py}px)`,
-                  animationDelay: `${d.delay}s`,
-                  opacity: d.opacity,
-                  // Use width/height scaling instead of transform so the pulse
-                  // keyframe can still transform without fighting us.
-                  width: `${4 * d.scale}px`,
-                  height: `${4 * d.scale}px`,
-                }}
-              />
-            ))}
-          </div>
         </div>
 
-        {/* Reflection highlight */}
-        <div className="globe-highlight" />
-      </div>
+        {/* ---------- Thin orbital connector paths ---------- */}
+        <div className="globe-orbit globe-orbit-a" />
+        <div className="globe-orbit globe-orbit-b" />
+        <div className="globe-orbit globe-orbit-c" />
 
-      {/* Orbit rings + flying profile chips */}
-      <div className="globe-orbits">
-        {orbits.map((o, i) => {
-          const size = 140 + o.ring * 2;
-          const direction = o.direction < 0 ? "orbitSpinAlt" : "orbitSpin";
+        {/* ---------- Connector lines from the globe out to each marker ---------- */}
+        <svg className="globe-links" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          {MARKERS.map((m, i) => {
+            const rad = ((m.angle - 90) * Math.PI) / 180;
+            const x = 100 + Math.cos(rad) * m.radius * 86;
+            const y = 100 + Math.sin(rad) * m.radius * 86;
+            // Start just outside the sphere edge, end at the marker.
+            const sx = 100 + Math.cos(rad) * 66;
+            const sy = 100 + Math.sin(rad) * 66;
+            return (
+              <line
+                key={`l-${i}`}
+                x1={sx}
+                y1={sy}
+                x2={x}
+                y2={y}
+                stroke={m.color}
+                strokeWidth="0.6"
+                strokeDasharray="2 3"
+                opacity="0.42"
+                className="globe-link"
+                style={{ animationDelay: `${m.delay}s` }}
+              />
+            );
+          })}
+        </svg>
+
+        {/* ---------- Profile markers ---------- */}
+        {MARKERS.map((m, i) => {
+          const rad = ((m.angle - 90) * Math.PI) / 180;
+          const left = 50 + Math.cos(rad) * m.radius * 43;
+          const top = 50 + Math.sin(rad) * m.radius * 43;
           return (
-            <div
-              key={i}
-              className="orbit-ring"
+            <span
+              key={`p-${i}`}
+              className="globe-marker"
               style={{
-                width: `${size}px`,
-                height: `${size}px`,
-                top: `calc(50% - ${size / 2}px)`,
-                left: `calc(50% - ${size / 2}px)`,
-                // Each ring gets its own tilt and spin speed/direction via CSS vars.
-                "--tilt-x": `${o.tiltX}deg`,
-                "--tilt-y": `${o.tiltY}deg`,
-                animationName: direction,
-                animationDuration: `${o.duration}s`,
-                animationDelay: `${o.delay}s`,
+                left: `${left}%`,
+                top: `${top}%`,
+                width: `${m.size}px`,
+                height: `${m.size}px`,
+                background: m.color,
+                boxShadow: `0 0 0 4px ${m.color}1f, 0 6px 16px ${m.color}40`,
+                animationDelay: `${m.delay}s`,
               }}
             >
-              <span
-                className="orbit-dot"
-                style={{
-                  width: `${o.size + 14}px`,
-                  height: `${o.size + 14}px`,
-                  background: o.color,
-                  color: "#fff",
-                  // Re-apply the per-orbit tilt to the dot in REVERSE so the
-                  // chip stays upright while it circles the globe.
-                  "--counter-tilt": `rotateY(${-o.tiltY}deg) rotateX(${-o.tiltX}deg)`,
-                }}
-              >
-                <span
-                  className="orbit-dot-inner"
-                  style={{
-                    boxShadow: `0 8px 20px -6px ${o.color}99, 0 0 0 3px rgba(255,255,255,0.9)`,
-                  }}
-                >
-                  {o.label}
-                </span>
-              </span>
-            </div>
+              {/* Generic person silhouette — no text, no logo. */}
+              <svg viewBox="0 0 24 24" fill="#ffffff" aria-hidden="true">
+                <circle cx="12" cy="8.6" r="3.9" />
+                <path d="M12 13.6c-4.1 0-7.1 2.3-7.1 5.1 0 .7.5 1.1 1.2 1.1h11.8c.7 0 1.2-.4 1.2-1.1 0-2.8-3-5.1-7.1-5.1z" />
+              </svg>
+            </span>
           );
         })}
       </div>
-
-      {/* Stats bubbles — 5 million leads / 196 countries */}
-      <div className="globe-stat globe-stat-leads">
-        <span className="globe-stat-dot leads" />
-        <div>
-          <b>5 million</b>
-          <small>Verified leads</small>
-        </div>
-      </div>
-      <div className="globe-stat globe-stat-countries">
-        <span className="globe-stat-dot countries" />
-        <div>
-          <b>196</b>
-          <small>Countries covered</small>
-        </div>
-      </div>
-
-      {/* Tiny floating connection lines; rotation preserved through the keyframe */}
-      <span className="spark s1" style={{ "--r": "-20deg" }} />
-      <span className="spark s2" style={{ "--r": "35deg" }} />
-      <span className="spark s3" style={{ "--r": "-12deg" }} />
     </div>
   );
 }
