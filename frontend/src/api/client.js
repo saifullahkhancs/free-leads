@@ -228,10 +228,15 @@ export async function createLead(payload) {
 export async function importLeadsCsv(csv, source = "csv_upload", thirdArg = {}) {
   let body;
   if (thirdArg && typeof thirdArg === "object" && !Array.isArray(thirdArg)) {
-    const looksLikeMapping = Object.values(thirdArg).some(
-      (v) => v && typeof v === "object" && (v.type === "single" || v.type === "combined")
-    );
-    body = looksLikeMapping
+    // A bare field-mapping object is the legacy positional form: every value is
+    // a { type: "single" | "combined", ... } config. Anything with option keys
+    // (limit / offset / fieldMapping) is the options form.
+    const isLegacyMapping =
+      Object.keys(thirdArg).length > 0 &&
+      Object.values(thirdArg).every(
+        (v) => v && typeof v === "object" && (v.type === "single" || v.type === "combined")
+      );
+    body = isLegacyMapping
       ? { csv, source, fieldMapping: thirdArg }
       : { csv, source, ...thirdArg };
   } else {

@@ -1412,6 +1412,25 @@
 .skeleton-line { height: 12px; width: 80%; }
 .skeleton-pills { height: 22px; width: 50%; }
 
+/* Inline "results are updating" indicator shown while a search/filter runs. */
+.app-results-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 9px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--primary-light);
+  border: 1px solid var(--light-indigo-border);
+  color: var(--primary);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.app-results-loading svg {
+  flex-shrink: 0;
+}
+
 /* ==========================================================================
    TOAST
    ========================================================================== */

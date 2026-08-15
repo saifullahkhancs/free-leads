@@ -7,6 +7,7 @@ import {
   ChevronDown,
   Columns3,
   Link2,
+  Loader2,
   Plus,
   Sparkles,
   X,
@@ -93,7 +94,7 @@ function mappingSources(config) {
   return config.type === "combined" ? config.csvFields : [config.csvField];
 }
 
-export default function CsvFieldMapping({ csvHeaders, sampleData = [], onConfirm, onCancel, submitting = false, error = null }) {
+export default function CsvFieldMapping({ csvHeaders, sampleData = [], onConfirm, onCancel, submitting = false, error = null, progress = null }) {
   const [mapping, setMapping] = useState(() => buildAutomaticMapping(csvHeaders));
   const [selectedSource, setSelectedSource] = useState(null);
   const [combining, setCombining] = useState(null);
@@ -301,6 +302,31 @@ export default function CsvFieldMapping({ csvHeaders, sampleData = [], onConfirm
 
         {!requiredReady && <div className="csv-map-required-note">Map a CSV column—or combine first and last name—to <strong>Full name</strong> before importing.</div>}
         {error && <div className="csv-map-import-error" role="alert">{error}</div>}
+
+        {progress && (
+          <div className="csv-import-progress" role="status" aria-live="polite">
+            <div className="csv-import-progress-head">
+              <span className="csv-import-progress-title">
+                <Loader2 className="spin" size={15} /> Importing leads…
+              </span>
+              <span className="csv-import-progress-count">
+                <strong>{progress.processed.toLocaleString()}</strong> of {progress.total.toLocaleString()} rows ·{" "}
+                <strong>{progress.remaining.toLocaleString()}</strong> remaining
+              </span>
+            </div>
+            <div className="csv-import-progress-bar">
+              <div
+                className="csv-import-progress-fill"
+                style={{ width: `${progress.total ? Math.min(100, (progress.processed / progress.total) * 100) : 0}%` }}
+              />
+            </div>
+            <div className="csv-import-progress-stats">
+              <span className="csv-import-progress-good">Imported {progress.imported.toLocaleString()}</span>
+              <span>Skipped {progress.skipped.toLocaleString()}</span>
+              <span>Failed {progress.failed.toLocaleString()}</span>
+            </div>
+          </div>
+        )}
 
         <footer className="csv-map-footer">
           <button className="dash-btn dash-btn-ghost" onClick={onCancel} disabled={submitting}>Back</button>

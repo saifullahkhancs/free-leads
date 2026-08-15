@@ -24,6 +24,47 @@ function downloadTemplate() {
   URL.revokeObjectURL(url);
 }
 
+/**
+ * Split CSV text into individual record strings (header + data rows), correctly
+ * honouring quoted fields (commas, escaped quotes and even embedded newlines
+ * stay inside their record). Used to count rows client-side and to stream the
+ * import in small windows so we can report live "X uploaded / Y remaining".
+ */
+function splitCsvRecords(text) {
+  const raw = [];
+  let start = 0;
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') i++; // escaped quote -> still inside the field
+        else inQuotes = false;
+      }
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === "\n") {
+      raw.push(text.slice(start, i));
+      start = i + 1;
+    }
+  }
+  const last = text.slice(start);
+  if (last.trim() !== "") raw.push(last);
+
+  return raw
+    .map((r) => (r.endsWith("\r") ? r.slice(0, -1) : r))
+    .filter((r) => r.trim() !== "");
+}
+
+/** Build import windows of `chunkSize` data rows, each re-including the header. */
+function buildCsvChunks(header, dataRows, chunkSize) {
+  const chunks = [];
+  for (let i = 0; i < dataRows.length; i += chunkSize) {
+    chunks.push([header, ...dataRows.slice(i, i + chunkSize)].join("\n") + "\n");
+  }
+  return chunks;
+}
+
 export default function ImportLeadsPage() {
   const { user } = useAuth();
   const canManage = user?.roles?.some((r) => ["admin", "super_admin", "editor"].includes(r));
@@ -36,6 +77,8 @@ export default function ImportLeadsPage() {
   const [maxRows, setMaxRows] = useState("");
   const [showMapping, setShowMapping] = useState(false);
   const [csvData, setCsvData] = useState(null);
+  // Live import progress: { processed, total, imported, skipped, failed, remaining }
+  const [importProgress, setImportProgress] = useState(null);
 
   const acceptFile = (f) => {
     setError(null);
@@ -90,19 +133,61 @@ export default function ImportLeadsPage() {
     setImporting(true);
     setError(null);
     setResult(null);
+    setImportProgress({ processed: 0, total: 0, imported: 0, skipped: 0, failed: 0, remaining: 0 });
+
+    const CHUNK_SIZE = 2000;
+    let accumulated = { imported: 0, skipped: 0, failed: 0, errors: [] };
+
     try {
-      const res = await api.importLeadsFile(file, {
-        source: "csv_upload",
-        limit: parsedLimit,
-        fieldMapping: mapping,
+      // Read the whole file once so we can count rows and import in windows,
+      // reporting live progress ("X uploaded, Y remaining") as we go.
+      const fullText = await file.text();
+      const records = splitCsvRecords(fullText);
+      if (records.length === 0) throw new Error("The CSV file has no rows to import.");
+
+      const header = records[0];
+      let dataRows = records.slice(1);
+      if (parsedLimit && dataRows.length > parsedLimit) {
+        dataRows = dataRows.slice(0, parsedLimit);
+      }
+      const total = dataRows.length;
+      setImportProgress((p) => ({ ...p, total }));
+
+      const chunks = buildCsvChunks(header, dataRows, CHUNK_SIZE);
+
+      for (let i = 0; i < chunks.length; i++) {
+        const res = await api.importLeadsCsv(chunks[i], "csv_upload", { fieldMapping: mapping });
+        const d = res?.data || {};
+        accumulated.imported += d.imported || 0;
+        accumulated.skipped += d.skipped || 0;
+        accumulated.failed += d.failed || 0;
+        if (Array.isArray(d.errors)) accumulated.errors = accumulated.errors.concat(d.errors);
+
+        const processed = Math.min((i + 1) * CHUNK_SIZE, total);
+        setImportProgress({
+          processed,
+          total,
+          imported: accumulated.imported,
+          skipped: accumulated.skipped,
+          failed: accumulated.failed,
+          remaining: total - processed,
+        });
+      }
+
+      setResult({
+        imported: accumulated.imported,
+        skipped: accumulated.skipped,
+        failed: accumulated.failed,
+        total,
+        errors: accumulated.errors,
       });
-      setResult(res.data);
       setShowMapping(false);
       setCsvData(null);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Import failed.");
     } finally {
       setImporting(false);
+      setImportProgress(null);
     }
   };
 
@@ -280,6 +365,7 @@ export default function ImportLeadsPage() {
           onCancel={handleMappingCancel}
           submitting={importing}
           error={error}
+          progress={importProgress}
         />
       )}
     </>

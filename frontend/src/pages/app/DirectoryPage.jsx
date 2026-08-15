@@ -99,6 +99,10 @@ export default function DirectoryPage() {
   const requestSeq = useRef(0);
   const facetSeq = useRef(0);
   const searchInputRef = useRef(null);
+  // True once we've fallen back to the bundled demo dataset (API unreachable or
+  // empty database). While in demo mode, filters are applied locally so the UI
+  // always responds instead of dropping to a blank empty state.
+  const demoModeRef = useRef(false);
 
   const showToast = useCallback((msg) => {
     setToastMessage(msg);
@@ -205,8 +209,11 @@ export default function DirectoryPage() {
   // ---------------------------------------------------------------------------
   // Fetch leads. On an *untouched* directory (no query, no filters) an
   // unreachable/empty API falls back to the bundled demo dataset so the page is
-  // never blank on first load. The moment the user searches or filters, the
-  // demo rows are dropped — results then come from the API only.
+  // never blank on first load. Once in that demo mode, the user's filters are
+  // applied *locally* to the demo rows so selecting a category/industry (or
+  // searching) always visibly narrows the results — it never just blanks out.
+  // As soon as the API returns real rows we leave demo mode and let the server
+  // handle all further filtering.
   // ---------------------------------------------------------------------------
   const fetchLeads = useCallback(
     async ({ cursor = null, page = 1, ...overrides } = {}) => {
@@ -215,19 +222,15 @@ export default function DirectoryPage() {
       (isAppend ? setLoadingMore : setLoading)(true);
       setError(null);
 
-      // The demo dataset is only ever shown on an untouched directory. As soon
-      // as the user types a query or picks a filter we show real results (or a
-      // real empty state) instead of pretending the mock rows matched.
-      const applyFallback = () => {
-        if (!isUnfiltered(overrides)) {
-          setLeads([]);
-          setNextCursor(null);
-          setUsingFallback(false);
-          return;
-        }
-        setLeads(sortLeads([...DEFAULT_MOCK_LEADS], sortBy));
+      const showDemo = () => {
+        demoModeRef.current = true;
+        const filtered = applyLocalFilters(DEFAULT_MOCK_LEADS, localFilterShape(overrides));
+        const sorted = sortLeads(filtered, sortBy);
+        setLeads(sorted);
         setNextCursor(null);
         setUsingFallback(true);
+        setTotalLeads(sorted.length);
+        setCurrentPage(1);
       };
 
       try {
@@ -243,10 +246,21 @@ export default function DirectoryPage() {
         const fetched = response?.data?.leads || [];
 
         if (fetched.length === 0 && !isAppend) {
-          // A genuinely empty *filtered* result must stay empty — only fall back
-          // to the demo dataset when nothing is filtered and the DB is bare.
-          applyFallback();
+          if (!isUnfiltered(overrides) && !demoModeRef.current) {
+            // A real, filtered search returned nothing — show an honest empty
+            // state rather than pretending the demo rows matched.
+            demoModeRef.current = false;
+            setLeads([]);
+            setNextCursor(null);
+            setUsingFallback(false);
+            setTotalLeads(response.data.total || 0);
+          } else {
+            // Empty database (or an untouched directory) — demo data stands in,
+            // honouring the active filters/sort so it still feels responsive.
+            showDemo();
+          }
         } else {
+          demoModeRef.current = false;
           setUsingFallback(false);
           setLeads((prev) => (isAppend ? [...prev, ...fetched] : fetched));
           setNextCursor(response.data.nextCursor);
@@ -262,12 +276,14 @@ export default function DirectoryPage() {
               : "You're searching too fast — give it a second and try again."
           );
         }
-        applyFallback();
+        // API unreachable — fall back to the demo dataset, applying the filters
+        // locally so search/filter still work while offline.
+        showDemo();
       } finally {
         if (seq === requestSeq.current) (isAppend ? setLoadingMore : setLoading)(false);
       }
     },
-    [buildParams, isUnfiltered, sortBy, limit]
+    [buildParams, isUnfiltered, sortBy, limit, localFilterShape]
   );
 
   // ---------------------------------------------------------------------------
@@ -1205,8 +1221,8 @@ export default function DirectoryPage() {
           <Sparkles size={14} />
           <span>
             <strong>Sample leads</strong> — showing {processedLeads.length} example profiles
-            while the directory has no live results. Search or apply a filter to query real
-            leads.
+            while the directory has no live results. You can search and filter these the same
+            way — connect your database to see real leads.
           </span>
         </div>
       )}
@@ -1314,6 +1330,13 @@ export default function DirectoryPage() {
           </div>
 
           {/* Results */}
+          {loading && (
+            <div className="app-results-loading" role="status" aria-live="polite">
+              <Loader2 className="spin" size={16} />
+              <span>Updating results…</span>
+            </div>
+          )}
+
           {loading ? (
             <div className="app-grid">
               {[1, 2, 3, 4, 5, 6].map((idx) => (
