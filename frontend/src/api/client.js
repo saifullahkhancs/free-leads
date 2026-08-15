@@ -216,11 +216,48 @@ export async function createLead(payload) {
   });
 }
 
-/** Bulk-import leads from raw CSV text (requires editor/admin role server-side). */
-export async function importLeadsCsv(csv, source = "csv_upload") {
+/**
+ * Bulk-import leads from raw CSV text (requires editor/admin role server-side).
+ * `limit` caps how many data rows are imported (from the start of the file);
+ * `offset` skips rows first so you can import a window like rows 100001–200000.
+ */
+export async function importLeadsCsv(csv, source = "csv_upload", { limit, offset } = {}) {
   return request("/api/leads/import", {
     method: "POST",
-    body: { csv, source },
+    body: { csv, source, limit, offset },
+  });
+}
+
+/**
+ * Bulk-import leads from a CSV File (requires editor/admin role server-side).
+ * Sent as multipart/form-data so the file streams to the server instead of
+ * being read fully into memory (avoids out-of-memory on 1M+ row files).
+ * `limit`/`offset` behave like importLeadsCsv.
+ */
+export async function importLeadsFile(file, { source = "csv_upload", limit, offset } = {}) {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("source", source);
+  if (limit) formData.append("limit", String(limit));
+  if (offset) formData.append("offset", String(offset));
+
+  const token = getAccessToken();
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  // Note: no Content-Type header — the browser sets the multipart boundary.
+
+  const response = await fetch(`${API_BASE}/api/leads/import`, {
+    method: "POST",
+    headers,
+    credentials: "include",
+    body: formData,
+  });
+
+  return parseBody(response).then((data) => {
+    if (!response.ok) {
+      throw buildError(data, response);
+    }
+    return data;
   });
 }
 

@@ -350,3 +350,40 @@ GET    /api/admin/audit-logs
 - **Environment separation:** never point a dev/staging environment at the production dataset with production credentials.
 
 
+
+---
+
+## 8. CSV Import: Out-of-Memory Fix & Row-Limit Support
+
+**Why large uploads ran out of memory.** The original import pipeline had two
+places that buffered the whole file in memory at once:
+
+1. The frontend called `file.text()`, which read the entire CSV into a single
+   string and sent it as a JSON request body (`{ csv: "<entire file>" }`).
+2. The backend used `csv-parse/sync`'s `parse()`, which materialised *every
+   row* into a JavaScript object array before a single row was inserted.
+
+For a 1 012 493-row file this means the full text plus an array of ~1M objects
+(plus 4 fingerprint hashes each) all live in the Node heap at the same time —
+easily exceeding the default heap and crashing with "out of memory".
+
+**Fix (now in place).**
+- Imports accept `multipart/form-data` and the uploaded file is **streamed**
+  straight into the CSV parser — the file is never read into memory (see
+  `importLeadsFromStream` in `backend/src/services/leadService.js`).
+- The parser is the streaming `csv-parse` (not `/sync`), so rows are yielded
+  one at a time.
+- `bulkInsertFromIterable` holds only one batch (1 000 rows) in memory at a
+  time and geo-maps / dedups / inserts inside one transaction.
+
+**Limiting how much is read ("from start to end").** The `/api/leads/import`
+endpoint now accepts optional `limit` and `offset` (query or body/form):
+
+- `limit` — how many **data rows** to import, starting from the beginning of
+  the file. Unset / `0` imports everything.
+- `offset` — how many data rows to skip before importing (for reading a window,
+  e.g. re-running rows 100 001–150 000).
+
+The response's `total` always reflects the whole file, so you can see how many
+rows were left over. The admin **Import CSV** page exposes a "Max rows to
+import" field that sends `limit` and streams the file via multipart.

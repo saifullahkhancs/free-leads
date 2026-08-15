@@ -32,6 +32,7 @@ export default function ImportLeadsPage() {
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
+  const [maxRows, setMaxRows] = useState("");
 
   const acceptFile = (f) => {
     setError(null);
@@ -46,6 +47,12 @@ export default function ImportLeadsPage() {
     setFile(f);
   };
 
+  const parsedLimit = (() => {
+    if (maxRows === "" || maxRows == null) return undefined;
+    const n = Number.parseInt(maxRows, 10);
+    return Number.isNaN(n) || n < 1 ? undefined : n;
+  })();
+
   const handleDrop = (e) => {
     e.preventDefault();
     setDragging(false);
@@ -58,8 +65,13 @@ export default function ImportLeadsPage() {
     setError(null);
     setResult(null);
     try {
-      const text = await file.text();
-      const res = await api.importLeadsCsv(text, "csv_upload");
+      // Stream the file to the server (multipart) so 1M+ row files don't get
+      // loaded into memory. limit caps how many rows are imported from the
+      // start of the file — pass offset here too if you ever need a window.
+      const res = await api.importLeadsFile(file, {
+        source: "csv_upload",
+        limit: parsedLimit,
+      });
       setResult(res.data);
     } catch (err) {
       setError(err.message);
@@ -140,6 +152,25 @@ export default function ImportLeadsPage() {
                 >
                   Remove
                 </button>
+              </div>
+              <div className="import-row-limit">
+                <label htmlFor="max-rows" style={{ fontWeight: 700, fontSize: 13 }}>
+                  Max rows to import
+                </label>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <input
+                    id="max-rows"
+                    type="number"
+                    min="1"
+                    placeholder="All rows"
+                    value={maxRows}
+                    onChange={(e) => setMaxRows(e.target.value)}
+                    style={{ width: 160, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--dash-border, #d4d4d8)" }}
+                  />
+                  <span style={{ fontSize: 12, color: "var(--dash-muted)" }}>
+                    {maxRows ? "Import only the first rows from the file." : "Leave empty to import the whole file."}
+                  </span>
+                </div>
               </div>
               <div style={{ display: "flex", gap: 10 }}>
                 <button className="dash-btn dash-btn-primary" onClick={handleImport} disabled={importing}>

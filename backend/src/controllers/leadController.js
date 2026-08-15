@@ -3,6 +3,7 @@ const authService = require("../services/authService");
 const quotaService = require("../services/quotaService");
 const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/ApiError");
+const busboy = require("busboy");
 
 function isRolePaid(user) {
   return user && (user.roles || []).some((r) => ["admin", "super_admin"].includes(r));
@@ -239,23 +240,89 @@ const createLead = asyncHandler(async (req, res) => {
   });
 });
 
+/** Normalise a user-supplied row limit/offset into a non-negative integer. */
+function parseRowWindow(value, fallback) {
+  if (value === undefined || value === null || value === "") return fallback;
+  const n = Number.parseInt(value, 10);
+  if (Number.isNaN(n) || n < 0) {
+    throw new ApiError(400, "limit and offset must be non-negative integers");
+  }
+  return n;
+}
+
 /**
- * POST /api/leads/import — bulk import leads from raw CSV text (editor/admin/super_admin).
+ * POST /api/leads/import — bulk import leads (editor/admin/super_admin).
+ *
+ * Supports two bodies:
+ *   - multipart/form-data: field `file` (the .csv) + optional `source`,
+ *     `limit`, `offset` form fields. The file is streamed to the parser, so
+ *     multi-million-row files never load into memory.
+ *   - application/json: `{ csv: "<text>", source?, limit?, offset? }`.
+ *     Kept for backwards compatibility / programmatic use.
+ *
+ * `limit` caps how many data rows are imported (from the start of the file);
+ * `offset` skips that many data rows first (import a window, e.g. rows
+ * 100001–200000). 0 / unset means "import everything".
  */
 const importLeads = asyncHandler(async (req, res) => {
-  const { csv, source } = req.body || {};
+  const limit = parseRowWindow(req.body?.limit ?? req.query?.limit, 0);
+  const offset = parseRowWindow(req.body?.offset ?? req.query?.offset, 0);
+  const options = { limit, offset };
 
+  // Large files use multipart uploads so the CSV streams in without buffering.
+  if (req.is("multipart/form-data")) {
+    const result = await importLeadsMultipart(req, options);
+    return res.json({ status: "success", data: result });
+  }
+
+  const { csv, source } = req.body || {};
   if (!csv || typeof csv !== "string" || !csv.trim()) {
     throw new ApiError(400, "CSV content is required (send { csv: '<text>' })");
   }
 
-  const result = await leadService.importLeadsCsv(csv, source || "csv_upload");
-
-  res.json({
-    status: "success",
-    data: result,
-  });
+  const result = await leadService.importLeadsCsv(csv, source || "csv_upload", options);
+  res.json({ status: "success", data: result });
 });
+
+/**
+ * Handle a multipart/form-data CSV import. The uploaded file stream is handed
+ * straight to the service (which pipes it into the CSV parser), so memory stays
+ * flat regardless of file size.
+ */
+const importLeadsMultipart = (req, { limit, offset }) =>
+  new Promise((resolve, reject) => {
+    const bb = busboy({ headers: req.headers, limits: { files: 1 } });
+    let source = "csv_upload";
+    let fileStream = null;
+
+    bb.on("field", (name, value) => {
+      if (name === "source" && value) source = value;
+    });
+
+    bb.on("file", (name, stream) => {
+      if (!fileStream) {
+        fileStream = stream;
+      } else {
+        stream.resume(); // ignore any additional files
+      }
+    });
+
+    bb.on("error", (err) => reject(err));
+
+    bb.on("close", async () => {
+      if (!fileStream) {
+        return reject(new ApiError(400, "No CSV file received (expected multipart field 'file')"));
+      }
+      try {
+        const result = await leadService.importLeadsFromStream(fileStream, source, { limit, offset });
+        resolve(result);
+      } catch (err) {
+        reject(err);
+      }
+    });
+
+    req.pipe(bb);
+  });
 
 /**
  * GET /api/leads/landing-stats — public aggregate coverage for the landing page.
