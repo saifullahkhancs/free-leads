@@ -1,6 +1,7 @@
 const leadService = require("../services/leadService");
 const authService = require("../services/authService");
 const quotaService = require("../services/quotaService");
+const geocodingJobService = require("../services/geocodingJobService");
 const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/ApiError");
 
@@ -63,6 +64,7 @@ const getLeads = asyncHandler(async (req, res) => {
     verified,
     cursor,
     limit,
+    offset,
     sort,
     lat,
     lon,
@@ -89,7 +91,8 @@ const getLeads = asyncHandler(async (req, res) => {
     industry: industry || null,
     verified: toBool(verified),
     cursor: toInt(cursor),
-    limit: Math.min(Math.max(toInt(limit) || 50, 1), 200),
+    limit: Math.min(Math.max(toInt(limit) || 20, 1), 200),
+    offset: toInt(offset) || 0,
     sort: sort || "recent",
     lat: lat ? parseFloat(lat) : null,
     lon: lon ? parseFloat(lon) : null,
@@ -243,13 +246,31 @@ const createLead = asyncHandler(async (req, res) => {
  * POST /api/leads/import — bulk import leads from raw CSV text (editor/admin/super_admin).
  */
 const importLeads = asyncHandler(async (req, res) => {
-  const { csv, source } = req.body || {};
+  const { csv, source, fieldMapping } = req.body || {};
 
   if (!csv || typeof csv !== "string" || !csv.trim()) {
     throw new ApiError(400, "CSV content is required (send { csv: '<text>' })");
   }
 
-  const result = await leadService.importLeadsCsv(csv, source || "csv_upload");
+  const result = await leadService.importLeadsCsv(csv, source || "csv_upload", fieldMapping);
+
+  res.json({
+    status: "success",
+    data: result,
+  });
+});
+
+/**
+ * POST /api/leads/parse-csv — parse CSV and return headers and sample data
+ */
+const parseCsv = asyncHandler(async (req, res) => {
+  const { csv } = req.body || {};
+
+  if (!csv || typeof csv !== "string" || !csv.trim()) {
+    throw new ApiError(400, "CSV content is required");
+  }
+
+  const result = await leadService.parseCsvHeaders(csv);
 
   res.json({
     status: "success",
@@ -281,6 +302,29 @@ const getStats = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * POST /api/leads/geocode/:id — geocode a single lead by ID
+ */
+const geocodeLead = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const result = await geocodingJobService.geocodeSingleLead(id);
+  res.json({
+    status: "success",
+    data: result,
+  });
+});
+
+/**
+ * POST /api/leads/geocode/batch — run geocoding for leads without coordinates
+ */
+const runGeocodingBatch = asyncHandler(async (req, res) => {
+  const result = await geocodingJobService.runGeocodingJob();
+  res.json({
+    status: "success",
+    data: result,
+  });
+});
+
 module.exports = {
   getLeads,
   getFacets,
@@ -288,7 +332,10 @@ module.exports = {
   exportLeads,
   createLead,
   importLeads,
+  parseCsv,
   ingestLeads,
   getLandingStats,
   getStats,
+  geocodeLead,
+  runGeocodingBatch,
 };

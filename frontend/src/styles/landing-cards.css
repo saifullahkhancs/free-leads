@@ -97,16 +97,28 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   color: var(--ink);
-  background: var(--card-country);
+  background: var(--card-tint, var(--card-country);
   box-shadow: var(--shadow-xs);
+  position: relative;
+  overflow: hidden;
   transition: background-color var(--t-slow) var(--ease), border-color var(--t-slow) var(--ease),
               transform var(--t-slow) var(--ease), box-shadow var(--t-slow) var(--ease);
 }
 
+.country-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--accent, var(--primary));
+}
+
 .country-card:hover,
 .country-card-scene:hover .country-card {
-  border-color: var(--light-indigo-border);
-  background: var(--card-blue);
+  border-color: var(--accent, var(--light-indigo-border));
+  background: var(--card-tint-hover, var(--card-blue));
   box-shadow: var(--shadow-card-hover);
 }
 
@@ -121,6 +133,17 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 12px;
+}
+
+.country-flag-container {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--icon-tint, var(--card-soft, var(--icon-indigo));
+  font-size: 18px;
 }
 
 .country-flag {

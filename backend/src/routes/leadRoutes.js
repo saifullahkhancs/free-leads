@@ -84,6 +84,13 @@ router.post(
   leadController.importLeads
 );
 
+router.post(
+  "/parse-csv",
+  authenticate,
+  requireRole("admin", "super_admin", "editor"),
+  leadController.parseCsv
+);
+
 // NOTE: keep `/landing-stats`, `/stats`, `/import`, `/export`, `/ingest` before `/:id`.
 router.get(
   "/:id",
@@ -91,6 +98,21 @@ router.get(
   throttle("view_lead", env.SEARCH_THROTTLE_PER_MINUTE),
   quotaService.requireQuota("view_lead"),
   leadController.getLeadById
+);
+
+// Geocoding endpoints (admin only)
+router.post(
+  "/geocode/:id",
+  authenticate,
+  requireRole("admin", "super_admin"),
+  leadController.geocodeLead
+);
+
+router.post(
+  "/geocode/batch",
+  authenticate,
+  requireRole("admin", "super_admin"),
+  leadController.runGeocodingBatch
 );
 
 module.exports = router;

@@ -9,7 +9,9 @@ import {
   MapPin,
   RefreshCw,
   Search,
+  Trash2,
   UploadCloud,
+  Map,
 } from "lucide-react";
 import * as api from "../../api/client";
 import { useAuth } from "../../context/AuthContext";
@@ -29,6 +31,13 @@ export default function LeadsPage() {
   const [nextCursor, setNextCursor] = useState(null);
   const [selectedLead, setSelectedLead] = useState(null);
   const [geoActive, setGeoActive] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
+  const [geocodingLeadId, setGeocodingLeadId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalLeads, setTotalLeads] = useState(0);
+  const limit = 20;
   const requestSeq = useRef(0);
 
   useEffect(() => {
@@ -37,13 +46,19 @@ export default function LeadsPage() {
     }).catch(() => {});
   }, []);
 
-  const fetchLeads = async ({ reset = false, cursor = null, geo = null } = {}) => {
+  const fetchLeads = async ({ reset = false, cursor = null, geo = null, page = 1 } = {}) => {
     const seq = ++requestSeq.current;
     const setter = reset ? setLoading : setLoadingMore;
     setter(true);
     setError(null);
     try {
-      const params = { q: q.trim() || undefined, industry: industry || undefined, cursor: cursor || undefined };
+      const params = { 
+        q: q.trim() || undefined, 
+        industry: industry || undefined, 
+        cursor: cursor || undefined,
+        limit: limit,
+        offset: (page - 1) * limit
+      };
       if (geo) {
         params.lat = geo.lat;
         params.lon = geo.lon;
@@ -53,9 +68,12 @@ export default function LeadsPage() {
       if (seq !== requestSeq.current) return;
       if (reset) {
         setLeads(response.data.leads);
+        setCurrentPage(1);
       } else {
-        setLeads((prev) => [...prev, ...response.data.leads]);
+        setLeads(response.data.leads);
+        setCurrentPage(page);
       }
+      setTotalLeads(response.data.total || response.data.leads.length);
       setNextCursor(response.data.nextCursor);
     } catch (err) {
       if (seq === requestSeq.current) setError(err.message);
@@ -96,7 +114,46 @@ export default function LeadsPage() {
     setQ("");
     setIndustry("");
     setGeoActive(false);
-    fetchLeads({ reset: true });
+    fetchLeads({ reset: true, page: 1 });
+  };
+
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > Math.ceil(totalLeads / limit)) return;
+    fetchLeads({ reset: false, page: newPage });
+  };
+
+  const handleDeleteAll = async () => {
+    if (!confirm("Are you sure you want to delete ALL leads? This action cannot be undone.")) {
+      return;
+    }
+    
+    setDeleting(true);
+    try {
+      await api.deleteAllLeads();
+      setLeads([]);
+      setNextCursor(null);
+      setShowDeleteDialog(false);
+      setError(null);
+    } catch (err) {
+      setError(err.message || "Failed to delete leads");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleGeocodeLead = async (leadId) => {
+    setGeocodingLeadId(leadId);
+    setGeocoding(true);
+    try {
+      await api.geocodeLead(leadId);
+      // Refresh the leads to show updated coordinates
+      fetchLeads({ reset: true, page: currentPage });
+    } catch (err) {
+      setError(err.message || "Failed to geocode lead");
+    } finally {
+      setGeocoding(false);
+      setGeocodingLeadId(null);
+    }
   };
 
   return (
@@ -115,6 +172,32 @@ export default function LeadsPage() {
               <Link to="/admin/import" className="dash-btn dash-btn-primary">
                 <UploadCloud size={16} /> Import CSV
               </Link>
+              {user?.roles?.some((r) => ["admin", "super_admin"].includes(r)) && (
+                <>
+                  <button 
+                    className="dash-btn dash-btn-info"
+                    onClick={async () => {
+                      if (!confirm("Run geocoding for all leads without coordinates? This may take several minutes.")) return;
+                      try {
+                        const result = await api.runGeocodingBatch();
+                        alert(`Geocoding complete: ${result.data.totalSuccess} success, ${result.data.totalFailed} failed`);
+                        fetchLeads({ reset: true, page: 1 });
+                      } catch (err) {
+                        alert(`Geocoding failed: ${err.message}`);
+                      }
+                    }}
+                  >
+                    <Map size={16} /> Geocode All
+                  </button>
+                  <button 
+                    className="dash-btn dash-btn-danger"
+                    onClick={() => setShowDeleteDialog(true)}
+                    disabled={leads.length === 0}
+                  >
+                    <Trash2 size={16} /> Delete All
+                  </button>
+                </>
+              )}
             </>
           )}
         </div>
@@ -152,7 +235,7 @@ export default function LeadsPage() {
 
       <div className="dash-toolbar">
         <span className="dash-toolbar-count">
-          {loading ? "Loading…" : `${leads.length} lead${leads.length === 1 ? "" : "s"} shown`}
+          {loading ? "Loading…" : `${totalLeads} total lead${totalLeads === 1 ? "" : "s"} (Page ${currentPage} of ${Math.ceil(totalLeads / limit) || 1})`}
         </span>
         {geoActive && <span className="dash-badge badge-green"><MapPin size={11} /> Within 50 km of you</span>}
       </div>
@@ -181,6 +264,7 @@ export default function LeadsPage() {
                   <th>Email</th>
                   <th>Status</th>
                   <th>Added</th>
+                  <th>Geocode</th>
                 </tr>
               </thead>
               <tbody>
@@ -211,6 +295,23 @@ export default function LeadsPage() {
                       )}
                     </td>
                     <td className="muted">{formatDate(lead.created_at)}</td>
+                    <td>
+                      <button
+                        className="dash-btn dash-btn-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleGeocodeLead(lead.id);
+                        }}
+                        disabled={geocoding && geocodingLeadId === lead.id}
+                        title="Get coordinates for this lead's location"
+                      >
+                        {geocoding && geocodingLeadId === lead.id ? (
+                          <Loader2 className="spin" size={14} />
+                        ) : (
+                          <Map size={14} />
+                        )}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -218,15 +319,25 @@ export default function LeadsPage() {
           </div>
         )}
 
-        {nextCursor && !loading && (
-          <div style={{ textAlign: "center", padding: "18px" }}>
+        {/* Pagination */}
+        {totalLeads > limit && !loading && (
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, padding: "18px" }}>
             <button
               className="dash-btn"
-              disabled={loadingMore}
-              onClick={() => fetchLeads({ cursor: nextCursor })}
+              disabled={currentPage === 1}
+              onClick={() => handlePageChange(currentPage - 1)}
             >
-              {loadingMore ? <Loader2 className="spin" size={15} /> : null}
-              {loadingMore ? "Loading…" : "Load more"}
+              Previous
+            </button>
+            <span style={{ fontSize: "14px", color: "var(--ink-muted)" }}>
+              Page {currentPage} of {Math.ceil(totalLeads / limit)}
+            </span>
+            <button
+              className="dash-btn"
+              disabled={currentPage >= Math.ceil(totalLeads / limit)}
+              onClick={() => handlePageChange(currentPage + 1)}
+            >
+              Next
             </button>
           </div>
         )}
@@ -234,6 +345,34 @@ export default function LeadsPage() {
 
       {selectedLead && (
         <LeadDetailModal lead={selectedLead} onClose={() => setSelectedLead(null)} />
+      )}
+
+      {showDeleteDialog && (
+        <div className="modal-overlay" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+          <div className="dash-card" style={{ maxWidth: 400, padding: 24, margin: 16 }}>
+            <h3 style={{ marginBottom: 12 }}>Delete All Leads</h3>
+            <p style={{ marginBottom: 20, color: "var(--ink-muted)" }}>
+              Are you sure you want to delete all {leads.length} leads? This action cannot be undone.
+            </p>
+            <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+              <button 
+                className="dash-btn"
+                onClick={() => setShowDeleteDialog(false)}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button 
+                className="dash-btn dash-btn-danger"
+                onClick={handleDeleteAll}
+                disabled={deleting}
+              >
+                {deleting ? <Loader2 className="spin" size={16} /> : <Trash2 size={16} />}
+                {deleting ? "Deleting..." : "Delete All"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

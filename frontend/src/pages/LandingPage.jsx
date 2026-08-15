@@ -314,7 +314,9 @@ export default function LandingPage() {
               onMouseMove={handleTypeCardMove}
             >
               <div className="country-top">
-                <span className="country-flag">{flag(c.code)}</span>
+                <div className="country-flag-container">
+                  <span className="country-flag">{flag(c.code)}</span>
+                </div>
                 <span className="country-rank">#{String(i + 1).padStart(2, "0")}</span>
               </div>
               <h4>{c.name}</h4>

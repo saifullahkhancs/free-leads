@@ -445,6 +445,18 @@
   border-color: var(--danger);
 }
 
+.dash-btn-info {
+  background: var(--blue-soft);
+  border-color: rgba(37, 99, 235, 0.3);
+  color: var(--blue);
+}
+
+.dash-btn-info:hover {
+  background: var(--blue);
+  color: #fff;
+  border-color: var(--blue);
+}
+
 /* ---------- Stat Cards ---------- */
 .stat-grid {
   display: grid;

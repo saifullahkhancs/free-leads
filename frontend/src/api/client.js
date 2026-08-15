@@ -217,10 +217,25 @@ export async function createLead(payload) {
 }
 
 /** Bulk-import leads from raw CSV text (requires editor/admin role server-side). */
-export async function importLeadsCsv(csv, source = "csv_upload") {
+export async function importLeadsCsv(csv, source = "csv_upload", fieldMapping = null) {
   return request("/api/leads/import", {
     method: "POST",
-    body: { csv, source },
+    body: { csv, source, fieldMapping },
+  });
+}
+
+/** Parse CSV and return headers and sample data. */
+export async function parseCsv(csv) {
+  return request("/api/leads/parse-csv", {
+    method: "POST",
+    body: { csv },
+  });
+}
+
+/** Delete all leads (requires admin role server-side). */
+export async function deleteAllLeads() {
+  return request("/api/admin/leads", {
+    method: "DELETE",
   });
 }
 
@@ -512,6 +527,20 @@ export async function adminUpdatePost(id, payload) {
 /** Admin: delete a blog post. */
 export async function adminDeletePost(id) {
   return request(`/api/blog/${id}`, { method: "DELETE" });
+}
+
+/** Geocode a single lead by ID (admin only). */
+export async function geocodeLead(id) {
+  return request(`/api/leads/geocode/${id}`, {
+    method: "POST",
+  });
+}
+
+/** Run batch geocoding for leads without coordinates (admin only). */
+export async function runGeocodingBatch() {
+  return request("/api/leads/geocode/batch", {
+    method: "POST",
+  });
 }
 
 // Re-export token helpers so pages (e.g. the Google callback) can set the

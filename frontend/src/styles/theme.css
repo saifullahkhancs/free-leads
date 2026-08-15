@@ -24,14 +24,14 @@
   --orange-soft: #fff7ed;
 
   /* ---------- Surfaces ---------- */
-  --bg: #f7f8ff;
-  --bg-alt: #f5f7ff;
-  --bg-gradient: radial-gradient(ellipse 900px 520px at 12% -8%, rgba(79, 70, 229, 0.06), transparent 62%),
-                 radial-gradient(ellipse 760px 520px at 100% -2%, rgba(37, 99, 235, 0.05), transparent 58%),
-                 linear-gradient(180deg, #fbfcff 0%, #f7f8ff 100%);
-  --panel: #fcfcff;
-  --panel-hover: #f5f7ff;
-  --panel-subtle: #f5f7ff;
+  --bg: #f0f4ff;
+  --bg-alt: #edf2ff;
+  --bg-gradient: radial-gradient(ellipse 900px 520px at 12% -8%, rgba(79, 70, 229, 0.08), transparent 62%),
+                 radial-gradient(ellipse 760px 520px at 100% -2%, rgba(37, 99, 235, 0.06), transparent 58%),
+                 linear-gradient(180deg, #f5f7ff 0%, #f0f4ff 100%);
+  --panel: #f5f7ff;
+  --panel-hover: #edf2ff;
+  --panel-subtle: #edf2ff;
   --line: #e1e5f2;
   --line-strong: #c7d2fe;
   --line-subtle: #eef2ff;

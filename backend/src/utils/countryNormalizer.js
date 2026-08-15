@@ -69,6 +69,9 @@ const ALIASES = {
   "united arab emirates": "AE",
   "the uae": "AE",
 
+  // ---- Pakistan ----
+  "pakistan": "PK",
+
   // ---- Other frequent variants ----
   "russia": "RU",
   "russian federation": "RU",
@@ -113,6 +116,7 @@ const CANONICAL_NAMES = {
   US: "United States of America",
   GB: "United Kingdom",
   AE: "United Arab Emirates",
+  PK: "Pakistan",
   RU: "Russia",
   KR: "South Korea",
   KP: "North Korea",
