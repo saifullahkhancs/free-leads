@@ -77,6 +77,9 @@ export default function DirectoryPage() {
   const [nextCursor, setNextCursor] = useState(null);
   const [usingFallback, setUsingFallback] = useState(false);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalLeads, setTotalLeads] = useState(0);
+  const limit = 20;
 
   // ---- Facets (filter options + counts) --------------------------------------
   const [facets, setFacets] = useState(null);
@@ -206,7 +209,7 @@ export default function DirectoryPage() {
   // demo rows are dropped — results then come from the API only.
   // ---------------------------------------------------------------------------
   const fetchLeads = useCallback(
-    async ({ cursor = null, ...overrides } = {}) => {
+    async ({ cursor = null, page = 1, ...overrides } = {}) => {
       const seq = ++requestSeq.current;
       const isAppend = Boolean(cursor);
       (isAppend ? setLoadingMore : setLoading)(true);
@@ -230,6 +233,8 @@ export default function DirectoryPage() {
       try {
         const params = buildParams(overrides);
         if (cursor) params.cursor = cursor;
+        params.limit = limit;
+        params.offset = (page - 1) * limit;
 
         const response = await api.getLeads(params);
         if (seq !== requestSeq.current) return;
@@ -245,6 +250,8 @@ export default function DirectoryPage() {
           setUsingFallback(false);
           setLeads((prev) => (isAppend ? [...prev, ...fetched] : fetched));
           setNextCursor(response.data.nextCursor);
+          setTotalLeads(response.data.total || fetched.length);
+          setCurrentPage(page);
         }
       } catch (err) {
         if (seq !== requestSeq.current) return;
@@ -260,7 +267,7 @@ export default function DirectoryPage() {
         if (seq === requestSeq.current) (isAppend ? setLoadingMore : setLoading)(false);
       }
     },
-    [buildParams, isUnfiltered, sortBy]
+    [buildParams, isUnfiltered, sortBy, limit]
   );
 
   // ---------------------------------------------------------------------------
@@ -322,7 +329,8 @@ export default function DirectoryPage() {
 
   // Re-run the search whenever any server-side filter changes.
   useEffect(() => {
-    fetchLeads();
+    setCurrentPage(1);
+    fetchLeads({ page: 1 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     submittedQ,
@@ -337,6 +345,11 @@ export default function DirectoryPage() {
     filters.radius,
     sortBy,
   ]);
+
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > Math.ceil(totalLeads / limit)) return;
+    fetchLeads({ page: newPage });
+  };
 
   useEffect(() => {
     fetchFacets();
@@ -1205,9 +1218,14 @@ export default function DirectoryPage() {
           <div className="app-toolbar">
             <div className="app-toolbar-left">
               <div className="app-count-badge">
-                <span>Showing</span>
-                <span className="app-count-number">{processedLeads.length}</span>
-                <span>{processedLeads.length === 1 ? "lead" : "leads"}</span>
+                <span>{usingFallback ? "Demo data: " : totalLeads > 0 ? "Showing " : ""}</span>
+                <span className="app-count-number">{usingFallback ? processedLeads.length : totalLeads}</span>
+                <span>{usingFallback ? " demo " : totalLeads === 1 ? " lead" : " leads"}</span>
+                {!usingFallback && totalLeads > limit && (
+                  <span style={{ marginLeft: 8, color: "var(--ink-muted)", fontSize: "13px" }}>
+                    (Page {currentPage} of {Math.ceil(totalLeads / limit)})
+                  </span>
+                )}
               </div>
 
               {activeFilterTags.map((tag) => {
@@ -1620,18 +1638,33 @@ export default function DirectoryPage() {
             </div>
           )}
 
-          {nextCursor && !loading && (
-            <div style={{ textAlign: "center", marginTop: 32 }}>
+          {totalLeads > limit && !loading && !usingFallback && (
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginTop: 32 }}>
               <button
                 type="button"
-                className="app-header-btn app-header-btn-primary"
-                style={{ padding: "10px 24px", fontSize: "13.5px" }}
-                disabled={loadingMore}
-                onClick={() => fetchLeads({ cursor: nextCursor })}
+                className="app-header-btn"
+                disabled={currentPage === 1}
+                onClick={() => handlePageChange(currentPage - 1)}
               >
-                {loadingMore ? <Loader2 className="spin" size={16} /> : null}
-                <span>{loadingMore ? "Loading more leads…" : "Load More Leads"}</span>
+                Previous
               </button>
+              <span style={{ fontSize: "14px", color: "var(--ink-muted)" }}>
+                Page {currentPage} of {Math.ceil(totalLeads / limit)}
+              </span>
+              <button
+                type="button"
+                className="app-header-btn"
+                disabled={currentPage >= Math.ceil(totalLeads / limit)}
+                onClick={() => handlePageChange(currentPage + 1)}
+              >
+                Next
+              </button>
+            </div>
+          )}
+
+          {usingFallback && (
+            <div style={{ textAlign: "center", marginTop: 32, color: "var(--ink-muted)", fontSize: "13px" }}>
+              Showing demo data — connect to your database to see all leads
             </div>
           )}
         </div>

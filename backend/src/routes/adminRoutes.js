@@ -21,6 +21,9 @@ router.get("/roles", adminController.getRoles);
 router.get("/audit-logs", adminController.getAuditLogs);
 router.post("/leads/dedup", adminController.runDedup);
 
+// Delete all leads
+router.delete("/leads", adminController.deleteAllLeads);
+
 // Membership Plans
 router.get("/plans", adminController.getAdminPlans);
 router.post("/plans", adminController.createPlan);

@@ -1,6 +1,7 @@
 const leadService = require("../services/leadService");
 const authService = require("../services/authService");
 const quotaService = require("../services/quotaService");
+const geocodingJobService = require("../services/geocodingJobService");
 const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/ApiError");
 const busboy = require("busboy");
@@ -64,6 +65,7 @@ const getLeads = asyncHandler(async (req, res) => {
     verified,
     cursor,
     limit,
+    offset,
     sort,
     lat,
     lon,
@@ -90,7 +92,8 @@ const getLeads = asyncHandler(async (req, res) => {
     industry: industry || null,
     verified: toBool(verified),
     cursor: toInt(cursor),
-    limit: Math.min(Math.max(toInt(limit) || 50, 1), 200),
+    limit: Math.min(Math.max(toInt(limit) || 20, 1), 200),
+    offset: toInt(offset) || 0,
     sort: sort || "recent",
     lat: lat ? parseFloat(lat) : null,
     lon: lon ? parseFloat(lon) : null,
@@ -265,9 +268,11 @@ function parseRowWindow(value, fallback) {
  * 100001–200000). 0 / unset means "import everything".
  */
 const importLeads = asyncHandler(async (req, res) => {
+  const { csv, source, fieldMapping } = req.body || {};
+
   const limit = parseRowWindow(req.body?.limit ?? req.query?.limit, 0);
   const offset = parseRowWindow(req.body?.offset ?? req.query?.offset, 0);
-  const options = { limit, offset };
+  const options = { limit, offset, fieldMapping };
 
   // Large files use multipart uploads so the CSV streams in without buffering.
   if (req.is("multipart/form-data")) {
@@ -275,7 +280,6 @@ const importLeads = asyncHandler(async (req, res) => {
     return res.json({ status: "success", data: result });
   }
 
-  const { csv, source } = req.body || {};
   if (!csv || typeof csv !== "string" || !csv.trim()) {
     throw new ApiError(400, "CSV content is required (send { csv: '<text>' })");
   }
@@ -285,18 +289,44 @@ const importLeads = asyncHandler(async (req, res) => {
 });
 
 /**
+ * POST /api/leads/parse-csv — parse CSV and return headers and sample data
+ */
+const parseCsv = asyncHandler(async (req, res) => {
+  const { csv } = req.body || {};
+
+  if (!csv || typeof csv !== "string" || !csv.trim()) {
+    throw new ApiError(400, "CSV content is required");
+  }
+
+  const result = await leadService.parseCsvHeaders(csv);
+
+  res.json({
+    status: "success",
+    data: result,
+  });
+});
+
+/**
  * Handle a multipart/form-data CSV import. The uploaded file stream is handed
  * straight to the service (which pipes it into the CSV parser), so memory stays
  * flat regardless of file size.
  */
-const importLeadsMultipart = (req, { limit, offset }) =>
+const importLeadsMultipart = (req, { limit, offset, fieldMapping }) =>
   new Promise((resolve, reject) => {
     const bb = busboy({ headers: req.headers, limits: { files: 1 } });
     let source = "csv_upload";
+    let mapping = fieldMapping || null;
     let fileStream = null;
 
     bb.on("field", (name, value) => {
       if (name === "source" && value) source = value;
+      if (name === "fieldMapping" && value) {
+        try {
+          mapping = JSON.parse(value);
+        } catch {
+          mapping = fieldMapping || null;
+        }
+      }
     });
 
     bb.on("file", (name, stream) => {
@@ -314,7 +344,11 @@ const importLeadsMultipart = (req, { limit, offset }) =>
         return reject(new ApiError(400, "No CSV file received (expected multipart field 'file')"));
       }
       try {
-        const result = await leadService.importLeadsFromStream(fileStream, source, { limit, offset });
+        const result = await leadService.importLeadsFromStream(fileStream, source, {
+          limit,
+          offset,
+          fieldMapping: mapping,
+        });
         resolve(result);
       } catch (err) {
         reject(err);
@@ -348,6 +382,29 @@ const getStats = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * POST /api/leads/geocode/:id — geocode a single lead by ID
+ */
+const geocodeLead = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const result = await geocodingJobService.geocodeSingleLead(id);
+  res.json({
+    status: "success",
+    data: result,
+  });
+});
+
+/**
+ * POST /api/leads/geocode/batch — run geocoding for leads without coordinates
+ */
+const runGeocodingBatch = asyncHandler(async (req, res) => {
+  const result = await geocodingJobService.runGeocodingJob();
+  res.json({
+    status: "success",
+    data: result,
+  });
+});
+
 module.exports = {
   getLeads,
   getFacets,
@@ -355,7 +412,10 @@ module.exports = {
   exportLeads,
   createLead,
   importLeads,
+  parseCsv,
   ingestLeads,
   getLandingStats,
   getStats,
+  geocodeLead,
+  runGeocodingBatch,
 };

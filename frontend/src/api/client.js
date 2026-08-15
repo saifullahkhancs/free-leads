@@ -218,13 +218,28 @@ export async function createLead(payload) {
 
 /**
  * Bulk-import leads from raw CSV text (requires editor/admin role server-side).
- * `limit` caps how many data rows are imported (from the start of the file);
- * `offset` skips rows first so you can import a window like rows 100001–200000.
+ *
+ * The third argument is either a field-mapping object (legacy positional
+ * signature) or an options object `{ limit, offset, fieldMapping }`:
+ *   - `limit` caps how many data rows are imported (from the start of the file);
+ *   - `offset` skips rows first so you can import a window like rows 100001–200000;
+ *   - `fieldMapping` re-maps arbitrary CSV columns to standard lead fields.
  */
-export async function importLeadsCsv(csv, source = "csv_upload", { limit, offset } = {}) {
+export async function importLeadsCsv(csv, source = "csv_upload", thirdArg = {}) {
+  let body;
+  if (thirdArg && typeof thirdArg === "object" && !Array.isArray(thirdArg)) {
+    const looksLikeMapping = Object.values(thirdArg).some(
+      (v) => v && typeof v === "object" && (v.type === "single" || v.type === "combined")
+    );
+    body = looksLikeMapping
+      ? { csv, source, fieldMapping: thirdArg }
+      : { csv, source, ...thirdArg };
+  } else {
+    body = { csv, source };
+  }
   return request("/api/leads/import", {
     method: "POST",
-    body: { csv, source, limit, offset },
+    body,
   });
 }
 
@@ -232,14 +247,15 @@ export async function importLeadsCsv(csv, source = "csv_upload", { limit, offset
  * Bulk-import leads from a CSV File (requires editor/admin role server-side).
  * Sent as multipart/form-data so the file streams to the server instead of
  * being read fully into memory (avoids out-of-memory on 1M+ row files).
- * `limit`/`offset` behave like importLeadsCsv.
+ * `options`: { source, limit, offset, fieldMapping }.
  */
-export async function importLeadsFile(file, { source = "csv_upload", limit, offset } = {}) {
+export async function importLeadsFile(file, { source = "csv_upload", limit, offset, fieldMapping } = {}) {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("source", source);
   if (limit) formData.append("limit", String(limit));
   if (offset) formData.append("offset", String(offset));
+  if (fieldMapping) formData.append("fieldMapping", JSON.stringify(fieldMapping));
 
   const token = getAccessToken();
   const headers = {};
@@ -258,6 +274,21 @@ export async function importLeadsFile(file, { source = "csv_upload", limit, offs
       throw buildError(data, response);
     }
     return data;
+  });
+}
+
+/** Parse CSV and return headers and sample data. */
+export async function parseCsv(csv) {
+  return request("/api/leads/parse-csv", {
+    method: "POST",
+    body: { csv },
+  });
+}
+
+/** Delete all leads (requires admin role server-side). */
+export async function deleteAllLeads() {
+  return request("/api/admin/leads", {
+    method: "DELETE",
   });
 }
 
@@ -549,6 +580,20 @@ export async function adminUpdatePost(id, payload) {
 /** Admin: delete a blog post. */
 export async function adminDeletePost(id) {
   return request(`/api/blog/${id}`, { method: "DELETE" });
+}
+
+/** Geocode a single lead by ID (admin only). */
+export async function geocodeLead(id) {
+  return request(`/api/leads/geocode/${id}`, {
+    method: "POST",
+  });
+}
+
+/** Run batch geocoding for leads without coordinates (admin only). */
+export async function runGeocodingBatch() {
+  return request("/api/leads/geocode/batch", {
+    method: "POST",
+  });
 }
 
 // Re-export token helpers so pages (e.g. the Google callback) can set the

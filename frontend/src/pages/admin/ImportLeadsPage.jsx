@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { CheckCircle2, Download, FileSpreadsheet, Loader2, ShieldAlert, UploadCloud, XCircle } from "lucide-react";
 import * as api from "../../api/client";
 import { useAuth } from "../../context/AuthContext";
+import CsvFieldMapping from "../../components/CsvFieldMapping";
 
 const CSV_TEMPLATE = [
   "full_name,headline,about,email,linkedin_url,twitter_url,facebook_url,website_url,country,country_code,region,city,industry,company_name,job_title",
@@ -33,6 +34,9 @@ export default function ImportLeadsPage() {
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
   const [maxRows, setMaxRows] = useState("");
+  const [showMapping, setShowMapping] = useState(false);
+  const [csvData, setCsvData] = useState(null);
+  const [fieldMapping, setFieldMapping] = useState(null);
 
   const acceptFile = (f) => {
     setError(null);
@@ -66,8 +70,8 @@ export default function ImportLeadsPage() {
     setResult(null);
     try {
       // Stream the file to the server (multipart) so 1M+ row files don't get
-      // loaded into memory. limit caps how many rows are imported from the
-      // start of the file — pass offset here too if you ever need a window.
+      // loaded into memory (avoids the out-of-memory crashes). `limit` caps
+      // how many rows are imported from the start of the file.
       const res = await api.importLeadsFile(file, {
         source: "csv_upload",
         limit: parsedLimit,
@@ -78,6 +82,54 @@ export default function ImportLeadsPage() {
     } finally {
       setImporting(false);
     }
+  };
+
+  // Read the file once to preview its headers/sample rows and open the
+  // column-mapping modal. The confirmed mapping is applied on the next
+  // "Import with mapping" action.
+  const handleMapColumns = async () => {
+    if (!file) return;
+    setImporting(true);
+    setError(null);
+    setResult(null);
+    try {
+      const text = await file.text();
+      const parseRes = await api.parseCsv(text);
+      setCsvData({
+        text,
+        headers: parseRes.data.headers,
+        sampleData: parseRes.data.sampleData,
+      });
+      setShowMapping(true);
+    } catch (err) {
+      console.error("Parse error:", err);
+      setError(err.message || "Could not read the CSV for column mapping. Use Import for large files.");
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleMappingConfirm = async (mapping) => {
+    setImporting(true);
+    setError(null);
+    setResult(null);
+    try {
+      const res = await api.importLeadsCsv(csvData.text, "csv_upload", mapping);
+      setResult(res.data);
+      setShowMapping(false);
+      setCsvData(null);
+      setFieldMapping(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleMappingCancel = () => {
+    setShowMapping(false);
+    setCsvData(null);
+    setFieldMapping(null);
   };
 
   return (
@@ -177,6 +229,14 @@ export default function ImportLeadsPage() {
                   {importing ? <Loader2 className="spin" size={16} /> : <UploadCloud size={16} />}
                   {importing ? "Importing…" : `Import ${file.name}`}
                 </button>
+                <button
+                  className="dash-btn dash-btn-ghost"
+                  onClick={handleMapColumns}
+                  disabled={importing}
+                  title="Preview the CSV and re-map its columns to the standard lead fields"
+                >
+                  Map columns
+                </button>
                 <button className="dash-btn dash-btn-ghost" onClick={() => fileInputRef.current?.click()}>
                   Choose another file
                 </button>
@@ -239,6 +299,16 @@ export default function ImportLeadsPage() {
           </p>
         </div>
       </div>}
+
+      {/* CSV Field Mapping Modal */}
+      {showMapping && csvData && (
+        <CsvFieldMapping
+          csvHeaders={csvData.headers}
+          sampleData={csvData.sampleData}
+          onConfirm={handleMappingConfirm}
+          onCancel={handleMappingCancel}
+        />
+      )}
     </>
   );
 }

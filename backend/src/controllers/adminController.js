@@ -468,6 +468,34 @@ const deletePlan = asyncHandler(async (req, res) => {
   res.status(200).json({ status: "success", data: { deleted: true } });
 });
 
+/**
+ * DELETE /api/admin/leads — delete all leads (admin only).
+ * This is a destructive operation that cannot be undone.
+ */
+const deleteAllLeads = asyncHandler(async (req, res) => {
+  // Get count before deletion for audit log
+  const { rows: countResult } = await query("SELECT COUNT(*) as count FROM leads");
+  const count = parseInt(countResult[0].count, 10);
+
+  // Delete all leads
+  await query("DELETE FROM leads");
+
+  // Log the action
+  await auditService.log({
+    actorId: req.user.id,
+    action: "delete_all_leads",
+    entityType: "lead",
+    metadata: { count },
+    ip: req.ip,
+  });
+
+  res.status(200).json({ 
+    status: "success", 
+    message: `Deleted ${count} leads`,
+    data: { deletedCount: count }
+  });
+});
+
 module.exports = {
   requireAdmin,
   getAllUsers,
@@ -482,4 +510,5 @@ module.exports = {
   createPlan,
   updatePlan,
   deletePlan,
+  deleteAllLeads,
 };

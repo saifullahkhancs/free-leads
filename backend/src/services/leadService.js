@@ -66,6 +66,7 @@ const getLeads = async ({
   industry,
   verified,
   cursor,
+  offset = 0,
   lat,
   lon,
   radius = 50000, // 50km default
@@ -222,7 +223,75 @@ const getLeads = async ({
   queryText += ` ORDER BY ${ORDER_BY[sort] || "l.id ASC"} LIMIT $${paramIndex}`;
   values.push(limit);
 
+  // Add offset for offset-based pagination
+  if (offset > 0) {
+    queryText += ` OFFSET $${paramIndex + 1}`;
+    values.push(offset);
+  }
+
   const { rows } = await pool.query(queryText, values);
+
+  // Get total count for pagination when offset is used
+  let total = null;
+  if (offset > 0 || cursor === null) {
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM leads l
+      LEFT JOIN countries c ON l.country_id = c.id
+      LEFT JOIN regions r ON l.region_id = r.id
+      LEFT JOIN cities ci ON l.city_id = ci.id
+      WHERE l.is_active = TRUE
+    `;
+    const countValues = [];
+    let countParamIndex = 1;
+
+    if (q) {
+      countQuery += ` AND l.search_vector @@ plainto_tsquery('english', $${countParamIndex++})`;
+      countValues.push(q);
+    }
+    if (lat && lon) {
+      countQuery += ` AND l.location IS NOT NULL AND ST_DWithin(l.location, ST_MakePoint($1, $2)::geography, $${countParamIndex++})`;
+      countValues.push(radius);
+    }
+    if (country_id) {
+      countQuery += ` AND l.country_id = $${countParamIndex++}`;
+      countValues.push(country_id);
+    }
+    if (region_id) {
+      countQuery += ` AND l.region_id = $${countParamIndex++}`;
+      countValues.push(region_id);
+    }
+    if (city_id) {
+      countQuery += ` AND l.city_id = $${countParamIndex++}`;
+      countValues.push(city_id);
+    }
+    if (!country_id && country_code) {
+      countQuery += ` AND upper(c.code) = upper($${countParamIndex++})`;
+      countValues.push(String(country_code).trim());
+    }
+    if (!region_id && region) {
+      countQuery += ` AND lower(r.name) = lower($${countParamIndex++})`;
+      countValues.push(String(region).trim());
+    }
+    if (!city_id && city) {
+      countQuery += ` AND lower(ci.name) = lower($${countParamIndex++})`;
+      countValues.push(String(city).trim());
+    }
+    if (category) {
+      countQuery += ` AND l.category = $${countParamIndex++}`;
+      countValues.push(category);
+    }
+    if (industry) {
+      countQuery += ` AND l.industry = $${countParamIndex++}`;
+      countValues.push(industry);
+    }
+    if (verified) {
+      countQuery += ` AND l.is_verified = TRUE`;
+    }
+
+    const { rows: countRows } = await pool.query(countQuery, countValues);
+    total = parseInt(countRows[0].total, 10);
+  }
 
   const nextCursor =
     keysetSort && rows.length === limit ? rows[rows.length - 1].id : null;
@@ -230,6 +299,7 @@ const getLeads = async ({
   return {
     leads: rows,
     nextCursor,
+    total,
   };
 };
 
@@ -491,11 +561,16 @@ function serializeLeads(leads, format) {
 // ---------------------------------------------------------------------------
 // Location resolution
 // ---------------------------------------------------------------------------
-const resolveLocation = async (geoMapper, { country, country_code, region, city }) => {
+const resolveLocation = async (geoMapper, { country, country_code, region, city, lat: recordLat, lon: recordLon }) => {
   const countryId = country ? await geoMapper.getCountryId(country, country_code) : null;
   const regionId = countryId && region ? await geoMapper.getRegionId(countryId, region) : null;
   const cityId = countryId && city ? await geoMapper.getCityId(countryId, regionId, city) : null;
-  return { cityId, regionId, countryId };
+
+  // Use coordinates from record if provided, otherwise null
+  let lat = recordLat ? parseFloat(recordLat) : null;
+  let lon = recordLon ? parseFloat(recordLon) : null;
+
+  return { cityId, regionId, countryId, lat, lon };
 };
 
 /**
@@ -508,7 +583,14 @@ const createLead = async (data) => {
 
   const geoMapper = new GeoMapper();
   await geoMapper.init();
-  const { cityId, regionId, countryId } = await resolveLocation(geoMapper, data);
+  const { cityId, regionId, countryId, lat, lon } = await resolveLocation(geoMapper, {
+    country: data.country,
+    country_code: data.country_code,
+    region: data.region,
+    city: data.city,
+    lat: data.lat,
+    lon: data.lon
+  });
   const fp = dedupService.fingerprint(data);
 
   const { rows } = await pool.query(
@@ -516,10 +598,10 @@ const createLead = async (data) => {
        full_name, headline, about, email, phone, linkedin_url, twitter_url,
        facebook_url, website_url, city_id, region_id, country_id,
        industry, category, company_name, job_title, source, is_verified,
-       email_hash, phone_hash, website_hash, biz_hash
+       email_hash, phone_hash, website_hash, biz_hash, lat, lon
      )
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17, FALSE,
-             $18,$19,$20,$21)
+             $18,$19,$20,$21,$22,$23)
      RETURNING id, full_name, email, phone, company_name, industry, category, created_at`,
     [
       String(data.full_name).trim(),
@@ -543,6 +625,8 @@ const createLead = async (data) => {
       fp.phone_hash,
       fp.website_hash,
       fp.biz_hash,
+      lat,
+      lon,
     ]
   );
 
@@ -552,14 +636,14 @@ const createLead = async (data) => {
 
 /**
  * Insert lead rows in a single UNNEST-based batch (no per-row INSERT loops).
- * rows: [{ record, cityId, regionId, countryId, fp }]
+ * rows: [{ record, cityId, regionId, countryId, lat, lon, fp }]
  * Returns the array of inserted lead ids.
  */
 const insertLeadBatch = async (client, rows, fingerprints = []) => {
   if (rows.length === 0) return [];
-  const cols = Array.from({ length: 21 }, () => []);
+  const cols = Array.from({ length: 23 }, () => []);
 
-  rows.forEach(({ record, cityId, regionId, countryId, fp: rowFp }, rowIndex) => {
+  rows.forEach(({ record, cityId, regionId, countryId, lat, lon, fp: rowFp }, rowIndex) => {
     // Fingerprints are computed by the dedup pass and handed in positionally;
     // fall back to a per-row fp (single-record callers) or recompute.
     const fp = rowFp || fingerprints[rowIndex] || dedupService.fingerprint(record);
@@ -585,6 +669,8 @@ const insertLeadBatch = async (client, rows, fingerprints = []) => {
       fp.phone_hash,
       fp.website_hash,
       fp.biz_hash,
+      lat,
+      lon,
     ];
     v.forEach((val, i) => cols[i].push(val));
   });
@@ -594,17 +680,34 @@ const insertLeadBatch = async (client, rows, fingerprints = []) => {
        full_name, headline, about, email, phone, linkedin_url, twitter_url,
        facebook_url, website_url, city_id, region_id, country_id,
        industry, category, company_name, job_title, source,
-       email_hash, phone_hash, website_hash, biz_hash
+       email_hash, phone_hash, website_hash, biz_hash, lat, lon
      )
      SELECT * FROM UNNEST(
        $1::text[], $2::text[], $3::text[], $4::text[], $5::text[], $6::text[],
        $7::text[], $8::text[], $9::text[], $10::int[], $11::int[], $12::int[],
        $13::text[], $14::text[], $15::text[], $16::text[], $17::text[],
-       $18::text[], $19::text[], $20::text[], $21::text[]
+       $18::text[], $19::text[], $20::text[], $21::text[], $22::float[], $23::float[]
      )
      RETURNING id`,
     cols
   );
+
+  // Update PostGIS location for records that have coordinates
+  const coordinates = rows.map((row, index) => ({
+    id: inserted[index].id,
+    lat: row.lat,
+    lon: row.lon
+  })).filter(coord => coord.lat && coord.lon);
+
+  if (coordinates.length > 0) {
+    for (const coord of coordinates) {
+      await client.query(
+        `UPDATE leads SET location = ST_SetSRID(ST_MakePoint($1, $2), 4326) WHERE id = $3`,
+        [coord.lon, coord.lat, coord.id]
+      );
+    }
+  }
+
   return inserted.map((r) => r.id);
 };
 
@@ -658,7 +761,7 @@ const recordHashesBatch = async (client, ids, fingerprints) => {
 const bulkInsertFromIterable = async (
   getIterator,
   source = "csv_upload",
-  { limit = Infinity, offset = 0, onProgress } = {}
+  { limit = Infinity, offset = 0, fieldMapping = null, onProgress } = {}
 ) => {
   // A non-positive limit means "no limit" (import everything).
   if (!(limit > 0)) limit = Infinity;
@@ -697,13 +800,24 @@ const bulkInsertFromIterable = async (
       attempted += 1;
       if (onProgress) onProgress(attempted);
 
-      if (!record.full_name || !String(record.full_name).trim()) {
+      // Re-map arbitrary CSV columns to the standard lead fields when a
+      // field mapping was provided.
+      const mapped = fieldMapping ? mapRecord(record, fieldMapping) : record;
+
+      if (!mapped.full_name || !String(mapped.full_name).trim()) {
         errors.push({ row: displayRow, error: "missing full_name" });
         continue;
       }
       try {
-        const { cityId, regionId, countryId } = await resolveLocation(geoMapper, record);
-        batch.push({ record: { ...record, source }, cityId, regionId, countryId });
+        const { cityId, regionId, countryId, lat, lon } = await resolveLocation(geoMapper, {
+          country: mapped.country,
+          country_code: mapped.country_code,
+          region: mapped.region,
+          city: mapped.city,
+          lat: mapped.lat,
+          lon: mapped.lon
+        });
+        batch.push({ record: { ...mapped, source }, cityId, regionId, countryId, lat, lon });
         if (batch.length >= BATCH_SIZE) {
           await flushBatch(client);
         }
@@ -731,7 +845,7 @@ const bulkInsertFromIterable = async (
       batch = [];
       return;
     }
-    // Pair survivors back with their geo ids.
+    // Pair survivors back with their geo ids and coordinates.
     const survivorSet = new Set(survivors);
     const survivorRows = batch.filter((b) => survivorSet.has(b.record));
     const survivorFp = fingerprints;
@@ -759,12 +873,12 @@ const bulkInsertRecords = async (records, source = "csv_upload", options = {}) =
 
 /**
  * Import leads from raw CSV text (editor/admin/super_admin).
- *
  * The CSV is parsed as a stream (row-by-row) rather than `csv-parse/sync`,
  * which used to build an array of every row in memory — the cause of
  * "out of memory" on large uploads. `limit`/`offset` let you read only a
  * window of rows from the file (e.g. the first 50 000 rows, or rows
- * 100001–200000).
+ * 100001–200000). `fieldMapping` (optional) re-maps arbitrary CSV columns
+ * to the standard lead fields before import.
  */
 const importLeadsCsv = async (csvText, source = "csv_upload", options = {}) => {
   if (!csvText || typeof csvText !== "string" || !csvText.trim()) {
@@ -816,6 +930,70 @@ const importLeadsFromStream = async (input, source = "csv_upload", options = {})
   }
 
   return bulkInsertFromIterable(records, source, options);
+};
+
+/**
+ * Re-map a single record's arbitrary CSV columns onto the standard lead
+ * fields using the supplied mapping. Unmapped columns keep their original
+ * values, so a partial mapping still passes through the rest of the row.
+ */
+function mapRecord(record, mapping) {
+  const mapped = {};
+
+  for (const [dbField, csvConfig] of Object.entries(mapping)) {
+    if (csvConfig.type === "single") {
+      // Single field mapping
+      mapped[dbField] = record[csvConfig.csvField];
+    } else if (csvConfig.type === "combined") {
+      // Combined field mapping
+      const separator = csvConfig.separator === "comma" ? ", " : " ";
+      const values = (csvConfig.csvFields || [])
+        .map((field) => record[field])
+        .filter((v) => v != null && String(v).trim() !== "");
+      mapped[dbField] = values.join(separator);
+    }
+  }
+
+  // Add any unmapped fields with their original values
+  for (const [key, value] of Object.entries(record)) {
+    if (!mapped[key]) {
+      mapped[key] = value;
+    }
+  }
+
+  return mapped;
+}
+
+/**
+ * Apply field mapping to an array of CSV records (legacy helper).
+ */
+function applyFieldMapping(records, mapping) {
+  return records.map((record) => mapRecord(record, mapping));
+}
+
+/**
+ * Parse CSV and return column headers and sample data
+ */
+const parseCsvHeaders = async (csvText) => {
+  const records = parse(csvText, {
+    columns: true,
+    skip_empty_lines: true,
+    trim: true,
+    relax_column_count: true,
+  });
+
+  if (!Array.isArray(records) || records.length === 0) {
+    throw new ApiError(400, "CSV file is empty or no data rows");
+  }
+
+  const headers = Object.keys(records[0]);
+  const sampleData = records.slice(0, 5); // First 5 rows as sample
+
+  return {
+    headers,
+    sampleData,
+    totalRows: records.length
+  };
 };
 
 /**
@@ -937,6 +1115,7 @@ module.exports = {
   importLeadsCsv,
   importLeadsFromStream,
   ingestLeads,
+  parseCsvHeaders,
   getLandingStats,
   getStats,
   deriveCategory,
