@@ -80,10 +80,7 @@ and enforced server-side with `requireRole()`.
 
 4. **Create a super_admin user:**
    ```bash
-   node src/db/createAdmin.js \
-     --email super@example.com \
-     --role super_admin \
-     --password SuperSecret123
+   node src/db/createAdmin.js --email super@example.com --role super_admin --password SuperSecret123
    ```
 
 **Output example:**
