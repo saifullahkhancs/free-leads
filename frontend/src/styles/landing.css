@@ -800,8 +800,9 @@ section.block,
 }
 
 .country-card {
-  background: var(--card-country);
+  background: var(--card-tint, var(--card-country));
   border: 1px solid var(--line);
+  overflow: hidden;
   border-radius: var(--radius-md);
   padding: 18px;
   transition: background-color var(--t-slow) var(--ease), border-color var(--t-slow) var(--ease),
@@ -829,30 +830,45 @@ section.block,
   to { opacity: 1; transform: translateY(0); }
 }
 
+.country-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--accent, var(--primary));
+  transition: height var(--t-slow) var(--ease);
+}
+
 .country-card::after {
   content: "";
   position: absolute;
-  left: 18px;
-  right: 18px;
-  bottom: 12px;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--primary), transparent);
+  inset: 0;
+  background: radial-gradient(circle at var(--mx,50%) var(--my,0%), var(--soft, rgba(79,70,229,0.10)), transparent 60%);
   opacity: 0;
-  transform: scaleX(0.4);
-  transition: opacity 0.3s ease, transform 0.3s ease;
-  border-radius: 2px;
+  transition: opacity var(--t-slow) var(--ease);
+  pointer-events: none;
+}
+
+.country-card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .country-card:hover {
-  background: var(--card-blue);
+  background: var(--card-tint-hover, var(--card-blue));
   border-color: var(--light-indigo-border);
   transform: translateY(-3px);
   box-shadow: var(--shadow-card-hover);
 }
 
+.country-card:hover::before {
+  height: 4px;
+}
+
 .country-card:hover::after {
   opacity: 1;
-  transform: scaleX(1);
 }
 
 .country-card:hover .country-flag {
@@ -873,7 +889,14 @@ section.block,
 }
 
 .country-flag {
-  font-size: 22px;
+  font-size: 20px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--icon-tint, var(--icon-indigo));
 }
 
 .country-rank {
@@ -907,7 +930,7 @@ section.block,
 .country-volume {
   height: 4px;
   border-radius: 100px;
-  background: var(--primary-light);
+  background: rgba(15, 23, 42, 0.07);
   overflow: hidden;
   margin-bottom: 10px;
 }
@@ -916,7 +939,7 @@ section.block,
 .country-volume span {
   display: block;
   height: 100%;
-  background: var(--primary);
+  background: var(--accent, var(--primary));
   border-radius: 100px;
 }
 
