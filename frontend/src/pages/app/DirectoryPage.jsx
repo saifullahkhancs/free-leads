@@ -155,6 +155,18 @@ export default function DirectoryPage() {
         verified: f.verifiedOnly ? "true" : undefined,
         sort: sortBy !== "recent" ? sortBy : undefined,
       };
+
+      // Some filters are only known by *name* — e.g. a country/city suggested
+      // from the signed-in user's profile, which never carries a facet id.
+      // Send the label too, otherwise the filter is silently dropped and the
+      // directory looks like it ignored the selection entirely.
+      if (!f.country?.id && f.country?.value) {
+        if (f.country.code) params.country_code = f.country.code;
+        else params.country = f.country.value;
+      }
+      if (!f.region?.id && f.region?.value) params.region = f.region.value;
+      if (!f.city?.id && f.city?.value) params.city = f.city.value;
+
       if (f.geo) {
         params.lat = f.geo.lat;
         params.lon = f.geo.lon;
@@ -275,6 +287,13 @@ export default function DirectoryPage() {
               ? "You've used all your searches for today. Upgrade your plan for more."
               : "You're searching too fast — give it a second and try again."
           );
+        } else if (err?.status >= 500) {
+          // A server-side failure is NOT the same as being offline. Say so
+          // explicitly — silently swapping in demo rows here is what made a
+          // backend crash look like "the filters don't work".
+          setError(
+            "The search service failed to respond, so live results are unavailable right now."
+          );
         }
         // API unreachable — fall back to the demo dataset, applying the filters
         // locally so search/filter still work while offline.
@@ -293,14 +312,24 @@ export default function DirectoryPage() {
     const seq = ++facetSeq.current;
     setFacetsLoading(true);
     try {
-      const res = await api.getLeadFacets({
+      const facetParams = {
         q: submittedQ.trim() || undefined,
         category: filters.category || undefined,
         industry: filters.industry || undefined,
         country_id: filters.country?.id || undefined,
         region_id: filters.region?.id || undefined,
         verified: filters.verifiedOnly ? "true" : undefined,
-      });
+      };
+      // Mirror the name-only fallbacks used by buildParams so the cascading
+      // state/city lists still resolve when we only know the country's label.
+      if (!filters.country?.id && filters.country?.value) {
+        if (filters.country.code) facetParams.country_code = filters.country.code;
+        else facetParams.country = filters.country.value;
+      }
+      if (!filters.region?.id && filters.region?.value) {
+        facetParams.region = filters.region.value;
+      }
+      const res = await api.getLeadFacets(facetParams);
       if (seq !== facetSeq.current) return;
 
       const data = res?.data;
