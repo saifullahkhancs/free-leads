@@ -58,6 +58,7 @@ const getLeads = asyncHandler(async (req, res) => {
     country_id,
     region_id,
     city_id,
+    country,
     country_code,
     region,
     city,
@@ -86,6 +87,7 @@ const getLeads = asyncHandler(async (req, res) => {
     country_id: toInt(country_id),
     region_id: toInt(region_id),
     city_id: toInt(city_id),
+    country: country || null,
     country_code: country_code || null,
     region: region || null,
     city: city || null,
@@ -121,6 +123,13 @@ const getFacets = asyncHandler(async (req, res) => {
     industry: req.query.industry || null,
     country_id: toInt(req.query.country_id),
     region_id: toInt(req.query.region_id),
+    city_id: toInt(req.query.city_id),
+    // Name-based equivalents, so a country picked by label (e.g. from the
+    // user's profile) still cascades into the state/city option lists.
+    country: req.query.country || null,
+    country_code: req.query.country_code || null,
+    region: req.query.region || null,
+    city: req.query.city || null,
     verified: toBool(req.query.verified),
   });
 
@@ -195,6 +204,7 @@ const exportLeads = asyncHandler(async (req, res) => {
     country_id: toInt(req.query.country_id),
     region_id: toInt(req.query.region_id),
     city_id: toInt(req.query.city_id),
+    country: req.query.country || null,
     country_code: req.query.country_code || null,
     region: req.query.region || null,
     city: req.query.city || null,

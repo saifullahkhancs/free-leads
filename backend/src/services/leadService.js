@@ -39,6 +39,80 @@ function deriveCategory(industry) {
   return "Professional Services";
 }
 
+/** True when a usable lat/lon pair was supplied (0 is a valid coordinate). */
+function hasGeo({ lat, lon }) {
+  return (
+    lat !== null &&
+    lat !== undefined &&
+    lon !== null &&
+    lon !== undefined &&
+    Number.isFinite(Number(lat)) &&
+    Number.isFinite(Number(lon))
+  );
+}
+
+/**
+ * Build the shared `WHERE` clause for the lead queries.
+ *
+ * Both the row query and the pagination COUNT query go through this single
+ * builder. They used to be written out twice by hand, which let them drift
+ * apart (and the COUNT copy silently reused `$1/$2` for the geo search without
+ * ever binding those values). Placeholders are numbered from the live `values`
+ * array, so the caller can push its own parameters before calling this.
+ *
+ * @param f      the filter set (see getLeads)
+ * @param values parameter array that gets appended to in place
+ * @param geoPlaceholders reuse already-bound lon/lat placeholders (the row
+ *        query binds them for the ST_Distance select); null to bind fresh ones.
+ */
+function buildLeadWhere(f, values, geoPlaceholders = null) {
+  const push = (value) => {
+    values.push(value);
+    return `$${values.length}`;
+  };
+
+  let where = " WHERE l.is_active = TRUE";
+
+  if (f.q) {
+    where += ` AND l.search_vector @@ plainto_tsquery('english', ${push(f.q)})`;
+  }
+
+  if (hasGeo(f)) {
+    const lonPh = geoPlaceholders ? geoPlaceholders.lonPh : push(Number(f.lon));
+    const latPh = geoPlaceholders ? geoPlaceholders.latPh : push(Number(f.lat));
+    const radiusPh = push(Number(f.radius) || 50000);
+    where += ` AND l.location IS NOT NULL AND ST_DWithin(l.location, ST_MakePoint(${lonPh}, ${latPh})::geography, ${radiusPh})`;
+  }
+
+  // Location hierarchy — ids are exact and index-friendly, so they always win.
+  if (f.country_id) where += ` AND l.country_id = ${push(f.country_id)}`;
+  if (f.region_id) where += ` AND l.region_id = ${push(f.region_id)}`;
+  if (f.city_id) where += ` AND l.city_id = ${push(f.city_id)}`;
+
+  // Name-based fallbacks, used when the UI knows the label but not the id
+  // (e.g. a country/city suggested from the signed-in user's profile). Without
+  // these the filter would be dropped entirely and the search would look
+  // "broken" — it would quietly return unfiltered results.
+  if (!f.country_id && f.country_code) {
+    where += ` AND upper(c.code) = upper(${push(String(f.country_code).trim())})`;
+  }
+  if (!f.country_id && !f.country_code && f.country) {
+    where += ` AND lower(c.name) = lower(${push(String(f.country).trim())})`;
+  }
+  if (!f.region_id && f.region) {
+    where += ` AND lower(r.name) = lower(${push(String(f.region).trim())})`;
+  }
+  if (!f.city_id && f.city) {
+    where += ` AND lower(ci.name) = lower(${push(String(f.city).trim())})`;
+  }
+
+  if (f.category) where += ` AND l.category = ${push(String(f.category).trim())}`;
+  if (f.industry) where += ` AND l.industry = ${push(String(f.industry).trim())}`;
+  if (f.verified) where += " AND l.is_verified = TRUE";
+
+  return where;
+}
+
 /**
  * Get leads with keyset pagination and filters.
  *
@@ -47,9 +121,9 @@ function deriveCategory(industry) {
  *  - category     top-level bucket, e.g. "Technology"
  *  - industry     specific industry inside a category
  *  - country_id / region_id / city_id   cascading location hierarchy
- *  - country_code / region / city       same, but by name (used by the UI when
- *                                       it only knows the label, e.g. from the
- *                                       user's saved profile location)
+ *  - country / country_code / region / city   same, but by name (used by the
+ *                                       UI when it only knows the label, e.g.
+ *                                       from the user's saved profile location)
  *  - verified     true  -> verified leads only
  *  - lat/lon/radius  "Near Me" geo radius search (needs PostGIS)
  *  - sort         "recent" | "name" | "company" | "verified" | "distance"
@@ -60,6 +134,7 @@ const getLeads = async ({
   country_id,
   region_id,
   city_id,
+  country,
   country_code,
   region,
   city,
@@ -75,8 +150,25 @@ const getLeads = async ({
   is_paid = false,
   visibility = null, // per-plan field visibility flags from resolveVisibility()
 }) => {
+  const filterSet = {
+    q,
+    category,
+    industry,
+    country_id,
+    region_id,
+    city_id,
+    country,
+    country_code,
+    region,
+    city,
+    verified,
+    lat,
+    lon,
+    radius,
+  };
+  const geoActive = hasGeo(filterSet);
+
   const values = [];
-  let paramIndex = 1;
 
   let queryText = `
     SELECT
@@ -96,10 +188,13 @@ const getLeads = async ({
       l.created_at
   `;
 
-  if (lat && lon) {
-    queryText += `, ST_Distance(l.location, ST_MakePoint($${paramIndex}, $${paramIndex + 1})::geography) as distance `;
-    values.push(lon, lat);
-    paramIndex += 2;
+  // Bind lon/lat once up front so both the distance projection and the
+  // ST_DWithin filter below can reference the very same placeholders.
+  let geoPlaceholders = null;
+  if (geoActive) {
+    values.push(Number(lon), Number(lat));
+    geoPlaceholders = { lonPh: `$${values.length - 1}`, latPh: `$${values.length}` };
+    queryText += `, ST_Distance(l.location, ST_MakePoint(${geoPlaceholders.lonPh}, ${geoPlaceholders.latPh})::geography) as distance `;
   }
 
   const showEmail = visibility ? Boolean(visibility.show_email) : is_paid;
@@ -129,168 +224,63 @@ const getLeads = async ({
     ${aboutCol} as about
   `;
 
-  queryText += `
+  const FROM_JOINS = `
     FROM leads l
     LEFT JOIN countries c ON l.country_id = c.id
     LEFT JOIN regions r ON l.region_id = r.id
     LEFT JOIN cities ci ON l.city_id = ci.id
-    WHERE l.is_active = TRUE
   `;
 
-  if (q) {
-    queryText += ` AND l.search_vector @@ plainto_tsquery('english', $${paramIndex})`;
-    values.push(q);
-    paramIndex++;
-  }
-
-  if (lat && lon) {
-    queryText += ` AND l.location IS NOT NULL AND ST_DWithin(l.location, ST_MakePoint($1, $2)::geography, $${paramIndex})`;
-    values.push(radius);
-    paramIndex++;
-  }
-
-  if (country_id) {
-    queryText += ` AND l.country_id = $${paramIndex}`;
-    values.push(country_id);
-    paramIndex++;
-  }
-
-  if (region_id) {
-    queryText += ` AND l.region_id = $${paramIndex}`;
-    values.push(region_id);
-    paramIndex++;
-  }
-
-  if (city_id) {
-    queryText += ` AND l.city_id = $${paramIndex}`;
-    values.push(city_id);
-    paramIndex++;
-  }
-
-  // Name-based location filters (used when the UI knows the label but not the id,
-  // e.g. the country suggestion derived from the signed-in user's profile).
-  if (!country_id && country_code) {
-    queryText += ` AND upper(c.code) = upper($${paramIndex})`;
-    values.push(String(country_code).trim());
-    paramIndex++;
-  }
-
-  if (!region_id && region) {
-    queryText += ` AND lower(r.name) = lower($${paramIndex})`;
-    values.push(String(region).trim());
-    paramIndex++;
-  }
-
-  if (!city_id && city) {
-    queryText += ` AND lower(ci.name) = lower($${paramIndex})`;
-    values.push(String(city).trim());
-    paramIndex++;
-  }
-
-  if (category) {
-    queryText += ` AND l.category = $${paramIndex}`;
-    values.push(category);
-    paramIndex++;
-  }
-
-  if (industry) {
-    queryText += ` AND l.industry = $${paramIndex}`;
-    values.push(industry);
-    paramIndex++;
-  }
-
-  if (verified) {
-    queryText += ` AND l.is_verified = TRUE`;
-  }
+  queryText += FROM_JOINS + buildLeadWhere(filterSet, values, geoPlaceholders);
 
   // Keyset pagination — only valid for the stable id ordering. For the other
   // sort modes we fall back to offset-free "first page" semantics (the client
   // asks for a bigger limit instead), which keeps the query correct.
   const keysetSort = !sort || sort === "recent" || sort === "id";
   if (cursor && keysetSort) {
-    queryText += ` AND l.id > $${paramIndex}`;
     values.push(cursor);
-    paramIndex++;
+    queryText += ` AND l.id > $${values.length}`;
   }
 
   const ORDER_BY = {
+    // "recent" is the UI default and must actually order by recency.
+    recent: "l.created_at DESC NULLS LAST, l.id DESC",
     name: "l.full_name ASC, l.id ASC",
     company: "l.company_name ASC NULLS LAST, l.id ASC",
     verified: "l.is_verified DESC, l.id ASC",
     newest: "l.created_at DESC NULLS LAST, l.id DESC",
-    distance: lat && lon ? "distance ASC" : "l.id ASC",
+    distance: geoActive ? "distance ASC" : "l.id ASC",
   };
-  queryText += ` ORDER BY ${ORDER_BY[sort] || "l.id ASC"} LIMIT $${paramIndex}`;
+  // Keyset paging walks `l.id > cursor`, so it only works with the id ordering.
+  const orderBy = cursor && keysetSort ? "l.id ASC" : ORDER_BY[sort] || "l.id ASC";
   values.push(limit);
+  queryText += ` ORDER BY ${orderBy} LIMIT $${values.length}`;
 
   // Add offset for offset-based pagination
   if (offset > 0) {
-    queryText += ` OFFSET $${paramIndex + 1}`;
     values.push(offset);
+    queryText += ` OFFSET $${values.length}`;
   }
 
   const { rows } = await pool.query(queryText, values);
 
-  // Get total count for pagination when offset is used
+  // Total count for pagination. Built from the *same* WHERE builder as the row
+  // query above so the two can never disagree.
+  //
+  // NOTE: this block previously declared `const countQuery` and then appended
+  // to it with `+=`, which threw "Assignment to constant variable" on every
+  // request that reached it — i.e. every unpaginated search. The route 500'd,
+  // the UI fell back to its bundled demo dataset, and so *every* filter
+  // (country, industry, category, …) appeared to do nothing.
   let total = null;
-  if (offset > 0 || cursor === null) {
-    const countQuery = `
-      SELECT COUNT(*) as total
-      FROM leads l
-      LEFT JOIN countries c ON l.country_id = c.id
-      LEFT JOIN regions r ON l.region_id = r.id
-      LEFT JOIN cities ci ON l.city_id = ci.id
-      WHERE l.is_active = TRUE
-    `;
+  if (offset > 0 || cursor === null || cursor === undefined) {
     const countValues = [];
-    let countParamIndex = 1;
-
-    if (q) {
-      countQuery += ` AND l.search_vector @@ plainto_tsquery('english', $${countParamIndex++})`;
-      countValues.push(q);
-    }
-    if (lat && lon) {
-      countQuery += ` AND l.location IS NOT NULL AND ST_DWithin(l.location, ST_MakePoint($1, $2)::geography, $${countParamIndex++})`;
-      countValues.push(radius);
-    }
-    if (country_id) {
-      countQuery += ` AND l.country_id = $${countParamIndex++}`;
-      countValues.push(country_id);
-    }
-    if (region_id) {
-      countQuery += ` AND l.region_id = $${countParamIndex++}`;
-      countValues.push(region_id);
-    }
-    if (city_id) {
-      countQuery += ` AND l.city_id = $${countParamIndex++}`;
-      countValues.push(city_id);
-    }
-    if (!country_id && country_code) {
-      countQuery += ` AND upper(c.code) = upper($${countParamIndex++})`;
-      countValues.push(String(country_code).trim());
-    }
-    if (!region_id && region) {
-      countQuery += ` AND lower(r.name) = lower($${countParamIndex++})`;
-      countValues.push(String(region).trim());
-    }
-    if (!city_id && city) {
-      countQuery += ` AND lower(ci.name) = lower($${countParamIndex++})`;
-      countValues.push(String(city).trim());
-    }
-    if (category) {
-      countQuery += ` AND l.category = $${countParamIndex++}`;
-      countValues.push(category);
-    }
-    if (industry) {
-      countQuery += ` AND l.industry = $${countParamIndex++}`;
-      countValues.push(industry);
-    }
-    if (verified) {
-      countQuery += ` AND l.is_verified = TRUE`;
-    }
+    const countQuery =
+      `SELECT COUNT(*)::int AS total ${FROM_JOINS} ` +
+      buildLeadWhere(filterSet, countValues);
 
     const { rows: countRows } = await pool.query(countQuery, countValues);
-    total = parseInt(countRows[0].total, 10);
+    total = countRows[0]?.total ?? 0;
   }
 
   const nextCursor =
@@ -311,33 +301,63 @@ const getLeads = async ({
  * the states, picking a state narrows the cities. Each option carries its own
  * result count so the UI can show "Technology (1,204)".
  */
-const getFacets = async ({ q, category, industry, country_id, region_id, verified } = {}) => {
+const getFacets = async ({
+  q,
+  category,
+  industry,
+  country_id,
+  region_id,
+  city_id,
+  country,
+  country_code,
+  region,
+  city,
+  verified,
+} = {}) => {
   // Shared WHERE builder — `skip` lets a facet exclude its own dimension so the
   // list of options doesn't collapse to the single selected value.
   const buildWhere = (skip = []) => {
     const values = [];
-    let idx = 1;
+    const push = (value) => {
+      values.push(value);
+      return `$${values.length}`;
+    };
     let where = " WHERE l.is_active = TRUE";
 
     if (q) {
-      where += ` AND l.search_vector @@ plainto_tsquery('english', $${idx++})`;
-      values.push(q);
+      where += ` AND l.search_vector @@ plainto_tsquery('english', ${push(q)})`;
     }
     if (category && !skip.includes("category")) {
-      where += ` AND l.category = $${idx++}`;
-      values.push(category);
+      where += ` AND l.category = ${push(String(category).trim())}`;
     }
     if (industry && !skip.includes("industry")) {
-      where += ` AND l.industry = $${idx++}`;
-      values.push(industry);
+      where += ` AND l.industry = ${push(String(industry).trim())}`;
     }
-    if (country_id && !skip.includes("country")) {
-      where += ` AND l.country_id = $${idx++}`;
-      values.push(country_id);
+    if (!skip.includes("country")) {
+      // Accept the country by id, ISO code or name — the directory sometimes
+      // only knows the label (profile-derived filters), and dropping it here
+      // made the state/city lists ignore the selected country entirely.
+      if (country_id) {
+        where += ` AND l.country_id = ${push(country_id)}`;
+      } else if (country_code) {
+        where += ` AND upper(c.code) = upper(${push(String(country_code).trim())})`;
+      } else if (country) {
+        where += ` AND lower(c.name) = lower(${push(String(country).trim())})`;
+      }
     }
-    if (region_id && !skip.includes("region")) {
-      where += ` AND l.region_id = $${idx++}`;
-      values.push(region_id);
+    if (!skip.includes("region")) {
+      if (region_id) {
+        where += ` AND l.region_id = ${push(region_id)}`;
+      } else if (region) {
+        where += ` AND lower(r.name) = lower(${push(String(region).trim())})`;
+      }
+    }
+    if (!skip.includes("city")) {
+      if (city_id) {
+        where += ` AND l.city_id = ${push(city_id)}`;
+      } else if (city) {
+        where += ` AND lower(ci.name) = lower(${push(String(city).trim())})`;
+      }
     }
     if (verified && !skip.includes("verified")) {
       where += " AND l.is_verified = TRUE";
@@ -345,11 +365,24 @@ const getFacets = async ({ q, category, industry, country_id, region_id, verifie
     return { where, values };
   };
 
-  const facetQuery = async (selectExpr, joins, groupExpr, skip, having = "") => {
+  // A country is "chosen" however the UI expressed it.
+  const hasCountry = Boolean(country_id || country_code || country);
+
+  // The location tables are always joined so the WHERE clause can filter on
+  // `c.code` / `r.name` / `ci.name` regardless of which facet is being built.
+  // `requiredJoin` upgrades the relevant LEFT JOIN to an INNER JOIN so a facet
+  // never emits a NULL bucket for rows without that location level.
+  const FACET_JOINS = (requiredJoin = null) => `
+    ${requiredJoin === "country" ? "JOIN" : "LEFT JOIN"} countries c ON l.country_id = c.id
+    ${requiredJoin === "region" ? "JOIN" : "LEFT JOIN"} regions r ON l.region_id = r.id
+    ${requiredJoin === "city" ? "JOIN" : "LEFT JOIN"} cities ci ON l.city_id = ci.id
+  `;
+
+  const facetQuery = async (selectExpr, requiredJoin, groupExpr, skip, having = "") => {
     const { where, values } = buildWhere(skip);
     const { rows } = await pool.query(
       `SELECT ${selectExpr}, COUNT(*)::int AS count
-       FROM leads l ${joins} ${where} ${having}
+       FROM leads l ${FACET_JOINS(requiredJoin)} ${where} ${having}
        GROUP BY ${groupExpr}
        ORDER BY COUNT(*) DESC, value ASC
        LIMIT 300`,
@@ -360,38 +393,41 @@ const getFacets = async ({ q, category, industry, country_id, region_id, verifie
 
   const [categories, industries, countries, regions, cities, totals] = await Promise.all([
     // Categories: independent of the selected category/industry.
-    facetQuery("l.category AS value", "", "l.category", ["category", "industry"],
+    facetQuery("l.category AS value", null, "l.category", ["category", "industry"],
       "AND l.category IS NOT NULL AND l.category <> ''"),
 
     // Industries: scoped to the chosen category, but not to itself.
-    facetQuery("l.industry AS value", "", "l.industry", ["industry"],
+    facetQuery("l.industry AS value", null, "l.industry", ["industry"],
       "AND l.industry IS NOT NULL AND l.industry <> ''"),
 
-    // Countries: scoped to category/industry, not to the chosen country.
+    // Countries: scoped to category/industry, not to the chosen country
+    // (or the region/city *inside* that country, which would collapse the list).
     facetQuery(
       "c.id AS id, c.name AS value, c.code AS code",
-      "JOIN countries c ON l.country_id = c.id",
+      "country",
       "c.id, c.name, c.code",
-      ["country", "region"]
+      ["country", "region", "city"]
     ),
 
-    // States/regions: only meaningful once a country is chosen.
-    country_id
+    // States/regions: only meaningful once a country is chosen. Scoped to that
+    // country but not to the selected region/city.
+    hasCountry
       ? facetQuery(
           "r.id AS id, r.name AS value",
-          "JOIN regions r ON l.region_id = r.id",
+          "region",
           "r.id, r.name",
-          ["region"]
+          ["region", "city"]
         )
       : Promise.resolve([]),
 
     // Cities: only meaningful once a country (and usually a state) is chosen.
-    country_id
+    // Scoped to the country + region, but not to the selected city itself.
+    hasCountry
       ? facetQuery(
           "ci.id AS id, ci.name AS value",
-          "JOIN cities ci ON l.city_id = ci.id",
+          "city",
           "ci.id, ci.name",
-          []
+          ["city"]
         )
       : Promise.resolve([]),
 
@@ -400,7 +436,7 @@ const getFacets = async ({ q, category, industry, country_id, region_id, verifie
       const { rows } = await pool.query(
         `SELECT COUNT(*)::int AS total,
                 COUNT(*) FILTER (WHERE l.is_verified)::int AS verified
-         FROM leads l ${where}`,
+         FROM leads l ${FACET_JOINS()} ${where}`,
         values
       );
       return rows[0] || { total: 0, verified: 0 };
