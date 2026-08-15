@@ -251,18 +251,23 @@ export async function importLeadsCsv(csv, source = "csv_upload", thirdArg = {}) 
  */
 export async function importLeadsFile(file, { source = "csv_upload", limit, offset, fieldMapping } = {}) {
   const formData = new FormData();
-  formData.append("file", file);
+  // Busboy emits multipart parts in order. Send metadata first so the server
+  // has the mapping before it starts consuming the streamed file.
   formData.append("source", source);
-  if (limit) formData.append("limit", String(limit));
-  if (offset) formData.append("offset", String(offset));
   if (fieldMapping) formData.append("fieldMapping", JSON.stringify(fieldMapping));
+  formData.append("file", file);
+
+  const query = new URLSearchParams();
+  if (limit) query.set("limit", String(limit));
+  if (offset) query.set("offset", String(offset));
 
   const token = getAccessToken();
   const headers = {};
   if (token) headers.Authorization = `Bearer ${token}`;
   // Note: no Content-Type header — the browser sets the multipart boundary.
 
-  const response = await fetch(`${API_BASE}/api/leads/import`, {
+  const suffix = query.size ? `?${query.toString()}` : "";
+  const response = await fetch(`${API_BASE}/api/leads/import${suffix}`, {
     method: "POST",
     headers,
     credentials: "include",

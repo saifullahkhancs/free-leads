@@ -766,6 +766,7 @@ const bulkInsertFromIterable = async (
   // A non-positive limit means "no limit" (import everything).
   if (!(limit > 0)) limit = Infinity;
   if (!(offset > 0)) offset = 0;
+  const validatedMapping = fieldMapping ? validateFieldMapping(fieldMapping) : null;
 
   const geoMapper = new GeoMapper();
   await geoMapper.init();
@@ -802,7 +803,7 @@ const bulkInsertFromIterable = async (
 
       // Re-map arbitrary CSV columns to the standard lead fields when a
       // field mapping was provided.
-      const mapped = fieldMapping ? mapRecord(record, fieldMapping) : record;
+      const mapped = validatedMapping ? mapRecord(record, validatedMapping) : record;
 
       if (!mapped.full_name || !String(mapped.full_name).trim()) {
         errors.push({ row: displayRow, error: "missing full_name" });
@@ -932,68 +933,99 @@ const importLeadsFromStream = async (input, source = "csv_upload", options = {})
   return bulkInsertFromIterable(records, source, options);
 };
 
-/**
- * Re-map a single record's arbitrary CSV columns onto the standard lead
- * fields using the supplied mapping. Unmapped columns keep their original
- * values, so a partial mapping still passes through the rest of the row.
- */
+/** Standard destination fields accepted by the lead importer. */
+const IMPORTABLE_FIELDS = new Set([
+  "full_name", "headline", "about", "email", "phone", "linkedin_url",
+  "twitter_url", "facebook_url", "website_url", "company_name", "job_title",
+  "industry", "country", "country_code", "region", "city", "lat", "lon",
+]);
+
+/** Validate and normalize mapping once before the streaming row loop. */
+function validateFieldMapping(mapping) {
+  if (!mapping || typeof mapping !== "object" || Array.isArray(mapping)) {
+    throw new ApiError(400, "Field mapping must be an object");
+  }
+
+  const validated = {};
+  for (const [dbField, config] of Object.entries(mapping)) {
+    if (!IMPORTABLE_FIELDS.has(dbField) || !config || typeof config !== "object") continue;
+    if (config.type === "single" && typeof config.csvField === "string" && config.csvField) {
+      validated[dbField] = { type: "single", csvField: config.csvField };
+    } else if (config.type === "combined" && Array.isArray(config.csvFields)) {
+      const csvFields = config.csvFields.filter((field) => typeof field === "string" && field).slice(0, 50);
+      if (csvFields.length) {
+        validated[dbField] = {
+          type: "combined",
+          csvFields,
+          separator: config.separator === "comma" ? "comma" : "space",
+        };
+      }
+    }
+  }
+
+  if (!validated.full_name) {
+    throw new ApiError(400, "The required full_name field must be mapped");
+  }
+  return validated;
+}
+
+/** Map one arbitrary CSV record to explicitly selected database fields. */
 function mapRecord(record, mapping) {
   const mapped = {};
-
-  for (const [dbField, csvConfig] of Object.entries(mapping)) {
-    if (csvConfig.type === "single") {
-      // Single field mapping
-      mapped[dbField] = record[csvConfig.csvField];
-    } else if (csvConfig.type === "combined") {
-      // Combined field mapping
-      const separator = csvConfig.separator === "comma" ? ", " : " ";
-      const values = (csvConfig.csvFields || [])
-        .map((field) => record[field])
-        .filter((v) => v != null && String(v).trim() !== "");
-      mapped[dbField] = values.join(separator);
+  for (const [dbField, config] of Object.entries(mapping)) {
+    if (config.type === "single") {
+      mapped[dbField] = record[config.csvField];
+      continue;
     }
+    const separator = config.separator === "comma" ? ", " : " ";
+    mapped[dbField] = config.csvFields
+      .map((field) => record[field])
+      .filter((value) => value != null && String(value).trim() !== "")
+      .map((value) => String(value).trim())
+      .join(separator);
   }
-
-  // Add any unmapped fields with their original values
-  for (const [key, value] of Object.entries(record)) {
-    if (!mapped[key]) {
-      mapped[key] = value;
-    }
-  }
-
   return mapped;
 }
 
-/**
- * Apply field mapping to an array of CSV records (legacy helper).
- */
+/** Apply mapping to an in-memory array (used by legacy callers). */
 function applyFieldMapping(records, mapping) {
-  return records.map((record) => mapRecord(record, mapping));
+  const validated = validateFieldMapping(mapping);
+  return records.map((record) => mapRecord(record, validated));
 }
 
 /**
  * Parse CSV and return column headers and sample data
  */
 const parseCsvHeaders = async (csvText) => {
-  const records = parse(csvText, {
+  if (!csvText || typeof csvText !== "string" || !csvText.trim()) {
+    throw new ApiError(400, "CSV content is required");
+  }
+
+  const parser = parse(csvText, {
     columns: true,
     skip_empty_lines: true,
     trim: true,
     relax_column_count: true,
+    // The browser may send only a prefix of a very large file for preview;
+    // ignore a final partial record cut at that preview boundary.
+    skip_records_with_error: true,
   });
+  const sampleData = [];
+  let headers = [];
+  let totalRows = 0;
 
-  if (!Array.isArray(records) || records.length === 0) {
-    throw new ApiError(400, "CSV file is empty or no data rows");
+  try {
+    for await (const record of parser) {
+      if (!headers.length) headers = Object.keys(record);
+      if (sampleData.length < 5) sampleData.push(record);
+      totalRows += 1;
+    }
+  } catch (err) {
+    throw new ApiError(400, `Could not parse CSV: ${err.message}`);
   }
 
-  const headers = Object.keys(records[0]);
-  const sampleData = records.slice(0, 5); // First 5 rows as sample
-
-  return {
-    headers,
-    sampleData,
-    totalRows: records.length
-  };
+  if (!totalRows) throw new ApiError(400, "CSV file is empty or has no data rows");
+  return { headers, sampleData, totalRows };
 };
 
 /**

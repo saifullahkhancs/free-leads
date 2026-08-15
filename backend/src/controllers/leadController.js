@@ -316,7 +316,8 @@ const importLeadsMultipart = (req, { limit, offset, fieldMapping }) =>
     const bb = busboy({ headers: req.headers, limits: { files: 1 } });
     let source = "csv_upload";
     let mapping = fieldMapping || null;
-    let fileStream = null;
+    let importOutcome = null;
+    let sawFile = false;
 
     bb.on("field", (name, value) => {
       if (name === "source" && value) source = value;
@@ -330,29 +331,29 @@ const importLeadsMultipart = (req, { limit, offset, fieldMapping }) =>
     });
 
     bb.on("file", (name, stream) => {
-      if (!fileStream) {
-        fileStream = stream;
-      } else {
+      if (sawFile) {
         stream.resume(); // ignore any additional files
+        return;
       }
+      sawFile = true;
+      // Consume the file immediately. Waiting for Busboy's `close` event before
+      // reading causes a deadlock because `close` is emitted only after the file
+      // stream has been consumed. Metadata fields are appended before the file
+      // by the browser client, so source/mapping are available here.
+      importOutcome = leadService
+        .importLeadsFromStream(stream, source, { limit, offset, fieldMapping: mapping })
+        .then((result) => ({ result }), (error) => ({ error }));
     });
 
     bb.on("error", (err) => reject(err));
 
     bb.on("close", async () => {
-      if (!fileStream) {
+      if (!sawFile || !importOutcome) {
         return reject(new ApiError(400, "No CSV file received (expected multipart field 'file')"));
       }
-      try {
-        const result = await leadService.importLeadsFromStream(fileStream, source, {
-          limit,
-          offset,
-          fieldMapping: mapping,
-        });
-        resolve(result);
-      } catch (err) {
-        reject(err);
-      }
+      const outcome = await importOutcome;
+      if (outcome.error) return reject(outcome.error);
+      resolve(outcome.result);
     });
 
     req.pipe(bb);

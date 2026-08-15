@@ -36,7 +36,6 @@ export default function ImportLeadsPage() {
   const [maxRows, setMaxRows] = useState("");
   const [showMapping, setShowMapping] = useState(false);
   const [csvData, setCsvData] = useState(null);
-  const [fieldMapping, setFieldMapping] = useState(null);
 
   const acceptFile = (f) => {
     setError(null);
@@ -69,41 +68,19 @@ export default function ImportLeadsPage() {
     setError(null);
     setResult(null);
     try {
-      // Stream the file to the server (multipart) so 1M+ row files don't get
-      // loaded into memory (avoids the out-of-memory crashes). `limit` caps
-      // how many rows are imported from the start of the file.
-      const res = await api.importLeadsFile(file, {
-        source: "csv_upload",
-        limit: parsedLimit,
-      });
-      setResult(res.data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setImporting(false);
-    }
-  };
-
-  // Read the file once to preview its headers/sample rows and open the
-  // column-mapping modal. The confirmed mapping is applied on the next
-  // "Import with mapping" action.
-  const handleMapColumns = async () => {
-    if (!file) return;
-    setImporting(true);
-    setError(null);
-    setResult(null);
-    try {
-      const text = await file.text();
-      const parseRes = await api.parseCsv(text);
+      // Read only a small prefix for the five-row mapping preview. The final
+      // import still streams the complete file to avoid loading large CSVs in memory.
+      const previewBytes = 2 * 1024 * 1024;
+      const previewText = await file.slice(0, previewBytes).text();
+      const parseRes = await api.parseCsv(previewText);
       setCsvData({
-        text,
         headers: parseRes.data.headers,
         sampleData: parseRes.data.sampleData,
       });
       setShowMapping(true);
     } catch (err) {
-      console.error("Parse error:", err);
-      setError(err.message || "Could not read the CSV for column mapping. Use Import for large files.");
+      console.error("CSV preview error:", err);
+      setError(err.message || "Could not read the CSV. Please check its format.");
     } finally {
       setImporting(false);
     }
@@ -114,11 +91,14 @@ export default function ImportLeadsPage() {
     setError(null);
     setResult(null);
     try {
-      const res = await api.importLeadsCsv(csvData.text, "csv_upload", mapping);
+      const res = await api.importLeadsFile(file, {
+        source: "csv_upload",
+        limit: parsedLimit,
+        fieldMapping: mapping,
+      });
       setResult(res.data);
       setShowMapping(false);
       setCsvData(null);
-      setFieldMapping(null);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -129,7 +109,6 @@ export default function ImportLeadsPage() {
   const handleMappingCancel = () => {
     setShowMapping(false);
     setCsvData(null);
-    setFieldMapping(null);
   };
 
   return (
@@ -227,15 +206,7 @@ export default function ImportLeadsPage() {
               <div style={{ display: "flex", gap: 10 }}>
                 <button className="dash-btn dash-btn-primary" onClick={handleImport} disabled={importing}>
                   {importing ? <Loader2 className="spin" size={16} /> : <UploadCloud size={16} />}
-                  {importing ? "Importing…" : `Import ${file.name}`}
-                </button>
-                <button
-                  className="dash-btn dash-btn-ghost"
-                  onClick={handleMapColumns}
-                  disabled={importing}
-                  title="Preview the CSV and re-map its columns to the standard lead fields"
-                >
-                  Map columns
+                  {importing ? "Reading CSV…" : "Continue to field mapping"}
                 </button>
                 <button className="dash-btn dash-btn-ghost" onClick={() => fileInputRef.current?.click()}>
                   Choose another file
@@ -307,6 +278,8 @@ export default function ImportLeadsPage() {
           sampleData={csvData.sampleData}
           onConfirm={handleMappingConfirm}
           onCancel={handleMappingCancel}
+          submitting={importing}
+          error={error}
         />
       )}
     </>
