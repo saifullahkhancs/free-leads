@@ -287,11 +287,11 @@ export async function importLeadsFile(file, { source = "csv_upload", limit, offs
   });
 }
 
-/** Parse CSV and return headers and sample data. */
-export async function parseCsv(csv) {
+/** Parse CSV and return headers and sample data. Supports row range for large files. */
+export async function parseCsv(csv, startRow = 0, endRow = null) {
   return request("/api/leads/parse-csv", {
     method: "POST",
-    body: { csv },
+    body: { csv, startRow, endRow },
   });
 }
 

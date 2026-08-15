@@ -290,15 +290,20 @@ const importLeads = asyncHandler(async (req, res) => {
 
 /**
  * POST /api/leads/parse-csv — parse CSV and return headers and sample data
+ * Supports row range (startRow, endRow) for memory-efficient processing
  */
 const parseCsv = asyncHandler(async (req, res) => {
-  const { csv } = req.body || {};
+  const { csv, startRow, endRow } = req.body || {};
 
   if (!csv || typeof csv !== "string" || !csv.trim()) {
     throw new ApiError(400, "CSV content is required");
   }
 
-  const result = await leadService.parseCsvHeaders(csv);
+  const result = await leadService.parseCsvHeaders(
+    csv, 
+    startRow ? parseInt(startRow) : 0,
+    endRow ? parseInt(endRow) : null
+  );
 
   res.json({
     status: "success",
@@ -313,7 +318,8 @@ const parseCsv = asyncHandler(async (req, res) => {
  */
 const importLeadsMultipart = (req, { limit, offset, fieldMapping }) =>
   new Promise((resolve, reject) => {
-    const bb = busboy({ headers: req.headers, limits: { files: 1 } });
+    const Busboy = require("busboy");
+    const bb = Busboy({ headers: req.headers, limits: { files: 1 } });
     let source = "csv_upload";
     let mapping = fieldMapping || null;
     let importOutcome = null;

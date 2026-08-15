@@ -77,6 +77,9 @@ export default function ImportLeadsPage() {
   const [maxRows, setMaxRows] = useState("");
   const [showMapping, setShowMapping] = useState(false);
   const [csvData, setCsvData] = useState(null);
+  const [startRow, setStartRow] = useState(0);
+  const [endRow, setEndRow] = useState("");
+  const [useRowRange, setUseRowRange] = useState(false);
   // Live import progress: { processed, total, imported, skipped, failed, remaining }
   const [importProgress, setImportProgress] = useState(null);
 
@@ -115,10 +118,19 @@ export default function ImportLeadsPage() {
       // import still streams the complete file to avoid loading large CSVs in memory.
       const previewBytes = 2 * 1024 * 1024;
       const previewText = await file.slice(0, previewBytes).text();
-      const parseRes = await api.parseCsv(previewText);
+      
+      // Use row range if specified
+      const start = useRowRange ? parseInt(startRow) || 0 : 0;
+      const end = useRowRange && endRow ? parseInt(endRow) : null;
+      
+      const parseRes = await api.parseCsv(previewText, start, end);
       setCsvData({
         headers: parseRes.data.headers,
         sampleData: parseRes.data.sampleData,
+        totalRows: parseRes.data.totalRows,
+        startRow: start,
+        endRow: end,
+        useRowRange: useRowRange
       });
       setShowMapping(true);
     } catch (err) {
@@ -288,6 +300,44 @@ export default function ImportLeadsPage() {
                   </span>
                 </div>
               </div>
+              
+              <div className="import-row-limit">
+                <label style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, display: "block" }}>
+                  Row Range (for large files)
+                </label>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
+                    <input
+                      type="checkbox"
+                      checked={useRowRange}
+                      onChange={(e) => setUseRowRange(e.target.checked)}
+                    />
+                    Enable range
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Start row"
+                    value={startRow}
+                    onChange={(e) => setStartRow(e.target.value)}
+                    disabled={!useRowRange}
+                    style={{ width: 100, padding: "6px 8px", borderRadius: 6, border: "1px solid var(--dash-border, #d4d4d8)", fontSize: 12 }}
+                  />
+                  <span style={{ fontSize: 12 }}>to</span>
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="End row (optional)"
+                    value={endRow}
+                    onChange={(e) => setEndRow(e.target.value)}
+                    disabled={!useRowRange}
+                    style={{ width: 120, padding: "6px 8px", borderRadius: 6, border: "1px solid var(--dash-border, #d4d4d8)", fontSize: 12 }}
+                  />
+                  <span style={{ fontSize: 11, color: "var(--dash-muted)", marginLeft: 4 }}>
+                    For files &gt;1M rows to avoid memory issues
+                  </span>
+                </div>
+              </div>
               <div style={{ display: "flex", gap: 10 }}>
                 <button className="dash-btn dash-btn-primary" onClick={handleImport} disabled={importing}>
                   {importing ? <Loader2 className="spin" size={16} /> : <UploadCloud size={16} />}
@@ -361,6 +411,10 @@ export default function ImportLeadsPage() {
         <CsvFieldMapping
           csvHeaders={csvData.headers}
           sampleData={csvData.sampleData}
+          totalRows={csvData.totalRows}
+          startRow={csvData.startRow}
+          endRow={csvData.endRow}
+          useRowRange={csvData.useRowRange}
           onConfirm={handleMappingConfirm}
           onCancel={handleMappingCancel}
           submitting={importing}

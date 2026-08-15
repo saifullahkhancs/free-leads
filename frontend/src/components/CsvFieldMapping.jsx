@@ -94,7 +94,7 @@ function mappingSources(config) {
   return config.type === "combined" ? config.csvFields : [config.csvField];
 }
 
-export default function CsvFieldMapping({ csvHeaders, sampleData = [], onConfirm, onCancel, submitting = false, error = null, progress = null }) {
+export default function CsvFieldMapping({ csvHeaders, sampleData = [], totalRows, startRow, endRow, useRowRange, onConfirm, onCancel, submitting = false, error = null, progress = null }) {
   const [mapping, setMapping] = useState(() => buildAutomaticMapping(csvHeaders));
   const [selectedSource, setSelectedSource] = useState(null);
   const [combining, setCombining] = useState(null);
@@ -186,7 +186,14 @@ export default function CsvFieldMapping({ csvHeaders, sampleData = [], onConfirm
             <div>
               <div className="csv-map-eyebrow">Step 2 of 2 · Configure import</div>
               <h2 id="csv-map-title">Match your CSV columns</h2>
-              <p>We matched what we could. Review the connections before importing.</p>
+              <p>
+                We matched what we could. Review the connections before importing.
+                {useRowRange && (
+                  <span style={{ marginLeft: 8, color: 'var(--accent)', fontWeight: 500 }}>
+                    Importing rows {startRow}{endRow ? ` to ${endRow}` : '+'} of {totalRows?.toLocaleString() || 'unknown'} total
+                  </span>
+                )}
+              </p>
             </div>
           </div>
           <button className="csv-map-icon-btn" onClick={onCancel} aria-label="Close field mapping"><X size={20} /></button>

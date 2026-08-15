@@ -995,8 +995,9 @@ function applyFieldMapping(records, mapping) {
 
 /**
  * Parse CSV and return column headers and sample data
+ * Supports row range (startRow, endRow) for memory-efficient processing of large files
  */
-const parseCsvHeaders = async (csvText) => {
+const parseCsvHeaders = async (csvText, startRow = 0, endRow = null) => {
   if (!csvText || typeof csvText !== "string" || !csvText.trim()) {
     throw new ApiError(400, "CSV content is required");
   }
@@ -1006,26 +1007,60 @@ const parseCsvHeaders = async (csvText) => {
     skip_empty_lines: true,
     trim: true,
     relax_column_count: true,
-    // The browser may send only a prefix of a very large file for preview;
-    // ignore a final partial record cut at that preview boundary.
     skip_records_with_error: true,
   });
+  
   const sampleData = [];
   let headers = [];
   let totalRows = 0;
+  let currentRow = 0;
+  const slicedRecords = [];
+  const maxPreviewRows = 5;
 
   try {
     for await (const record of parser) {
       if (!headers.length) headers = Object.keys(record);
-      if (sampleData.length < 5) sampleData.push(record);
-      totalRows += 1;
+      
+      // Always collect first few rows for preview
+      if (sampleData.length < maxPreviewRows) {
+        sampleData.push(record);
+      }
+      
+      // Collect rows in the specified range
+      if (startRow <= currentRow && (endRow === null || currentRow < endRow)) {
+        slicedRecords.push(record);
+      }
+      
+      // Stop counting after a reasonable limit for very large files
+      // to avoid memory issues during preview
+      if (totalRows < 1000000) {
+        totalRows += 1;
+      } else if (totalRows === 1000000) {
+        totalRows = 1000000; // Cap at 1M+ for display
+      }
+      
+      currentRow += 1;
+      
+      // Stop early if we've collected enough rows and don't need the total count
+      if (endRow !== null && currentRow >= endRow && totalRows >= 1000000) {
+        break;
+      }
     }
   } catch (err) {
     throw new ApiError(400, `Could not parse CSV: ${err.message}`);
   }
 
-  if (!totalRows) throw new ApiError(400, "CSV file is empty or has no data rows");
-  return { headers, sampleData, totalRows };
+  if (!totalRows) throw new ApiError(400, "CSV file is empty or no data rows");
+  
+  const result = { headers, sampleData, totalRows };
+  
+  // Include sliced records if a range was specified
+  if (startRow > 0 || endRow !== null) {
+    result.slicedRecords = slicedRecords;
+    result.actualRows = slicedRecords.length;
+  }
+  
+  return result;
 };
 
 /**
