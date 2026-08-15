@@ -216,11 +216,64 @@ export async function createLead(payload) {
   });
 }
 
-/** Bulk-import leads from raw CSV text (requires editor/admin role server-side). */
-export async function importLeadsCsv(csv, source = "csv_upload", fieldMapping = null) {
+/**
+ * Bulk-import leads from raw CSV text (requires editor/admin role server-side).
+ *
+ * The third argument is either a field-mapping object (legacy positional
+ * signature) or an options object `{ limit, offset, fieldMapping }`:
+ *   - `limit` caps how many data rows are imported (from the start of the file);
+ *   - `offset` skips rows first so you can import a window like rows 100001–200000;
+ *   - `fieldMapping` re-maps arbitrary CSV columns to standard lead fields.
+ */
+export async function importLeadsCsv(csv, source = "csv_upload", thirdArg = {}) {
+  let body;
+  if (thirdArg && typeof thirdArg === "object" && !Array.isArray(thirdArg)) {
+    const looksLikeMapping = Object.values(thirdArg).some(
+      (v) => v && typeof v === "object" && (v.type === "single" || v.type === "combined")
+    );
+    body = looksLikeMapping
+      ? { csv, source, fieldMapping: thirdArg }
+      : { csv, source, ...thirdArg };
+  } else {
+    body = { csv, source };
+  }
   return request("/api/leads/import", {
     method: "POST",
-    body: { csv, source, fieldMapping },
+    body,
+  });
+}
+
+/**
+ * Bulk-import leads from a CSV File (requires editor/admin role server-side).
+ * Sent as multipart/form-data so the file streams to the server instead of
+ * being read fully into memory (avoids out-of-memory on 1M+ row files).
+ * `options`: { source, limit, offset, fieldMapping }.
+ */
+export async function importLeadsFile(file, { source = "csv_upload", limit, offset, fieldMapping } = {}) {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("source", source);
+  if (limit) formData.append("limit", String(limit));
+  if (offset) formData.append("offset", String(offset));
+  if (fieldMapping) formData.append("fieldMapping", JSON.stringify(fieldMapping));
+
+  const token = getAccessToken();
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  // Note: no Content-Type header — the browser sets the multipart boundary.
+
+  const response = await fetch(`${API_BASE}/api/leads/import`, {
+    method: "POST",
+    headers,
+    credentials: "include",
+    body: formData,
+  });
+
+  return parseBody(response).then((data) => {
+    if (!response.ok) {
+      throw buildError(data, response);
+    }
+    return data;
   });
 }
 

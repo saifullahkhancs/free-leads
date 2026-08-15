@@ -33,6 +33,7 @@ export default function ImportLeadsPage() {
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
+  const [maxRows, setMaxRows] = useState("");
   const [showMapping, setShowMapping] = useState(false);
   const [csvData, setCsvData] = useState(null);
   const [fieldMapping, setFieldMapping] = useState(null);
@@ -50,6 +51,12 @@ export default function ImportLeadsPage() {
     setFile(f);
   };
 
+  const parsedLimit = (() => {
+    if (maxRows === "" || maxRows == null) return undefined;
+    const n = Number.parseInt(maxRows, 10);
+    return Number.isNaN(n) || n < 1 ? undefined : n;
+  })();
+
   const handleDrop = (e) => {
     e.preventDefault();
     setDragging(false);
@@ -62,28 +69,41 @@ export default function ImportLeadsPage() {
     setError(null);
     setResult(null);
     try {
-      const text = await file.text();
-      
-      // Try to parse CSV to get headers and sample data
-      try {
-        const parseRes = await api.parseCsv(text);
-        setCsvData({
-          text,
-          headers: parseRes.data.headers,
-          sampleData: parseRes.data.sampleData
-        });
-        
-        // Show mapping modal
-        setShowMapping(true);
-      } catch (parseErr) {
-        console.error('Parse error, falling back to direct import:', parseErr);
-        // If parsing fails, fall back to direct import without mapping
-        const res = await api.importLeadsCsv(text, "csv_upload");
-        setResult(res.data);
-      }
+      // Stream the file to the server (multipart) so 1M+ row files don't get
+      // loaded into memory (avoids the out-of-memory crashes). `limit` caps
+      // how many rows are imported from the start of the file.
+      const res = await api.importLeadsFile(file, {
+        source: "csv_upload",
+        limit: parsedLimit,
+      });
+      setResult(res.data);
     } catch (err) {
-      console.error('Import error:', err);
-      setError(err.message || 'Failed to import CSV. Please check the file format.');
+      setError(err.message);
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  // Read the file once to preview its headers/sample rows and open the
+  // column-mapping modal. The confirmed mapping is applied on the next
+  // "Import with mapping" action.
+  const handleMapColumns = async () => {
+    if (!file) return;
+    setImporting(true);
+    setError(null);
+    setResult(null);
+    try {
+      const text = await file.text();
+      const parseRes = await api.parseCsv(text);
+      setCsvData({
+        text,
+        headers: parseRes.data.headers,
+        sampleData: parseRes.data.sampleData,
+      });
+      setShowMapping(true);
+    } catch (err) {
+      console.error("Parse error:", err);
+      setError(err.message || "Could not read the CSV for column mapping. Use Import for large files.");
     } finally {
       setImporting(false);
     }
@@ -185,31 +205,37 @@ export default function ImportLeadsPage() {
                   Remove
                 </button>
               </div>
+              <div className="import-row-limit">
+                <label htmlFor="max-rows" style={{ fontWeight: 700, fontSize: 13 }}>
+                  Max rows to import
+                </label>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <input
+                    id="max-rows"
+                    type="number"
+                    min="1"
+                    placeholder="All rows"
+                    value={maxRows}
+                    onChange={(e) => setMaxRows(e.target.value)}
+                    style={{ width: 160, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--dash-border, #d4d4d8)" }}
+                  />
+                  <span style={{ fontSize: 12, color: "var(--dash-muted)" }}>
+                    {maxRows ? "Import only the first rows from the file." : "Leave empty to import the whole file."}
+                  </span>
+                </div>
+              </div>
               <div style={{ display: "flex", gap: 10 }}>
                 <button className="dash-btn dash-btn-primary" onClick={handleImport} disabled={importing}>
                   {importing ? <Loader2 className="spin" size={16} /> : <UploadCloud size={16} />}
                   {importing ? "Importing…" : `Import ${file.name}`}
                 </button>
-                <button 
-                  className="dash-btn dash-btn-ghost" 
-                  onClick={async () => {
-                    if (!file) return;
-                    setImporting(true);
-                    setError(null);
-                    setResult(null);
-                    try {
-                      const text = await file.text();
-                      const res = await api.importLeadsCsv(text, "csv_upload");
-                      setResult(res.data);
-                    } catch (err) {
-                      setError(err.message);
-                    } finally {
-                      setImporting(false);
-                    }
-                  }}
+                <button
+                  className="dash-btn dash-btn-ghost"
+                  onClick={handleMapColumns}
                   disabled={importing}
+                  title="Preview the CSV and re-map its columns to the standard lead fields"
                 >
-                  Import Direct (Skip Mapping)
+                  Map columns
                 </button>
                 <button className="dash-btn dash-btn-ghost" onClick={() => fileInputRef.current?.click()}>
                   Choose another file
