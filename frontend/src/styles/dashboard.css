@@ -1,5 +1,5 @@
 /* ==========================================================================
-   FreeLeads — Dashboard / CMS Design System (Dark Theme)
+   FreeLeads — Dashboard / CMS Design System (White Theme)
    ========================================================================== */
 
 .dash {
@@ -8,8 +8,31 @@
   --dash-sidebar-w: 268px;
   --dash-topbar-h: 68px;
 
+  /* Keep the admin workspace intentionally white, independent of the public
+     app's marketing background. Components below already consume the shared
+     token names, so scoping the light palette here covers every admin route. */
+  --bg: #ffffff;
+  --bg-gradient: #ffffff;
+  --panel: #ffffff;
+  --panel-hover: #f7faf8;
+  --panel-subtle: #f8faf9;
+  --line: #e4e9e6;
+  --line-strong: #cfd8d3;
+  --line-subtle: #eef2f0;
+  --ink: #17211c;
+  --ink-muted: #526158;
+  --ink-faint: #7b8981;
+  --green: #2ea873;
+  --green-hover: #23885f;
+  --green-soft: rgba(46, 168, 115, 0.1);
+  --lime: #2ea873;
+  --lime-hover: #23885f;
+  --lime-ink: #ffffff;
+  --lime-soft: rgba(46, 168, 115, 0.1);
+  --shadow-sm: 0 1px 2px rgba(23, 33, 28, 0.03), 0 8px 24px rgba(23, 33, 28, 0.04);
+
   min-height: 100vh;
-  background: var(--bg-gradient);
+  background: #ffffff;
   color: var(--ink);
   font-family: var(--font-body);
   font-size: 14px;
@@ -78,7 +101,7 @@
   place-items: center;
   background: rgba(75, 195, 140, 0.14);
   color: var(--lime);
-  border: 1px solid rgba(215, 255, 99, 0.2);
+  border: 1px solid rgba(46, 168, 115, 0.20);
 }
 
 .dash-brand-name {
@@ -142,10 +165,10 @@
 }
 
 .dash-nav-item.active {
-  background: rgba(215, 255, 99, 0.08);
+  background: rgba(46, 168, 115, 0.08);
   color: var(--lime);
-  border-color: rgba(215, 255, 99, 0.25);
-  box-shadow: 0 0 12px rgba(215, 255, 99, 0.06);
+  border-color: rgba(46, 168, 115, 0.24);
+  box-shadow: 0 0 12px rgba(46, 168, 115, 0.08);
 }
 
 .dash-nav-item.active svg {
@@ -243,7 +266,7 @@
   position: sticky;
   top: 0;
   height: var(--dash-topbar-h);
-  background: rgba(28, 42, 36, 0.88);
+  background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--line);
@@ -379,7 +402,7 @@
   border: 1px solid var(--lime);
   color: var(--lime-ink) !important;
   font-weight: 700;
-  box-shadow: 0 4px 14px rgba(215, 255, 99, 0.25);
+  box-shadow: 0 4px 14px rgba(46, 168, 115, 0.24);
 }
 
 .dash-btn-primary:hover,
@@ -387,7 +410,7 @@
   background: var(--lime-hover);
   border-color: var(--lime-hover);
   color: var(--lime-ink) !important;
-  box-shadow: 0 6px 18px rgba(215, 255, 99, 0.35);
+  box-shadow: 0 6px 18px rgba(46, 168, 115, 0.30);
 }
 
 .dash-btn-block {
@@ -472,7 +495,7 @@
 }
 
 .stat-icon.lime {
-  background: rgba(215, 255, 99, 0.12);
+  background: rgba(46, 168, 115, 0.10);
   color: var(--lime);
 }
 
@@ -745,9 +768,9 @@
 
 .badge-lime,
 .dash-badge-lime {
-  background: rgba(215, 255, 99, 0.12);
+  background: rgba(46, 168, 115, 0.10);
   color: var(--lime);
-  border: 1px solid rgba(215, 255, 99, 0.25);
+  border: 1px solid rgba(46, 168, 115, 0.24);
 }
 
 .badge-blue,
@@ -773,7 +796,7 @@
 
 .badge-gray,
 .dash-badge-gray {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(23, 33, 28, 0.05);
   color: var(--ink-faint);
   border: 1px solid var(--line);
 }
@@ -1014,7 +1037,7 @@
 
 .admin-plan-card.popular {
   border-color: var(--lime);
-  box-shadow: 0 0 24px rgba(215, 255, 99, 0.1);
+  box-shadow: 0 0 24px rgba(46, 168, 115, 0.10);
 }
 
 .admin-plan-title-row {
@@ -1134,7 +1157,7 @@
 }
 
 .admin-chip.disabled {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(23, 33, 28, 0.03);
   color: var(--ink-faint);
   border: 1px solid var(--line);
   opacity: 0.5;
@@ -1189,7 +1212,7 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: rgba(215, 255, 99, 0.12);
+  background: rgba(46, 168, 115, 0.10);
   color: var(--lime);
   display: grid;
   place-items: center;
@@ -1352,7 +1375,7 @@
 }
 
 .toggle-card-icon.popular {
-  background: rgba(215, 255, 99, 0.12);
+  background: rgba(46, 168, 115, 0.10);
   color: var(--lime);
 }
 
@@ -1496,7 +1519,7 @@
 }
 
 .vis-badge.off {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(23, 33, 28, 0.05);
   color: var(--ink-faint);
 }
 
