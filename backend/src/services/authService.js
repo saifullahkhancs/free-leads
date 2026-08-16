@@ -3,6 +3,7 @@ const { query, withTransaction } = require("../config/db");
 const redis = require("../config/redis");
 const env = require("../config/env");
 const ApiError = require("../utils/ApiError");
+const { canonicalCityName } = require("../utils/locationNormalizer");
 const {
   hashPassword,
   verifyPassword,
@@ -81,7 +82,7 @@ function sanitizeUser(user, roles = []) {
     location: {
       lat: user.location_lat ?? null,
       lng: user.location_lng ?? null,
-      city: user.location_city ?? null,
+      city: canonicalCityName(user.location_city),
       region: user.location_region ?? null,
       country: user.location_country ?? null,
       label: user.location_label ?? null,
@@ -606,7 +607,7 @@ async function getProfileLocation(userId) {
   return {
     lat: row.location_lat ?? null,
     lng: row.location_lng ?? null,
-    city: row.location_city ?? null,
+    city: canonicalCityName(row.location_city),
     region: row.location_region ?? null,
     country: row.location_country ?? null,
     label: row.location_label ?? null,
@@ -653,7 +654,7 @@ async function updateProfile(
     values.push(
       location.lat ?? null,
       location.lng ?? null,
-      location.city ?? null,
+      canonicalCityName(location.city),
       location.region ?? null,
       location.country ?? null,
       location.label ?? null

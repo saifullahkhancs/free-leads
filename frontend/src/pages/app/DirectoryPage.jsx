@@ -1549,6 +1549,7 @@ export default function DirectoryPage() {
                   <tr>
                     <th>Lead & Role</th>
                     <th>Company</th>
+                    <th>Employees</th>
                     <th>Category</th>
                     <th>Industry</th>
                     <th>Location</th>
@@ -1583,6 +1584,11 @@ export default function DirectoryPage() {
                           <span className="lead-pill lead-pill-company">
                             <Building2 size={12} /> {lead.company_name || "—"}
                           </span>
+                        </td>
+                        <td>
+                          {lead.num_employees != null
+                            ? Number(lead.num_employees).toLocaleString()
+                            : <span className="faint">—</span>}
                         </td>
                         <td>
                           <span

@@ -12,6 +12,7 @@ import {
   Trash2,
   UploadCloud,
   Map,
+  Pencil,
 } from "lucide-react";
 import * as api from "../../api/client";
 import { useAuth } from "../../context/AuthContext";
@@ -28,6 +29,10 @@ export default function LeadsPage() {
   const [q, setQ] = useState("");
   const [industry, setIndustry] = useState("");
   const [industries, setIndustries] = useState([]);
+  const [countryId, setCountryId] = useState("");
+  const [regionId, setRegionId] = useState("");
+  const [countries, setCountries] = useState([]);
+  const [regions, setRegions] = useState([]);
   const [nextCursor, setNextCursor] = useState(null);
   const [selectedLead, setSelectedLead] = useState(null);
   const [geoActive, setGeoActive] = useState(false);
@@ -41,20 +46,31 @@ export default function LeadsPage() {
   const requestSeq = useRef(0);
 
   useEffect(() => {
-    api.getLeadStats().then((res) => {
-      if (res?.data?.industries) setIndustries(res.data.industries);
+    Promise.all([api.getLeadStats(), api.getLeadFacets()]).then(([stats, facets]) => {
+      if (stats?.data?.industries) setIndustries(stats.data.industries);
+      setCountries(facets?.data?.countries || []);
+      setRegions(facets?.data?.regions || []);
     }).catch(() => {});
   }, []);
 
-  const fetchLeads = async ({ reset = false, cursor = null, geo = null, page = 1 } = {}) => {
+  useEffect(() => {
+    api.getLeadFacets({ country_id: countryId || undefined })
+      .then((res) => setRegions(res?.data?.regions || []))
+      .catch(() => {});
+  }, [countryId]);
+
+  const fetchLeads = async ({ reset = false, cursor = null, geo = null, page = 1, filters = null } = {}) => {
     const seq = ++requestSeq.current;
     const setter = reset ? setLoading : setLoadingMore;
     setter(true);
     setError(null);
     try {
+      const selected = filters || { q, industry, countryId, regionId };
       const params = { 
-        q: q.trim() || undefined, 
-        industry: industry || undefined, 
+        q: selected.q?.trim() || undefined,
+        industry: selected.industry || undefined,
+        country_id: selected.countryId || undefined,
+        region_id: selected.regionId || undefined,
         cursor: cursor || undefined,
         limit: limit,
         offset: (page - 1) * limit
@@ -113,8 +129,10 @@ export default function LeadsPage() {
   const resetFilters = () => {
     setQ("");
     setIndustry("");
+    setCountryId("");
+    setRegionId("");
     setGeoActive(false);
-    fetchLeads({ reset: true, page: 1 });
+    fetchLeads({ reset: true, page: 1, filters: { q: "", industry: "", countryId: "", regionId: "" } });
   };
 
   const handlePageChange = (newPage) => {
@@ -216,17 +234,23 @@ export default function LeadsPage() {
             onChange={(e) => setQ(e.target.value)}
           />
         </div>
-        <select className="dash-select" value={industry} onChange={(e) => setIndustry(e.target.value)}>
-          <option value="">All industries</option>
-          {industries.map((ind) => (
-            <option key={ind} value={ind}>{ind}</option>
-          ))}
+        <select className="dash-select" aria-label="Filter by country" value={countryId} onChange={(e) => { setCountryId(e.target.value); setRegionId(""); }}>
+          <option value="">All countries</option>
+          {countries.map((item) => <option key={item.id} value={item.id}>{item.value} ({item.count})</option>)}
         </select>
-        <button type="submit" className="dash-btn dash-btn-primary">Search</button>
+        <select className="dash-select" aria-label="Filter by state" value={regionId} onChange={(e) => setRegionId(e.target.value)}>
+          <option value="">All states</option>
+          {regions.map((item) => <option key={item.id} value={item.id}>{item.value} ({item.count})</option>)}
+        </select>
+        <select className="dash-select" aria-label="Filter by industry" value={industry} onChange={(e) => setIndustry(e.target.value)}>
+          <option value="">All industries</option>
+          {industries.map((ind) => <option key={ind} value={ind}>{ind}</option>)}
+        </select>
+        <button type="submit" className="dash-btn dash-btn-primary">Apply filters</button>
         <button type="button" className="dash-btn" onClick={handleNearMe}>
           <Compass size={15} /> Near me
         </button>
-        {(q || industry || geoActive) && (
+        {(q || industry || countryId || regionId || geoActive) && (
           <button type="button" className="dash-btn dash-btn-ghost" onClick={resetFilters}>
             <RefreshCw size={14} /> Reset
           </button>
@@ -259,12 +283,14 @@ export default function LeadsPage() {
                 <tr>
                   <th>Lead</th>
                   <th>Company</th>
+                  <th>Employees</th>
                   <th>Industry</th>
                   <th>Location</th>
                   <th>Email</th>
                   <th>Status</th>
+                  <th>Coordinates</th>
                   <th>Added</th>
-                  <th>Geocode</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -280,6 +306,7 @@ export default function LeadsPage() {
                       </div>
                     </td>
                     <td>{lead.company_name || <span className="faint">—</span>}</td>
+                    <td>{lead.num_employees != null ? Number(lead.num_employees).toLocaleString() : <span className="faint">—</span>}</td>
                     <td>{lead.industry || <span className="faint">—</span>}</td>
                     <td className="muted">
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
@@ -294,23 +321,22 @@ export default function LeadsPage() {
                         <span className="dash-badge badge-gray">Unverified</span>
                       )}
                     </td>
+                    <td>
+                      {lead.lat != null && lead.lon != null ? <span className="coordinate-value" title={`${lead.lat}, ${lead.lon}`}><b>{Number(lead.lat).toFixed(4)}</b><small>{Number(lead.lon).toFixed(4)}</small></span> : <span className="dash-badge badge-gray">Not set</span>}
+                    </td>
                     <td className="muted">{formatDate(lead.created_at)}</td>
                     <td>
-                      <button
-                        className="dash-btn dash-btn-sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleGeocodeLead(lead.id);
-                        }}
-                        disabled={geocoding && geocodingLeadId === lead.id}
-                        title="Get coordinates for this lead's location"
-                      >
-                        {geocoding && geocodingLeadId === lead.id ? (
-                          <Loader2 className="spin" size={14} />
-                        ) : (
-                          <Map size={14} />
-                        )}
-                      </button>
+                      <div className="lead-row-actions">
+                        {canManage && <Link className="dash-btn dash-btn-sm" to={`/admin/leads/${lead.id}/edit`} onClick={(e) => e.stopPropagation()} title="Edit lead"><Pencil size={14} /></Link>}
+                        <button
+                          className="dash-btn dash-btn-sm"
+                          onClick={(e) => { e.stopPropagation(); handleGeocodeLead(lead.id); }}
+                          disabled={geocoding && geocodingLeadId === lead.id}
+                          title="Get coordinates for this lead's location"
+                        >
+                          {geocoding && geocodingLeadId === lead.id ? <Loader2 className="spin" size={14} /> : <Map size={14} />}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

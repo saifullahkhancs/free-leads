@@ -216,6 +216,30 @@ export async function createLead(payload) {
   });
 }
 
+export async function getLeadForEdit(id) {
+  return request(`/api/leads/${id}/edit`);
+}
+
+export async function updateLead(id, payload) {
+  return request(`/api/leads/${id}`, { method: "PUT", body: payload });
+}
+
+export async function getLeadDimensions() {
+  return request("/api/admin/lead-dimensions");
+}
+
+export async function renameLeadDimension(type, key, name) {
+  return request(`/api/admin/lead-dimensions/${type}/${encodeURIComponent(key)}`, {
+    method: "PATCH", body: { name },
+  });
+}
+
+export async function deleteLeadDimension(type, key) {
+  return request(`/api/admin/lead-dimensions/${type}/${encodeURIComponent(key)}`, {
+    method: "DELETE", body: { confirmation: "DELETE" },
+  });
+}
+
 /**
  * Bulk-import leads from raw CSV text (requires editor/admin role server-side).
  *

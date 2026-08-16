@@ -10,6 +10,7 @@ const EMPTY_FORM = {
   email: "",
   company_name: "",
   job_title: "",
+  num_employees: "",
   industry: "",
   country: "",
   country_code: "",
@@ -113,6 +114,10 @@ export default function AddLeadPage() {
             <div className="form-field">
               <label>Job title</label>
               <input className="dash-input" type="text" placeholder="e.g. Marketing Director" value={form.job_title} onChange={set("job_title")} />
+            </div>
+            <div className="form-field">
+              <label>Number of employees</label>
+              <input className="dash-input" type="number" min="0" step="1" placeholder="e.g. 250" value={form.num_employees} onChange={set("num_employees")} />
             </div>
             <div className="form-field">
               <label>Industry</label>

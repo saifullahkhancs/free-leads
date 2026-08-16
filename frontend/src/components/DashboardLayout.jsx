@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Sparkles,
   Target,
+  Tags,
   UploadCloud,
   Users,
 } from "lucide-react";
@@ -22,6 +23,7 @@ const PAGE_TITLES = {
   "/admin/plans": { title: "Membership Plans", subtitle: "Configure subscription tiers, quotas, format support & field visibility" },
   "/admin/plans/new": { title: "New Plan", subtitle: "Create a new membership tier" },
   "/admin/leads": { title: "Leads", subtitle: "Browse and manage your lead database" },
+  "/admin/lead-management": { title: "Lead Data", subtitle: "Manage countries, industries and categories" },
   "/admin/add-lead": { title: "Add Lead", subtitle: "Create a single lead manually" },
   "/admin/import": { title: "Import CSV", subtitle: "Bulk upload leads from a CSV file" },
   "/admin/users": { title: "Users", subtitle: "Manage accounts and roles" },
@@ -34,6 +36,9 @@ const PAGE_TITLES = {
 function getPageMeta(pathname) {
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
   // dynamic edit routes
+  if (pathname.startsWith("/admin/leads/") && pathname.endsWith("/edit")) {
+    return { title: "Edit Lead", subtitle: "Update lead information and location" };
+  }
   if (pathname.startsWith("/admin/plans/") && pathname.endsWith("/edit")) {
     return { title: "Edit Plan", subtitle: "Update plan details, quotas and visibility" };
   }
@@ -102,6 +107,7 @@ export default function DashboardLayout() {
           {
             label: "Administration",
             items: [
+              { to: "/admin/lead-management", label: "Lead Data", icon: Tags },
               { to: "/admin/plans", label: "Membership Plans", icon: Sparkles },
               { to: "/admin/users", label: "Users", icon: Users },
               { to: "/admin/roles", label: "Roles & Permissions", icon: ShieldCheck },

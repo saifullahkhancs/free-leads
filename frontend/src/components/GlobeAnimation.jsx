@@ -10,8 +10,8 @@ import { useMemo } from "react";
  *   - a translucent 3D digital earth with a dotted world map
  *   - thin orbital connector paths and curved global connection lines
  *   - small glowing nodes on the surface
- *   - 7-9 profile markers (generic white person silhouettes) in the brand
- *     accent colours, each tethered to the globe by a subtle connector
+ *   - 10 moving profile markers in varied colour gradients, each tethered to
+ *     the globe and orbiting in sync with its rotation
  *
  * The whole thing is transparent-edged: no card, no rectangle, no labels, so
  * it drops straight onto the light hero background.
@@ -20,15 +20,19 @@ import { useMemo } from "react";
 /* Profile markers. Angles are degrees clockwise from 12 o'clock; radius is a
    fraction of half the composition, so everything scales with the container. */
 const MARKERS = [
-  { color: "#4F46E5", angle: -28, radius: 0.94, size: 46, delay: 0 },
-  { color: "#2563EB", angle: 24, radius: 0.99, size: 42, delay: -1.1 },
-  { color: "#06B6D4", angle: 74, radius: 0.9, size: 38, delay: -2.2 },
-  { color: "#EC4899", angle: 128, radius: 0.97, size: 42, delay: -0.6 },
-  { color: "#7C3AED", angle: 178, radius: 0.88, size: 44, delay: -1.7 },
-  { color: "#F59E0B", angle: 224, radius: 0.99, size: 38, delay: -2.8 },
-  { color: "#10B981", angle: 272, radius: 0.92, size: 40, delay: -1.4 },
-  { color: "#4F46E5", angle: 318, radius: 1.0, size: 36, delay: -0.3 },
+  { color: "#4F46E5", color2: "#8B5CF6", angle: -28, radius: 0.94, size: 46, delay: 0 },
+  { color: "#2563EB", color2: "#06B6D4", angle: 12, radius: 1.01, size: 39, delay: -1.1 },
+  { color: "#06B6D4", color2: "#10B981", angle: 48, radius: 0.9, size: 43, delay: -2.2 },
+  { color: "#F97316", color2: "#F59E0B", angle: 84, radius: 1.0, size: 37, delay: -3.1 },
+  { color: "#EC4899", color2: "#F43F5E", angle: 124, radius: 0.96, size: 44, delay: -0.6 },
+  { color: "#7C3AED", color2: "#EC4899", angle: 164, radius: 0.89, size: 40, delay: -1.7 },
+  { color: "#14B8A6", color2: "#22C55E", angle: 202, radius: 0.98, size: 45, delay: -2.8 },
+  { color: "#F59E0B", color2: "#EF4444", angle: 240, radius: 1.01, size: 38, delay: -3.7 },
+  { color: "#10B981", color2: "#84CC16", angle: 278, radius: 0.92, size: 42, delay: -1.4 },
+  { color: "#6366F1", color2: "#3B82F6", angle: 318, radius: 1.0, size: 37, delay: -0.3 },
 ];
+
+const DOT_COLORS = ["#4F46E5", "#2563EB", "#06B6D4", "#10B981", "#EC4899", "#F59E0B", "#7C3AED"];
 
 /* Deterministic pseudo-random so the dotted map is stable between renders. */
 function seeded(i) {
@@ -213,7 +217,7 @@ export default function GlobeAnimation() {
                     cx={d.cx}
                     cy={d.cy}
                     r={d.r}
-                    fill={i % 7 === 0 ? "#2563EB" : "#4F46E5"}
+                    fill={DOT_COLORS[i % DOT_COLORS.length]}
                     opacity={d.o}
                     className={d.twinkle ? "map-dot-twinkle" : undefined}
                     style={d.twinkle ? { animationDelay: `${(i % 9) * 0.4}s` } : undefined}
@@ -267,6 +271,9 @@ export default function GlobeAnimation() {
         <div className="globe-orbit globe-orbit-b" />
         <div className="globe-orbit globe-orbit-c" />
 
+        {/* Profiles and their tethers share the globe's rotation, so every
+            person travels around the earth instead of floating in one spot. */}
+        <div className="globe-profile-system">
         {/* ---------- Connector lines from the globe out to each marker ---------- */}
         <svg className="globe-links" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
           {MARKERS.map((m, i) => {
@@ -308,19 +315,22 @@ export default function GlobeAnimation() {
                 top: `${top}%`,
                 width: `${m.size}px`,
                 height: `${m.size}px`,
-                background: m.color,
+                background: `linear-gradient(135deg, ${m.color}, ${m.color2})`,
                 boxShadow: `0 0 0 4px ${m.color}1f, 0 6px 16px ${m.color}40`,
                 animationDelay: `${m.delay}s`,
               }}
             >
-              {/* Generic person silhouette — no text, no logo. */}
-              <svg viewBox="0 0 24 24" fill="#ffffff" aria-hidden="true">
-                <circle cx="12" cy="8.6" r="3.9" />
-                <path d="M12 13.6c-4.1 0-7.1 2.3-7.1 5.1 0 .7.5 1.1 1.2 1.1h11.8c.7 0 1.2-.4 1.2-1.1 0-2.8-3-5.1-7.1-5.1z" />
-              </svg>
+              {/* Counter-rotate the face so profiles stay upright as they orbit. */}
+              <span className="globe-marker-face">
+                <svg viewBox="0 0 24 24" fill="#ffffff" aria-hidden="true">
+                  <circle cx="12" cy="8.6" r="3.9" />
+                  <path d="M12 13.6c-4.1 0-7.1 2.3-7.1 5.1 0 .7.5 1.1 1.2 1.1h11.8c.7 0 1.2-.4 1.2-1.1 0-2.8-3-5.1-7.1-5.1z" />
+                </svg>
+              </span>
             </span>
           );
         })}
+        </div>
       </div>
     </div>
   );

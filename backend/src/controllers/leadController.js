@@ -178,6 +178,16 @@ const getFacets = asyncHandler(async (req, res) => {
   });
 });
 
+const getLeadForEdit = asyncHandler(async (req, res) => {
+  const lead = await leadService.getLeadForManagement(parseInt(req.params.id, 10));
+  res.json({ status: "success", data: lead });
+});
+
+const updateLead = asyncHandler(async (req, res) => {
+  const lead = await leadService.updateLead(parseInt(req.params.id, 10), req.body || {});
+  res.json({ status: "success", data: lead });
+});
+
 const getLeadById = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
@@ -426,6 +436,8 @@ module.exports = {
   getLeads,
   getFacets,
   getLeadById,
+  getLeadForEdit,
+  updateLead,
   exportLeads,
   createLead,
   importLeads,

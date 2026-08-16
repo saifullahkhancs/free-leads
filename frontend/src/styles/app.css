@@ -3212,11 +3212,11 @@
   box-shadow: var(--shadow-card-hover);
 }
 
-/* The featured plan is a LIGHT card identified by a 2px indigo border and a
-   soft indigo glow — never a solid purple block. */
+/* The featured plan uses a soft lavender wash so it stands out without
+   becoming a heavy, solid-colour block. */
 .billing-plan-card.popular,
 .billing-plan-card.popular:hover {
-  background: #ffffff;
+  background: linear-gradient(145deg, #ffffff 0%, #f5f3ff 52%, #eef2ff 100%);
   border: 2px solid #6366f1;
   box-shadow: 0 8px 30px rgba(79, 70, 229, 0.10);
 }

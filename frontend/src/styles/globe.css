@@ -162,6 +162,22 @@
   to { transform: translate(-50%, -50%) rotateX(78deg) rotateZ(398deg); }
 }
 
+/* Profiles and connector tethers rotate as one network at exactly the same
+   speed as the map. The profile faces counter-rotate below, keeping people
+   upright while their positions continuously travel around the globe. */
+.globe-profile-system {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 50%;
+  animation: globeProfileOrbit 44s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes globeProfileOrbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* ---------- Connector lines out to the profile markers ---------- */
 .globe-links {
   position: absolute;
@@ -193,9 +209,23 @@
   z-index: 3;
 }
 
+.globe-marker-face {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  animation: profileCounterSpin 44s linear infinite;
+}
+
 .globe-marker svg {
   width: 58%;
   height: 58%;
+  filter: drop-shadow(0 1px 1px rgba(30, 41, 59, 0.16));
+}
+
+@keyframes profileCounterSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
 }
 
 @keyframes markerFloat {
@@ -229,7 +259,9 @@
   .globe-map,
   .globe-graticule,
   .globe-orbit,
+  .globe-profile-system,
   .globe-marker,
+  .globe-marker-face,
   .globe-arc,
   .globe-node,
   .globe-link,

@@ -6,10 +6,10 @@ import { useAuth } from "../../context/AuthContext";
 import CsvFieldMapping from "../../components/CsvFieldMapping";
 
 const CSV_TEMPLATE = [
-  "full_name,headline,about,email,linkedin_url,twitter_url,facebook_url,website_url,country,country_code,region,city,industry,company_name,job_title",
-  "John Doe,Software Engineer,Experienced dev,john.doe@example.com,https://linkedin.com/in/johndoe,,,,United States,US,California,San Francisco,Software,Tech Corp,Senior Developer",
-  "Jane Smith,Marketing Specialist,SEO expert,jane.smith@example.com,,,,,United Kingdom,GB,Greater London,London,Marketing,Ad Agency,Account Manager",
-  "Bob Brown,Sales Lead,Top closer,bob.brown@example.com,,,,https://bobbrown.com,Canada,CA,Ontario,Toronto,Sales,Sales Force,Sales Director",
+  "full_name,headline,about,email,linkedin_url,twitter_url,facebook_url,website_url,country,country_code,region,city,industry,company_name,job_title,num_employees",
+  "John Doe,Software Engineer,Experienced dev,john.doe@example.com,https://linkedin.com/in/johndoe,,,,United States,US,California,San Francisco,Software,Tech Corp,Senior Developer,250",
+  "Jane Smith,Marketing Specialist,SEO expert,jane.smith@example.com,,,,,United Kingdom,GB,Greater London,London,Marketing,Ad Agency,Account Manager,42",
+  "Bob Brown,Sales Lead,Top closer,bob.brown@example.com,,,,https://bobbrown.com,Canada,CA,Ontario,Toronto,Sales,Sales Force,Sales Director,1200",
 ].join("\n");
 
 function downloadTemplate() {
@@ -395,7 +395,7 @@ export default function ImportLeadsPage() {
             Recognized columns:
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {["full_name", "headline", "about", "email", "linkedin_url", "twitter_url", "facebook_url", "website_url", "country", "country_code", "region", "city", "industry", "company_name", "job_title"].map((col) => (
+            {["full_name", "headline", "about", "email", "linkedin_url", "twitter_url", "facebook_url", "website_url", "country", "country_code", "region", "city", "industry", "company_name", "job_title", "num_employees"].map((col) => (
               <code key={col} className="dash-badge badge-gray" style={{ fontFamily: "'DM Mono', monospace", fontSize: 11 }}>{col}</code>
             ))}
           </div>
