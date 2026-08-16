@@ -70,8 +70,9 @@
   background-color: var(--primary-light);
 }
 
-/* Featured pricing remains a light card identified by its indigo border. */
+/* Featured pricing gets a gentle lavender background on both the public plans
+   page and the signed-in billing view. */
 .app-theme .billing-plan-card.popular {
-  background: #ffffff;
+  background: linear-gradient(145deg, #ffffff 0%, #f5f3ff 52%, #eef2ff 100%);
   border: 2px solid #6366f1;
 }
