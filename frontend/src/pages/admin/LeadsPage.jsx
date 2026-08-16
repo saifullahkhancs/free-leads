@@ -133,20 +133,20 @@ export default function LeadsPage() {
       });
     };
 
+    // An explicitly pinned profile location beats browser geolocation, which on
+    // desktops resolves to the IP/VPN location and can be hundreds of km off —
+    // making the radius search look like it returns nothing.
+    if (profileGeo) {
+      applyGeo(profileGeo);
+      return;
+    }
+
     const onGeoError = () => {
-      if (profileGeo) {
-        applyGeo(profileGeo);
-      } else {
-        setError("Could not get your location. Please check browser permissions.");
-      }
+      setError("Could not get your location. Please check browser permissions.");
     };
 
     if (!navigator.geolocation) {
-      if (profileGeo) {
-        applyGeo(profileGeo);
-      } else {
-        setError("Geolocation is not supported by your browser.");
-      }
+      setError("Geolocation is not supported by your browser.");
       return;
     }
     navigator.geolocation.getCurrentPosition(

@@ -105,6 +105,9 @@ export default function DirectoryPage() {
   const [quota, setQuota] = useState(null);
   const [exporting, setExporting] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
+  // Server-side explanation for an empty radius search:
+  // { radius, nearestDistance, leadsWithCoordinates, matchingLeads }
+  const [geoInfo, setGeoInfo] = useState(null);
 
   const requestSeq = useRef(0);
   const facetSeq = useRef(0);
@@ -265,6 +268,9 @@ export default function DirectoryPage() {
         if (seq !== requestSeq.current) return;
 
         if (response?.data?.quota) setQuota(response.data.quota);
+        // Present only when a radius search matched nothing — it tells us how
+        // far the nearest lead actually is, so the empty state can be specific.
+        setGeoInfo(response?.data?.geo || null);
         const fetched = response?.data?.leads || [];
 
         if (fetched.length === 0 && !isAppend) {
@@ -478,19 +484,29 @@ export default function DirectoryPage() {
       return;
     }
 
-    const useProfileFallback = () => {
+    // A location the user explicitly pinned on their profile is authoritative.
+    // Browser geolocation is frequently wrong by hundreds of kilometres (it
+    // falls back to the IP/VPN/datacentre location on desktops without GPS),
+    // and searching from that phantom position is exactly what made "Near Me"
+    // look broken: the pin said Lahore, but the radius was measured from
+    // wherever the network said the user was.
+    if (profileGeo) {
       setGeoLoading(false);
-      if (profileGeo) {
-        updateFilters({ geo: profileGeo });
-        setSortBy("distance");
-        showToast(`📍 Browser location unavailable — showing leads near ${profileGeoLabel || "your profile location"}`);
-      } else {
-        showToast("⚠ Couldn't get your location — allow location access or set a location on your profile.");
-      }
+      updateFilters({ geo: profileGeo });
+      setSortBy("distance");
+      showToast(`📍 Showing leads near ${profileGeoLabel || "your profile location"}`);
+      return;
+    }
+
+    const useDeviceFallback = () => {
+      setGeoLoading(false);
+      showToast(
+        "⚠ Couldn't get your location — allow location access or set a location on your profile."
+      );
     };
 
     if (!navigator.geolocation) {
-      useProfileFallback();
+      useDeviceFallback();
       return;
     }
     setGeoLoading(true);
@@ -504,7 +520,7 @@ export default function DirectoryPage() {
         setSortBy("distance");
         showToast("📍 Showing leads near you");
       },
-      useProfileFallback,
+      useDeviceFallback,
       // No timeout used to be passed: on devices without GPS the lookup could
       // hang indefinitely and Near Me appeared to do nothing at all.
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
@@ -849,6 +865,28 @@ export default function DirectoryPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, facets, suggestion, topCategories, savedLeadIds.size]);
 
+  // A precise, honest reason why a "Near Me" search came back empty. The
+  // backend tells us how far the nearest matching lead actually is and how many
+  // of the matching leads even have coordinates — without that, an empty radius
+  // search is indistinguishable from a broken filter.
+  const nearMeExplanation = useMemo(() => {
+    const km = Math.round(filters.radius / 1000);
+    if (!geoInfo) {
+      return `No leads found within ${km} km of your location. Try a larger radius.`;
+    }
+    if (geoInfo.matchingLeads === 0) {
+      return "No leads match your other filters at all, so there is nothing to find nearby. Clear a filter and try again.";
+    }
+    if (!geoInfo.leadsWithCoordinates) {
+      return `${geoInfo.matchingLeads.toLocaleString()} leads match your filters, but none of them have map coordinates yet — so they can't be matched to a radius. Filter by country/city instead, or ask an admin to run geocoding.`;
+    }
+    if (geoInfo.nearestDistance != null) {
+      const nearestKm = Math.max(1, Math.round(geoInfo.nearestDistance / 1000));
+      return `The nearest matching lead is about ${nearestKm.toLocaleString()} km away — outside your ${km} km radius. Widen the radius to include it.`;
+    }
+    return `No leads found within ${km} km of your location. Try a larger radius.`;
+  }, [geoInfo, filters.radius]);
+
   // ---------------------------------------------------------------------------
   // Client-side post-processing: saved-only view + sorting.
   // ---------------------------------------------------------------------------
@@ -1138,7 +1176,10 @@ export default function DirectoryPage() {
             {filters.geo && (
               <div className="app-filter-radius-group">
                 <span className="app-filter-radius-label">Radius:</span>
-                {[10, 25, 50, 100, 250].map((km) => {
+                {/* 500/1000 km matter for country-wide datasets: a user in
+                    Lahore searching Pakistan-wide leads needs more than 250 km
+                    to reach Karachi (~1,020 km). */}
+                {[10, 25, 50, 100, 250, 500, 1000].map((km) => {
                   const value = km * 1000;
                   return (
                     <button
@@ -1462,12 +1503,46 @@ export default function DirectoryPage() {
               <div className="app-empty-icon">
                 <Users size={32} />
               </div>
-              <h3>No matching leads found</h3>
+              <h3>
+                {filters.geo && !filters.savedOnly
+                  ? `No leads within ${Math.round(filters.radius / 1000)} km`
+                  : "No matching leads found"}
+              </h3>
               <p>
                 {filters.savedOnly
                   ? "You haven't saved any leads yet. Bookmark a lead to build your shortlist."
+                  : filters.geo
+                  ? nearMeExplanation
                   : "No leads match this combination of filters. Try widening the location or clearing a filter."}
               </p>
+
+              {/* A radius search that found nothing is almost always fixable by
+                  widening the radius — offer that directly instead of making
+                  the user hunt for the pills above. */}
+              {filters.geo && !filters.savedOnly && (
+                <div className="app-suggestions">
+                  <span>Widen the search:</span>
+                  {[100, 250, 500, 1000]
+                    .filter((km) => km * 1000 > filters.radius)
+                    .map((km) => (
+                      <button
+                        key={km}
+                        type="button"
+                        className="app-suggestion-chip"
+                        onClick={() => updateFilters({ radius: km * 1000 })}
+                      >
+                        Within {km} km
+                      </button>
+                    ))}
+                  <button
+                    type="button"
+                    className="app-suggestion-chip"
+                    onClick={() => updateFilters({ geo: null })}
+                  >
+                    Turn off Near Me <X size={11} />
+                  </button>
+                </div>
+              )}
 
               {activeFilterTags.length > 0 && (
                 <div className="app-suggestions">

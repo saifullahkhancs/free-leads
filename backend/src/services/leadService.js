@@ -392,12 +392,66 @@ const getLeads = async ({
   const nextCursor =
     keysetSort && rows.length === limit ? rows[rows.length - 1].id : null;
 
+  // A "Near Me" search that matched nothing is the single most confusing empty
+  // state in the app: the user cannot tell whether the radius is too small, the
+  // leads have no coordinates at all, or the feature is simply broken. Answer
+  // that question with one cheap extra query and let the UI say it out loud.
+  let geo = null;
+  if (geoActive && rows.length === 0 && (total === 0 || total === null)) {
+    geo = await describeEmptyGeoSearch(filterSet, geoMode);
+  }
+
   return {
     leads: rows,
     nextCursor,
     total,
+    ...(geo ? { geo } : {}),
   };
 };
+
+/**
+ * Explain why a radius search came back empty.
+ *
+ * Returns the distance to the closest lead that matches every *other* filter,
+ * plus how many leads in that same set actually carry coordinates. The UI turns
+ * this into "No leads within 250 km — the nearest one is 415 km away" and can
+ * offer a one-click radius expansion instead of a blank page.
+ */
+async function describeEmptyGeoSearch(filterSet, geoMode) {
+  try {
+    // Same filters, minus the radius restriction.
+    const withoutRadius = { ...filterSet, lat: null, lon: null };
+    const values = [Number(filterSet.lon), Number(filterSet.lat)];
+    const lonPh = "$1";
+    const latPh = "$2";
+    const distance = geoDistanceExpression(geoMode, lonPh, latPh);
+    const where = buildLeadWhere(withoutRadius, values);
+
+    const { rows } = await pool.query(
+      `SELECT MIN(${distance}) AS nearest_distance,
+              COUNT(*) FILTER (WHERE l.lat IS NOT NULL AND l.lon IS NOT NULL)::int AS with_coordinates,
+              COUNT(*)::int AS matching_total
+       FROM leads l
+       LEFT JOIN countries c ON l.country_id = c.id
+       LEFT JOIN regions r ON l.region_id = r.id
+       LEFT JOIN cities ci ON l.city_id = ci.id
+       ${where}`,
+      values
+    );
+
+    const row = rows[0] || {};
+    const nearest = row.nearest_distance == null ? null : Number(row.nearest_distance);
+    return {
+      radius: Number(filterSet.radius) || 50000,
+      nearestDistance: Number.isFinite(nearest) ? nearest : null,
+      leadsWithCoordinates: row.with_coordinates ?? 0,
+      matchingLeads: row.matching_total ?? 0,
+    };
+  } catch {
+    // Diagnostics must never take the search down with them.
+    return null;
+  }
+}
 
 /**
  * Faceted filter options for the search page.

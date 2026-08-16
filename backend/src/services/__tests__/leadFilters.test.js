@@ -236,6 +236,61 @@ test("Near Me on PostGIS still matches leads whose coordinates live only in lat/
   }
 });
 
+// ---------------------------------------------------------------------------
+// An empty radius search must explain itself.
+// ---------------------------------------------------------------------------
+test("an empty Near Me search reports the distance to the nearest matching lead", async () => {
+  setPostGIS(false);
+  captured.length = 0;
+  const result = await leadService.getLeads({
+    cursor: null,
+    limit: 20,
+    lat: 31.5497,
+    lon: 74.3436,
+    radius: 250000,
+    sort: "distance",
+  });
+
+  assert.ok(result.geo, "an empty geo search must return a `geo` explanation");
+  assert.equal(result.geo.radius, 250000);
+  // The diagnostic query drops the radius restriction but keeps every other
+  // filter, and measures the distance to the closest remaining lead.
+  const diagnostic = captured.find((c) => /nearest_distance/.test(c.text));
+  assert.ok(diagnostic, "expected a nearest-lead diagnostic query");
+  assert.doesNotMatch(diagnostic.text, /<= \$\d+/, "the radius must not be applied");
+  assert.match(diagnostic.text, /with_coordinates/);
+  assertPlaceholdersBound(diagnostic, "geo diagnostic");
+  assert.deepStrictEqual(diagnostic.values.slice(0, 2), [74.3436, 31.5497]);
+});
+
+test("the geo explanation keeps the other active filters", async () => {
+  setPostGIS(false);
+  captured.length = 0;
+  await leadService.getLeads({
+    cursor: null,
+    limit: 20,
+    lat: 31.5497,
+    lon: 74.3436,
+    radius: 50000,
+    industry: "Textiles",
+    country_id: 2,
+  });
+
+  const diagnostic = captured.find((c) => /nearest_distance/.test(c.text));
+  assert.ok(diagnostic);
+  assert.match(diagnostic.text, /l\.industry = \$\d+/);
+  assert.match(diagnostic.text, /l\.country_id = \$\d+/);
+  assert.ok(diagnostic.values.includes("Textiles"));
+  assert.ok(diagnostic.values.includes(2));
+});
+
+test("a non-geo empty search does not run the geo diagnostic", async () => {
+  captured.length = 0;
+  const result = await leadService.getLeads({ cursor: null, limit: 20, industry: "Textiles" });
+  assert.equal(result.geo, undefined);
+  assert.equal(captured.find((c) => /nearest_distance/.test(c.text)), undefined);
+});
+
 test("default 'recent' sort orders by created_at, not insertion id", async () => {
   await runFilter({ sort: "recent" });
   assert.match(rowQuery().text, /ORDER BY l\.created_at DESC/);

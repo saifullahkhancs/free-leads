@@ -51,8 +51,8 @@ export default function ProfilePage() {
   });
   const [location, setLocation] = useState(null); // { lat, lng, city, region, country, label }
 
-  // Category / industry options pulled from the live lead database.
-  const [facets, setFacets] = useState({ categories: [], industries: [] });
+  // Category / industry / city options pulled from the live lead database.
+  const [facets, setFacets] = useState({ categories: [], industries: [], cities: [] });
   const [facetsLoading, setFacetsLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
@@ -97,7 +97,14 @@ export default function ProfilePage() {
           (data?.categories?.length || 0) + (data?.industries?.length || 0) > 0;
         if (cancelled) return;
         if (hasOptions) {
-          setFacets({ categories: data.categories || [], industries: data.industries || [] });
+          setFacets({
+            categories: data.categories || [],
+            industries: data.industries || [],
+            // The real city list is what the directory's city filter matches
+            // against — keep it so the profile can confirm the reverse-geocoded
+            // city actually exists in the lead data.
+            cities: data.cities || [],
+          });
           return;
         }
         throw new Error("empty facets");
@@ -108,6 +115,7 @@ export default function ProfilePage() {
         setFacets({
           categories: buildLocalFacets(DEFAULT_MOCK_LEADS).categories,
           industries: local.industries,
+          cities: [],
         });
       } finally {
         if (!cancelled) setFacetsLoading(false);
@@ -147,14 +155,29 @@ export default function ProfilePage() {
     setReverseLoading(true);
     try {
       const info = await api.geoReverse(lat, lng);
-      setLocation((prev) => ({
+      // Geocoders regularly return a pin with no city-level tag at all (very
+      // common for South-Asian addresses). Rather than saving an empty city —
+      // which left the directory with no city default filter to offer — fall
+      // back to the first meaningful part of the display label.
+      const cityFromLabel = () => {
+        const parts = String(info.label || "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        // Skip house numbers / plot codes, and never pick the country (last part).
+        const candidate = parts
+          .slice(0, -1)
+          .find((p) => p.length > 2 && !/^\d/.test(p) && p !== info.region);
+        return candidate || null;
+      };
+      setLocation({
         lat,
         lng,
-        city: info.city || null,
+        city: info.city || cityFromLabel(),
         region: info.region || null,
         country: info.country || null,
         label: info.label || null,
-      }));
+      });
     } catch {
       setError("Could not fetch area info for this spot — you can still save the coordinates.");
     } finally {
@@ -169,10 +192,19 @@ export default function ProfilePage() {
       setShowResults(false);
       mapRef.current?.flyTo([r.lat, r.lng], 13, { duration: 0.8 });
       setMarker(r.lat, r.lng);
+      // Searching "Lahore" and picking the result must set the city even when
+      // the provider tagged the hit as a state/district rather than a city.
+      const fallbackCity =
+        r.city ||
+        String(r.label || "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)[0] ||
+        null;
       setLocation({
         lat: r.lat,
         lng: r.lng,
-        city: r.city || null,
+        city: fallbackCity,
         region: r.region || null,
         country: r.country || null,
         label: r.label || null,
@@ -321,6 +353,16 @@ export default function ProfilePage() {
     .filter(Boolean)
     .join(", ");
 
+  // Does the saved city actually exist in the lead data? If not, the directory's
+  // city default filter would match nothing, so say so instead of failing quietly.
+  const cityOptions = facets.cities || [];
+  const cityMatchesLeads =
+    !location?.city ||
+    cityOptions.length === 0 ||
+    cityOptions.some(
+      (c) => String(c.value).toLowerCase() === String(location.city).toLowerCase()
+    );
+
   return (
     <div className="profile-page">
       <div className="profile-heading">
@@ -458,6 +500,56 @@ export default function ProfilePage() {
               </p>
             )}
           </div>
+
+          {/* ---- City used by the directory's default filter ----------------
+              The pin gives coordinates; this field gives the *city name* the
+              search page filters on. It is auto-filled by reverse geocoding but
+              always editable, because a geocoder can return a district, a
+              cantonment, or nothing at all. */}
+          <label className="fl-field">
+            <span>
+              <MapPin size={13} /> Your city (used as your default city filter)
+            </span>
+            <input
+              type="text"
+              list="fl-city-options"
+              placeholder={
+                location?.lat != null
+                  ? "e.g. Lahore"
+                  : "Pick a spot on the map, or type your city"
+              }
+              value={location?.city || ""}
+              maxLength={150}
+              onChange={(e) => {
+                const city = e.target.value;
+                setSaved(false);
+                setLocation((prev) =>
+                  prev
+                    ? { ...prev, city }
+                    : {
+                        lat: null,
+                        lng: null,
+                        city,
+                        region: null,
+                        country: null,
+                        label: null,
+                      }
+                );
+              }}
+            />
+            <datalist id="fl-city-options">
+              {cityOptions.slice(0, 100).map((c) => (
+                <option key={c.id ?? c.value} value={c.value} />
+              ))}
+            </datalist>
+          </label>
+          {location?.city && !cityMatchesLeads && (
+            <p className="fl-interests-hint">
+              No leads are currently listed under <strong>{location.city}</strong>. Pick the
+              nearest larger city from the suggestions if you want a city default filter that
+              matches results — “Near Me” will still work from your coordinates.
+            </p>
+          )}
 
           <div className="fl-location-summary">
             <MapPin size={16} />

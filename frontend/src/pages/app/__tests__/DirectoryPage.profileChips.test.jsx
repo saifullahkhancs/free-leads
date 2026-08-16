@@ -185,9 +185,13 @@ describe("Near Me on the Search Leads page", () => {
 
   afterEach(() => cleanup());
 
-  it("sends the browser position with a radius and distance sort", async () => {
+  it("prefers the pinned profile location over the browser position", async () => {
+    // Browser geolocation on a desktop resolves to the IP/VPN location, which
+    // can be hundreds of km from where the user actually pinned themselves.
+    // A location explicitly saved on the profile must win, otherwise the radius
+    // is measured from a phantom point and "Near Me" finds nothing.
     const getCurrentPosition = vi.fn((success) =>
-      success({ coords: { latitude: 31.5497, longitude: 74.3436 } })
+      success({ coords: { latitude: 24.8607, longitude: 67.0011 } }) // Karachi
     );
     Object.defineProperty(navigator, "geolocation", {
       configurable: true,
@@ -202,37 +206,104 @@ describe("Near Me on the Search Leads page", () => {
 
     await waitFor(() => {
       const p = lastLeadParams();
-      expect(p.lat).toBeCloseTo(31.5497);
+      expect(p.lat).toBeCloseTo(31.5497); // Lahore, from the profile
       expect(p.lon).toBeCloseTo(74.3436);
     });
     const p = lastLeadParams();
     expect(p.radius).toBe(50000);
     expect(p.sort).toBe("distance");
-
-    // The lookup is given a timeout so the button can never hang forever.
-    expect(getCurrentPosition.mock.calls[0][2]).toMatchObject({ timeout: expect.any(Number) });
+    expect(getCurrentPosition).not.toHaveBeenCalled();
+    expect(await screen.findByText(/Lahore, Pakistan/)).toBeInTheDocument();
   });
 
-  it("falls back to the profile location when the browser position fails", async () => {
+  it("uses the browser position when the profile has no saved location", async () => {
+    const originalLocation = mockAuth.user.location;
+    mockAuth.user = { ...mockAuth.user, location: null };
+    const getCurrentPosition = vi.fn((success) =>
+      success({ coords: { latitude: 31.5497, longitude: 74.3436 } })
+    );
     Object.defineProperty(navigator, "geolocation", {
       configurable: true,
-      value: {
-        getCurrentPosition: vi.fn((success, error) => error(new Error("denied"))),
-      },
+      value: { getCurrentPosition },
     });
 
+    try {
+      const user = userEvent.setup();
+      renderPage();
+      await screen.findByText("Ayesha Khan");
+
+      await user.click(screen.getByRole("button", { name: /near me/i }));
+
+      await waitFor(() => {
+        const p = lastLeadParams();
+        expect(p.lat).toBeCloseTo(31.5497);
+        expect(p.lon).toBeCloseTo(74.3436);
+      });
+      expect(lastLeadParams().sort).toBe("distance");
+
+      // The lookup is given a timeout so the button can never hang forever.
+      expect(getCurrentPosition.mock.calls[0][2]).toMatchObject({
+        timeout: expect.any(Number),
+      });
+    } finally {
+      mockAuth.user = { ...mockAuth.user, location: originalLocation };
+    }
+  });
+
+  it("explains an empty radius search instead of showing a blank 'no leads' page", async () => {
     const user = userEvent.setup();
     renderPage();
     await screen.findByText("Ayesha Khan");
 
+    // The radius search matches nothing, and the backend reports the nearest
+    // matching lead is ~1,020 km away (Lahore -> Karachi).
+    api.getLeads.mockResolvedValue({
+      data: {
+        leads: [],
+        nextCursor: null,
+        total: 0,
+        geo: {
+          radius: 50000,
+          nearestDistance: 1020000,
+          leadsWithCoordinates: 3,
+          matchingLeads: 3,
+        },
+      },
+    });
+
     await user.click(screen.getByRole("button", { name: /near me/i }));
 
-    await waitFor(() => {
-      const p = lastLeadParams();
-      expect(p.lat).toBeCloseTo(31.5497);
-      expect(p.lon).toBeCloseTo(74.3436);
+    // A specific, actionable reason — not just "no matching leads".
+    expect(await screen.findByText(/nearest matching lead is about/i)).toBeInTheDocument();
+    expect(screen.getByText(/1,020 km/)).toBeInTheDocument();
+
+    // And a one-click way to widen the radius past that distance.
+    await user.click(screen.getByRole("button", { name: /within 1000 km/i }));
+    await waitFor(() => expect(lastLeadParams().radius).toBe(1000000));
+  });
+
+  it("says so when the matching leads simply have no coordinates", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("Ayesha Khan");
+
+    api.getLeads.mockResolvedValue({
+      data: {
+        leads: [],
+        nextCursor: null,
+        total: 0,
+        geo: {
+          radius: 50000,
+          nearestDistance: null,
+          leadsWithCoordinates: 0,
+          matchingLeads: 4200,
+        },
+      },
     });
-    expect(await screen.findByText(/Lahore, Pakistan/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /near me/i }));
+
+    expect(await screen.findByText(/none of them have map coordinates/i)).toBeInTheDocument();
   });
 
   it("never swaps demo rows into a failed filtered search (looks like a broken filter)", async () => {

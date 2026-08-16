@@ -22,7 +22,20 @@ function normalizeNominatim(place) {
   const a = place.address || {};
   // Prefer the provider's city-level field. Smaller values such as suburb,
   // neighbourhood and quarter are intentionally never used as directory cities.
-  const city = canonicalCityName(a.city || a.town || a.village || a.municipality || a.county);
+  //
+  // `city_district` / `state_district` are included as *last* resorts: for many
+  // South Asian addresses OSM tags the settlement only at district level (a pin
+  // in Lahore can come back with no `city` at all), and returning null there is
+  // what left profiles with an empty city and no city default-filter to offer.
+  const city = canonicalCityName(
+    a.city ||
+      a.town ||
+      a.village ||
+      a.municipality ||
+      a.county ||
+      a.city_district ||
+      a.state_district
+  );
   const region = a.state || a.province || a.region || a.county;
   return {
     label: place.display_name,
@@ -41,7 +54,11 @@ function normalizeGeoapify(feature) {
     label: p.formatted || p.name_long || p.name || null,
     lat: typeof p.lat === "number" ? p.lat : parseFloat(p.lat),
     lng: typeof p.lon === "number" ? p.lon : parseFloat(p.lon),
-    city: canonicalCityName(p.city || p.town || p.municipality),
+    // Same last-resort chain as the Nominatim branch: a district-level tag is
+    // far more useful to the directory filters than an empty city.
+    city: canonicalCityName(
+      p.city || p.town || p.municipality || p.village || p.county || p.district
+    ),
     region: p.state || p.county || null,
     country: p.country || null,
     countryCode: (p.country_code || "").toUpperCase() || null,
