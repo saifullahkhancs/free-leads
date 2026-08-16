@@ -41,4 +41,9 @@ describe("CsvFieldMapping automatic mapping", () => {
     const mapping = buildAutomaticMapping(["Title", "Email"]);
     expect(mapping.job_title).toEqual({ type: "single", csvField: "Title" });
   });
+
+  it("maps common employee-count headings", () => {
+    const mapping = buildAutomaticMapping(["Company Size", "Email"]);
+    expect(mapping.num_employees).toEqual({ type: "single", csvField: "Company Size" });
+  });
 });

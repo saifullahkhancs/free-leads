@@ -17,6 +17,7 @@ import {
   MapPin,
   ShieldCheck,
   Sparkles,
+  Users,
   X,
 } from "lucide-react";
 import { avatarColor, initialsOf, locationString } from "../utils/format";
@@ -149,6 +150,14 @@ export default function LeadDetailModal({ lead, onClose, onPrev, onNext }) {
             <div className="lead-modal-field">
               <label>Industry</label>
               <div>{lead.industry || "—"}</div>
+            </div>
+
+            <div className="lead-modal-field">
+              <label>Employees</label>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <Users size={14} color="var(--app-ink-faint)" />
+                {lead.num_employees != null ? Number(lead.num_employees).toLocaleString() : "—"}
+              </div>
             </div>
 
             <div className="lead-modal-field">

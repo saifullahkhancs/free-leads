@@ -65,8 +65,10 @@ export default function App() {
 
           <Route path="/" element={<Navigate to="/app" replace />} />
 
-          {/* Dashboard — CMS workspace with sidebar (requires authentication) */}
+          {/* Dashboard — restricted to administrators. Authentication alone is
+              not enough; direct /admin URLs are role-gated as well. */}
           <Route element={<AuthGuard />}>
+            <Route element={<RoleGuard roles={["admin", "super_admin"]} />}>
             <Route path="/admin" element={<DashboardLayout />}>
               <Route index element={<AdminOverviewPage />} />
               <Route path="leads" element={<LeadsPage />} />
@@ -91,6 +93,7 @@ export default function App() {
                 <Route path="roles" element={<RolesPage />} />
                 <Route path="contact-messages" element={<ContactMessagesPage />} />
               </Route>
+            </Route>
             </Route>
           </Route>
 

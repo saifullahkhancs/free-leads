@@ -283,6 +283,7 @@ export default function LeadsPage() {
                 <tr>
                   <th>Lead</th>
                   <th>Company</th>
+                  <th>Employees</th>
                   <th>Industry</th>
                   <th>Location</th>
                   <th>Email</th>
@@ -305,6 +306,7 @@ export default function LeadsPage() {
                       </div>
                     </td>
                     <td>{lead.company_name || <span className="faint">—</span>}</td>
+                    <td>{lead.num_employees != null ? Number(lead.num_employees).toLocaleString() : <span className="faint">—</span>}</td>
                     <td>{lead.industry || <span className="faint">—</span>}</td>
                     <td className="muted">
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>

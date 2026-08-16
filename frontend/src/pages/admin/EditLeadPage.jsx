@@ -12,6 +12,7 @@ const TEXT_FIELDS = [
   ["job_title", "Job title", "Marketing Director"],
   ["industry", "Industry", "Software"],
   ["category", "Category", "Technology"],
+  ["num_employees", "Number of employees", "250", false, "number"],
   ["country", "Country", "United States"],
   ["country_code", "Country code", "US"],
   ["region", "State / region", "California"],
@@ -76,9 +77,9 @@ export default function EditLeadPage() {
       <div className="lead-form-section">
         <h3>Lead information</h3><p>Core identity and business classification.</p>
         <div className="form-grid">
-          {TEXT_FIELDS.slice(0, 8).map(([key, label, placeholder, required, type]) => <div className="form-field" key={key}>
+          {TEXT_FIELDS.slice(0, 9).map(([key, label, placeholder, required, type]) => <div className="form-field" key={key}>
             <label>{label} {required && <span>*</span>}</label>
-            <input className="dash-input" type={type || "text"} value={form[key] ?? ""} placeholder={placeholder} required={required} onChange={set(key)} />
+            <input className="dash-input" type={type || "text"} min={key === "num_employees" ? 0 : undefined} step={key === "num_employees" ? 1 : undefined} value={form[key] ?? ""} placeholder={placeholder} required={required} onChange={set(key)} />
           </div>)}
           <div className="form-field full"><label>About</label><textarea className="dash-textarea" rows="5" value={form.about ?? ""} onChange={set("about")} /></div>
         </div>
@@ -86,7 +87,7 @@ export default function EditLeadPage() {
       <div className="lead-form-section">
         <h3>Location & coordinates</h3><p>Changing location remaps this lead to the correct country and state. Coordinates power nearby search.</p>
         <div className="form-grid">
-          {TEXT_FIELDS.slice(8, 14).map(([key, label, placeholder, required, type]) => <div className="form-field" key={key}>
+          {TEXT_FIELDS.slice(9, 15).map(([key, label, placeholder, required, type]) => <div className="form-field" key={key}>
             <label>{label}</label><input className="dash-input" type={type || "text"} step={type === "number" ? "any" : undefined} value={form[key] ?? ""} placeholder={placeholder} onChange={set(key)} />
           </div>)}
         </div>
@@ -94,7 +95,7 @@ export default function EditLeadPage() {
       <div className="lead-form-section">
         <h3>Online profiles</h3>
         <div className="form-grid">
-          {TEXT_FIELDS.slice(14).map(([key, label, placeholder, required, type]) => <div className="form-field" key={key}>
+          {TEXT_FIELDS.slice(15).map(([key, label, placeholder, required, type]) => <div className="form-field" key={key}>
             <label>{label}</label><input className="dash-input" type={type || "text"} value={form[key] ?? ""} placeholder={placeholder} onChange={set(key)} />
           </div>)}
         </div>

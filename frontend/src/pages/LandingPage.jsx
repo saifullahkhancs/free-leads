@@ -249,7 +249,7 @@ export default function LandingPage() {
           <div className="hero-ctas">
             {!isAuthenticated ? (
               <>
-                <Link className="btn-primary" to="/signup">Explore the directory →</Link>
+                <Link className="btn-primary" to="/app/search">Explore the leads →</Link>
                 <Link className="btn-outline" to="/app/plans">View plans</Link>
               </>
             ) : (
@@ -260,7 +260,7 @@ export default function LandingPage() {
                   </Link>
                 )}
                 <Link className={isAdmin ? "btn-outline" : "btn-primary"} to="/app/search">
-                  Explore the directory →
+                  Explore the leads →
                 </Link>
                 <Link className="btn-outline" to="/app/plans">View plans</Link>
               </>

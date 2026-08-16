@@ -40,6 +40,13 @@ function deriveCategory(industry) {
   return "Professional Services";
 }
 
+/** Normalize an optional company headcount. Invalid/negative values stay empty. */
+function normalizeEmployeeCount(value) {
+  if (value === undefined || value === null || value === "") return null;
+  const count = Number.parseInt(String(value).replace(/,/g, ""), 10);
+  return Number.isInteger(count) && count >= 0 ? count : null;
+}
+
 /** True when a usable lat/lon pair was supplied (0 is a valid coordinate). */
 function hasGeo({ lat, lon }) {
   return (
@@ -178,6 +185,7 @@ const getLeads = async ({
       l.headline,
       l.company_name,
       l.job_title,
+      l.num_employees,
       l.industry,
       l.category,
       l.phone,
@@ -630,12 +638,12 @@ const createLead = async (data) => {
     `INSERT INTO leads (
        full_name, headline, about, email, phone, linkedin_url, twitter_url,
        facebook_url, website_url, city_id, region_id, country_id,
-       industry, category, company_name, job_title, source, is_verified,
+       industry, category, company_name, job_title, num_employees, source, is_verified,
        email_hash, phone_hash, website_hash, biz_hash, lat, lon
      )
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17, FALSE,
-             $18,$19,$20,$21,$22,$23)
-     RETURNING id, full_name, email, phone, company_name, industry, category, created_at`,
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18, FALSE,
+             $19,$20,$21,$22,$23,$24)
+     RETURNING id, full_name, email, phone, company_name, num_employees, industry, category, created_at`,
     [
       String(data.full_name).trim(),
       data.headline || null,
@@ -653,6 +661,7 @@ const createLead = async (data) => {
       data.category || deriveCategory(data.industry),
       data.company_name || null,
       data.job_title || null,
+      normalizeEmployeeCount(data.num_employees),
       data.source || "manual",
       fp.email_hash,
       fp.phone_hash,
@@ -674,7 +683,7 @@ const createLead = async (data) => {
  */
 const insertLeadBatch = async (client, rows, fingerprints = []) => {
   if (rows.length === 0) return [];
-  const cols = Array.from({ length: 23 }, () => []);
+  const cols = Array.from({ length: 24 }, () => []);
 
   rows.forEach(({ record, cityId, regionId, countryId, lat, lon, fp: rowFp }, rowIndex) => {
     // Fingerprints are computed by the dedup pass and handed in positionally;
@@ -697,6 +706,7 @@ const insertLeadBatch = async (client, rows, fingerprints = []) => {
       record.category || deriveCategory(record.industry),
       record.company_name || null,
       record.job_title || null,
+      normalizeEmployeeCount(record.num_employees),
       record.source || "csv_upload",
       fp.email_hash,
       fp.phone_hash,
@@ -712,14 +722,14 @@ const insertLeadBatch = async (client, rows, fingerprints = []) => {
     `INSERT INTO leads (
        full_name, headline, about, email, phone, linkedin_url, twitter_url,
        facebook_url, website_url, city_id, region_id, country_id,
-       industry, category, company_name, job_title, source,
+       industry, category, company_name, job_title, num_employees, source,
        email_hash, phone_hash, website_hash, biz_hash, lat, lon
      )
      SELECT * FROM UNNEST(
        $1::text[], $2::text[], $3::text[], $4::text[], $5::text[], $6::text[],
        $7::text[], $8::text[], $9::text[], $10::int[], $11::int[], $12::int[],
-       $13::text[], $14::text[], $15::text[], $16::text[], $17::text[],
-       $18::text[], $19::text[], $20::text[], $21::text[], $22::float[], $23::float[]
+       $13::text[], $14::text[], $15::text[], $16::text[], $17::int[], $18::text[],
+       $19::text[], $20::text[], $21::text[], $22::text[], $23::float[], $24::float[]
      )
      RETURNING id`,
     cols
@@ -980,7 +990,7 @@ const importLeadsFromStream = async (input, source = "csv_upload", options = {})
 const IMPORTABLE_FIELDS = new Set([
   "full_name", "headline", "about", "email", "phone", "linkedin_url",
   "twitter_url", "facebook_url", "website_url", "company_name", "job_title",
-  "industry", "country", "country_code", "region", "city", "lat", "lon",
+  "num_employees", "industry", "country", "country_code", "region", "city", "lat", "lon",
 ]);
 
 /** Validate and normalize mapping once before the streaming row loop. */
@@ -1256,28 +1266,29 @@ const updateLead = async (id, data) => {
     lat,
     lon,
   });
+  const employeeCount = normalizeEmployeeCount(merged.num_employees);
   const fp = dedupService.fingerprint(merged);
 
   await withTransaction(async (client) => {
     const postgis = await hasPostGIS();
     const locationSql = location.lat != null && location.lon != null
-      ? (postgis ? "ST_SetSRID(ST_MakePoint($26, $25), 4326)::geography" : "$26::text || ' ' || $25::text")
+      ? (postgis ? "ST_SetSRID(ST_MakePoint($27, $26), 4326)::geography" : "$27::text || ' ' || $26::text")
       : "NULL";
     await client.query(
       `UPDATE leads SET
         full_name=$2, headline=$3, about=$4, email=$5, phone=$6,
         linkedin_url=$7, twitter_url=$8, facebook_url=$9, website_url=$10,
         city_id=$11, region_id=$12, country_id=$13, industry=$14, category=$15,
-        company_name=$16, job_title=$17, source=$18, is_verified=$19,
-        is_active=$20, email_hash=$21, phone_hash=$22, website_hash=$23,
-        biz_hash=$24, lat=$25, lon=$26, location=${locationSql}, updated_at=now()
+        company_name=$16, job_title=$17, num_employees=$18, source=$19, is_verified=$20,
+        is_active=$21, email_hash=$22, phone_hash=$23, website_hash=$24,
+        biz_hash=$25, lat=$26, lon=$27, location=${locationSql}, updated_at=now()
        WHERE id=$1`,
       [id, String(merged.full_name).trim(), merged.headline || null, merged.about || null,
        merged.email || null, merged.phone || null, merged.linkedin_url || null,
        merged.twitter_url || null, merged.facebook_url || null, merged.website_url || null,
        location.cityId, location.regionId, location.countryId, merged.industry || null,
        merged.category || deriveCategory(merged.industry), merged.company_name || null,
-       merged.job_title || null, merged.source || "manual", Boolean(merged.is_verified),
+       merged.job_title || null, employeeCount, merged.source || "manual", Boolean(merged.is_verified),
        merged.is_active !== false, fp.email_hash, fp.phone_hash, fp.website_hash,
        fp.biz_hash, location.lat, location.lon]
     );

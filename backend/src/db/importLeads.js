@@ -3,6 +3,11 @@ const { parse } = require("csv-parse");
 const { pool } = require("../config/db");
 const GeoMapper = require("../utils/GeoMapper");
 
+function employeeCount(value) {
+  const parsed = Number.parseInt(String(value || "").replace(/,/g, ""), 10);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
+}
+
 async function importLeads(csvFilePath) {
   const geoMapper = new GeoMapper();
   await geoMapper.init();
@@ -40,6 +45,7 @@ async function importLeads(csvFilePath) {
       record.industry,
       record.company_name,
       record.job_title,
+      employeeCount(record.num_employees),
       record.source || 'csv_import',
     ]);
 
@@ -70,16 +76,16 @@ async function insertBatch(batch) {
       INSERT INTO leads (
         full_name, headline, about, email, linkedin_url, twitter_url, 
         facebook_url, website_url, city_id, region_id, country_id, 
-        industry, company_name, job_title, source
+        industry, company_name, job_title, num_employees, source
       )
       SELECT * FROM UNNEST(
         $1::text[], $2::text[], $3::text[], $4::text[], $5::text[], $6::text[], 
         $7::text[], $8::text[], $9::int[], $10::int[], $11::int[], 
-        $12::text[], $13::text[], $14::text[], $15::text[]
+        $12::text[], $13::text[], $14::text[], $15::int[], $16::text[]
       )
     `;
 
-    const columns = [[], [], [], [], [], [], [], [], [], [], [], [], [], [], []];
+    const columns = [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []];
     batch.forEach(row => {
       row.forEach((val, i) => columns[i].push(val));
     });
