@@ -44,6 +44,7 @@ Module._load = function (request, parent, isMain) {
 };
 
 const leadService = require("../leadService");
+const { setPostGIS } = require("../../utils/postgis");
 
 /** Every `$n` referenced by the SQL must have a matching bound value. */
 function assertPlaceholdersBound({ text, values }, label) {
@@ -175,15 +176,39 @@ test("every bound placeholder lines up in both queries, for all filter shapes", 
   }
 });
 
-test("geo search binds lon/lat/radius in the count query too", async () => {
-  // The count query used to hardcode $1/$2 for ST_MakePoint without ever
-  // binding them, so the geo filter was wrong whenever it did run.
-  await runFilter({ lat: 37.3, lon: -121.8, radius: 25000 });
+test("Near Me works on plain PostgreSQL without referencing the geography type", async () => {
+  setPostGIS(false);
+  await runFilter({ lat: 37.3, lon: -121.8, radius: 25000, sort: "distance" });
 
+  const rows = rowQuery();
   const count = countQuery();
-  assert.match(count.text, /ST_DWithin/);
-  assertPlaceholdersBound(count, "geo count");
+  for (const entry of [rows, count]) {
+    assert.doesNotMatch(entry.text, /geography|ST_DWithin|ST_Distance/i);
+    assert.match(entry.text, /l\.lat IS NOT NULL AND l\.lon IS NOT NULL/);
+    assert.match(entry.text, /ASIN/);
+    assertPlaceholdersBound(entry, "plain PostgreSQL geo search");
+  }
+  assert.match(rows.text, /ORDER BY distance ASC/);
+  assert.deepStrictEqual(rows.values.slice(0, 3), [-121.8, 37.3, 25000]);
   assert.deepStrictEqual(count.values, [-121.8, 37.3, 25000]);
+});
+
+test("Near Me keeps the indexed PostGIS query when geography is available", async () => {
+  setPostGIS(true);
+  try {
+    await runFilter({ lat: 37.3, lon: -121.8, radius: 25000, sort: "distance" });
+
+    const rows = rowQuery();
+    const count = countQuery();
+    assert.match(rows.text, /ST_Distance/);
+    assert.match(count.text, /ST_DWithin/);
+    assert.match(count.text, /::geography/);
+    assertPlaceholdersBound(rows, "PostGIS row query");
+    assertPlaceholdersBound(count, "PostGIS count query");
+    assert.deepStrictEqual(count.values, [-121.8, 37.3, 25000]);
+  } finally {
+    setPostGIS(false);
+  }
 });
 
 test("default 'recent' sort orders by created_at, not insertion id", async () => {

@@ -35,7 +35,10 @@ export default function LeadsPage() {
   const [regions, setRegions] = useState([]);
   const [nextCursor, setNextCursor] = useState(null);
   const [selectedLead, setSelectedLead] = useState(null);
-  const [geoActive, setGeoActive] = useState(false);
+  // Keep the actual coordinates, not only an on/off flag. Pagination and
+  // subsequent filter requests must continue sending the same Near Me point.
+  const [geoFilter, setGeoFilter] = useState(null);
+  const geoActive = Boolean(geoFilter);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
@@ -59,13 +62,15 @@ export default function LeadsPage() {
       .catch(() => {});
   }, [countryId]);
 
-  const fetchLeads = async ({ reset = false, cursor = null, geo = null, page = 1, filters = null } = {}) => {
+  const fetchLeads = async ({ reset = false, cursor = null, geo, page = 1, filters = null } = {}) => {
     const seq = ++requestSeq.current;
     const setter = reset ? setLoading : setLoadingMore;
     setter(true);
     setError(null);
     try {
       const selected = filters || { q, industry, countryId, regionId };
+      // `undefined` means reuse the active geo filter; explicit `null` clears it.
+      const selectedGeo = geo === undefined ? geoFilter : geo;
       const params = { 
         q: selected.q?.trim() || undefined,
         industry: selected.industry || undefined,
@@ -75,10 +80,11 @@ export default function LeadsPage() {
         limit: limit,
         offset: (page - 1) * limit
       };
-      if (geo) {
-        params.lat = geo.lat;
-        params.lon = geo.lon;
-        params.radius = geo.radius || 50000;
+      if (selectedGeo) {
+        params.lat = selectedGeo.lat;
+        params.lon = selectedGeo.lon;
+        params.radius = selectedGeo.radius || 50000;
+        params.sort = "distance";
       }
       const response = await api.getLeads(params);
       if (seq !== requestSeq.current) return;
@@ -115,11 +121,17 @@ export default function LeadsPage() {
     }
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setGeoActive(true);
+        const nextGeo = {
+          lat: position.coords.latitude,
+          lon: position.coords.longitude,
+          radius: 50000,
+        };
+        setGeoFilter(nextGeo);
         setQ("");
         fetchLeads({
           reset: true,
-          geo: { lat: position.coords.latitude, lon: position.coords.longitude, radius: 50000 },
+          geo: nextGeo,
+          filters: { q: "", industry, countryId, regionId },
         });
       },
       () => setError("Could not get your location. Please check browser permissions.")
@@ -131,8 +143,13 @@ export default function LeadsPage() {
     setIndustry("");
     setCountryId("");
     setRegionId("");
-    setGeoActive(false);
-    fetchLeads({ reset: true, page: 1, filters: { q: "", industry: "", countryId: "", regionId: "" } });
+    setGeoFilter(null);
+    fetchLeads({
+      reset: true,
+      page: 1,
+      geo: null,
+      filters: { q: "", industry: "", countryId: "", regionId: "" },
+    });
   };
 
   const handlePageChange = (newPage) => {

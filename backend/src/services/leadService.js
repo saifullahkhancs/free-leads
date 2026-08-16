@@ -59,6 +59,37 @@ function hasGeo({ lat, lon }) {
   );
 }
 
+const EARTH_RADIUS_METERS = 6371008.8;
+
+/**
+ * Return the SQL expression that measures a lead's distance from the requested
+ * point in metres.
+ *
+ * PostGIS installations use the indexed GEOGRAPHY column. The repository's
+ * default `postgres:15` image does not include PostGIS, however, and migration
+ * 002 intentionally creates `location` as TEXT there. For that setup we use a
+ * Haversine calculation over the always-portable `lat`/`lon` columns instead
+ * of emitting `::geography` and crashing with "type geography does not exist".
+ */
+function geoDistanceExpression(mode, lonPh, latPh) {
+  if (mode === "postgis") {
+    return `ST_Distance(l.location, ST_MakePoint(${lonPh}, ${latPh})::geography)`;
+  }
+
+  return `(
+    2.0 * ${EARTH_RADIUS_METERS} * ASIN(
+      SQRT(
+        LEAST(
+          1.0,
+          POWER(SIN(RADIANS(l.lat - ${latPh}) / 2.0), 2) +
+          COS(RADIANS(${latPh})) * COS(RADIANS(l.lat)) *
+          POWER(SIN(RADIANS(l.lon - ${lonPh}) / 2.0), 2)
+        )
+      )
+    )
+  )`;
+}
+
 /**
  * Build the shared `WHERE` clause for the lead queries.
  *
@@ -70,10 +101,11 @@ function hasGeo({ lat, lon }) {
  *
  * @param f      the filter set (see getLeads)
  * @param values parameter array that gets appended to in place
- * @param geoPlaceholders reuse already-bound lon/lat placeholders (the row
- *        query binds them for the ST_Distance select); null to bind fresh ones.
+ * @param geoOptions geo mode plus optionally already-bound lon/lat placeholders
+ *        (the row query binds them for its distance projection). The count
+ *        query supplies only the mode and lets this builder bind fresh values.
  */
-function buildLeadWhere(f, values, geoPlaceholders = null) {
+function buildLeadWhere(f, values, geoOptions = null) {
   const push = (value) => {
     values.push(value);
     return `$${values.length}`;
@@ -86,10 +118,22 @@ function buildLeadWhere(f, values, geoPlaceholders = null) {
   }
 
   if (hasGeo(f)) {
-    const lonPh = geoPlaceholders ? geoPlaceholders.lonPh : push(Number(f.lon));
-    const latPh = geoPlaceholders ? geoPlaceholders.latPh : push(Number(f.lat));
+    const lonPh = geoOptions?.lonPh || push(Number(f.lon));
+    const latPh = geoOptions?.latPh || push(Number(f.lat));
     const radiusPh = push(Number(f.radius) || 50000);
-    where += ` AND l.location IS NOT NULL AND ST_DWithin(l.location, ST_MakePoint(${lonPh}, ${latPh})::geography, ${radiusPh})`;
+    const mode = geoOptions?.mode || "coordinates";
+
+    if (mode === "postgis") {
+      where += ` AND l.location IS NOT NULL AND ST_DWithin(l.location, ST_MakePoint(${lonPh}, ${latPh})::geography, ${radiusPh})`;
+    } else {
+      const distance = geoDistanceExpression(mode, lonPh, latPh);
+      // A cheap latitude range can use idx_leads_active_lat_lon to discard the
+      // vast majority of rows before PostgreSQL evaluates the exact Haversine
+      // expression. 111,195 metres is approximately one degree of latitude.
+      where += ` AND l.lat IS NOT NULL AND l.lon IS NOT NULL`;
+      where += ` AND l.lat BETWEEN ${latPh} - (${radiusPh} / 111195.0) AND ${latPh} + (${radiusPh} / 111195.0)`;
+      where += ` AND ${distance} <= ${radiusPh}`;
+    }
   }
 
   // Location hierarchy — ids are exact and index-friendly, so they always win.
@@ -175,6 +219,10 @@ const getLeads = async ({
     radius,
   };
   const geoActive = hasGeo(filterSet);
+  // Detect PostGIS before constructing geo SQL. On plain PostgreSQL the
+  // `location` column is TEXT, so the query must use the portable coordinate
+  // fallback and must never mention the nonexistent GEOGRAPHY type.
+  const geoMode = geoActive && (await hasPostGIS()) ? "postgis" : "coordinates";
 
   const values = [];
 
@@ -199,13 +247,21 @@ const getLeads = async ({
       l.created_at
   `;
 
-  // Bind lon/lat once up front so both the distance projection and the
-  // ST_DWithin filter below can reference the very same placeholders.
+  // Bind lon/lat once up front so both the distance projection and the geo
+  // filter below can reference the very same placeholders.
   let geoPlaceholders = null;
   if (geoActive) {
     values.push(Number(lon), Number(lat));
-    geoPlaceholders = { lonPh: `$${values.length - 1}`, latPh: `$${values.length}` };
-    queryText += `, ST_Distance(l.location, ST_MakePoint(${geoPlaceholders.lonPh}, ${geoPlaceholders.latPh})::geography) as distance `;
+    geoPlaceholders = {
+      mode: geoMode,
+      lonPh: `$${values.length - 1}`,
+      latPh: `$${values.length}`,
+    };
+    queryText += `, ${geoDistanceExpression(
+      geoMode,
+      geoPlaceholders.lonPh,
+      geoPlaceholders.latPh
+    )} as distance `;
   }
 
   const showEmail = visibility ? Boolean(visibility.show_email) : is_paid;
@@ -288,7 +344,7 @@ const getLeads = async ({
     const countValues = [];
     const countQuery =
       `SELECT COUNT(*)::int AS total ${FROM_JOINS} ` +
-      buildLeadWhere(filterSet, countValues);
+      buildLeadWhere(filterSet, countValues, { mode: geoMode });
 
     const { rows: countRows } = await pool.query(countQuery, countValues);
     total = countRows[0]?.total ?? 0;
