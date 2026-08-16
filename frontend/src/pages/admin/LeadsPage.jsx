@@ -115,26 +115,50 @@ export default function LeadsPage() {
   };
 
   const handleNearMe = () => {
+    // The user's saved profile location, if any — used when the browser
+    // can't/won't provide a device position.
+    const profileGeo =
+      user?.location?.lat != null && user?.location?.lng != null
+        ? { lat: Number(user.location.lat), lon: Number(user.location.lng) }
+        : null;
+
+    const applyGeo = (geo) => {
+      const nextGeo = { ...geo, radius: 50000 };
+      setGeoFilter(nextGeo);
+      setQ("");
+      fetchLeads({
+        reset: true,
+        geo: nextGeo,
+        filters: { q: "", industry, countryId, regionId },
+      });
+    };
+
+    const onGeoError = () => {
+      if (profileGeo) {
+        applyGeo(profileGeo);
+      } else {
+        setError("Could not get your location. Please check browser permissions.");
+      }
+    };
+
     if (!navigator.geolocation) {
-      setError("Geolocation is not supported by your browser.");
+      if (profileGeo) {
+        applyGeo(profileGeo);
+      } else {
+        setError("Geolocation is not supported by your browser.");
+      }
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const nextGeo = {
+      (position) =>
+        applyGeo({
           lat: position.coords.latitude,
           lon: position.coords.longitude,
-          radius: 50000,
-        };
-        setGeoFilter(nextGeo);
-        setQ("");
-        fetchLeads({
-          reset: true,
-          geo: nextGeo,
-          filters: { q: "", industry, countryId, regionId },
-        });
-      },
-      () => setError("Could not get your location. Please check browser permissions.")
+        }),
+      onGeoError,
+      // Previously no timeout was passed: on devices without GPS the lookup
+      // could hang forever, leaving Near Me looking completely unresponsive.
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
     );
   };
 

@@ -104,6 +104,7 @@ export default function DirectoryPage() {
   const [toastMessage, setToastMessage] = useState(null);
   const [quota, setQuota] = useState(null);
   const [exporting, setExporting] = useState(false);
+  const [geoLoading, setGeoLoading] = useState(false);
 
   const requestSeq = useRef(0);
   const facetSeq = useRef(0);
@@ -303,10 +304,31 @@ export default function DirectoryPage() {
           setError(
             "The search service failed to respond, so live results are unavailable right now."
           );
+        } else if (!err?.status) {
+          // A genuine network failure (no HTTP status at all). 401s for
+          // logged-out visitors are expected and stay quiet — the demo data
+          // below covers that case.
+          setError("Couldn't reach the search service — check your connection and try again.");
         }
-        // API unreachable — fall back to the demo dataset, applying the filters
-        // locally so search/filter still work while offline.
-        showDemo();
+
+        if (err?.status === 401 || err?.status === 403 || !err?.status) {
+          // Visitor browsing samples (401/403) or the API is unreachable in
+          // dev — keep the offline-demo story: filter the bundled rows locally.
+          showDemo();
+        } else if (isUnfiltered(overrides)) {
+          // First-load failure on an untouched directory — demo data stands in
+          // so the page is never blank.
+          showDemo();
+        } else {
+          // A *filtered* search hit a real server error (429/5xx). Swapping in
+          // demo rows here is what made a backend failure look exactly like
+          // "the filter is broken" — the bundled samples never match a real
+          // filter such as Near Me around Lahore. Show the honest empty state.
+          setLeads([]);
+          setNextCursor(null);
+          setUsingFallback(false);
+          setTotalLeads(0);
+        }
       } finally {
         if (seq === requestSeq.current) (isAppend ? setLoadingMore : setLoading)(false);
       }
@@ -437,30 +459,60 @@ export default function DirectoryPage() {
     setSubmittedQ(q);
   };
 
-  // "Near Me" — browser geolocation + radius filter.
+  // The user's saved profile location (set on the Profile page) — used as the
+  // Near Me fallback when the browser can't/won't share a device position.
+  const profileGeo =
+    user?.location?.lat != null && user?.location?.lng != null
+      ? { lat: Number(user.location.lat), lon: Number(user.location.lng) }
+      : null;
+  const profileGeoLabel =
+    [user?.location?.city, user?.location?.country].filter(Boolean).join(", ") || null;
+
+  // "Near Me" — browser geolocation + radius filter, with two safeguards:
+  //  - a timeout so a hanging position lookup never leaves the button dead, and
+  //  - a fallback to the profile location when the browser refuses/fails.
   const handleNearMe = () => {
     if (filters.geo) {
+      setGeoLoading(false);
       updateFilters({ geo: null });
       return;
     }
+
+    const useProfileFallback = () => {
+      setGeoLoading(false);
+      if (profileGeo) {
+        updateFilters({ geo: profileGeo });
+        setSortBy("distance");
+        showToast(`📍 Browser location unavailable — showing leads near ${profileGeoLabel || "your profile location"}`);
+      } else {
+        showToast("⚠ Couldn't get your location — allow location access or set a location on your profile.");
+      }
+    };
+
     if (!navigator.geolocation) {
-      showToast("Geolocation isn't supported by your browser");
+      useProfileFallback();
       return;
     }
+    setGeoLoading(true);
     showToast("Getting your location…");
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        setGeoLoading(false);
         updateFilters({
           geo: { lat: position.coords.latitude, lon: position.coords.longitude },
         });
         setSortBy("distance");
         showToast("📍 Showing leads near you");
       },
-      () => showToast("⚠ Couldn't get your location — check browser permissions.")
+      useProfileFallback,
+      // No timeout used to be passed: on devices without GPS the lookup could
+      // hang indefinitely and Near Me appeared to do nothing at all.
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
     );
   };
 
   // One-click "leads in my country", sourced from the user's profile location.
+  // Toggles the country filter only — never forces the city on or off.
   const applySuggestedCountry = () => {
     if (!suggestion?.country) return;
     const match = facets?.countries?.find(
@@ -470,25 +522,20 @@ export default function DirectoryPage() {
       country: match
         ? { id: match.id, value: match.value, code: match.code }
         : { id: suggestion.country_id || null, value: suggestion.country },
-      region: null,
-      city: null,
     });
     showToast(`Showing leads in ${suggestion.country}`);
   };
 
+  // Toggles the city filter only — never forces the country on or off.
   const applySuggestedCity = () => {
     if (!suggestion?.city) return;
-    const countryMatch = facets?.countries?.find(
-      (c) => String(c.value).toLowerCase() === String(suggestion.country || "").toLowerCase()
+    const cityMatch = facets?.cities?.find(
+      (c) => String(c.value).toLowerCase() === String(suggestion.city).toLowerCase()
     );
     updateFilters({
-      country: countryMatch
-        ? { id: countryMatch.id, value: countryMatch.value, code: countryMatch.code }
-        : suggestion.country
-        ? { id: suggestion.country_id || null, value: suggestion.country }
-        : null,
-      region: null,
-      city: { id: null, value: suggestion.city },
+      city: cityMatch
+        ? { id: cityMatch.id, value: cityMatch.value }
+        : { id: null, value: suggestion.city },
     });
     showToast(`Showing leads in ${suggestion.city}`);
   };
@@ -569,13 +616,15 @@ export default function DirectoryPage() {
   })();
 
   // Toggle the Country filter from the user's profile (used by the chip).
+  // The country and city chips are independent on purpose: selecting one must
+  // not auto-select the other, and clearing one must not clear the other.
   const applyProfileCountry = () => {
     if (!profileCountry) return;
     const isActive =
       String(filters.country?.value || "").toLowerCase() ===
       String(profileCountry).toLowerCase();
     if (isActive) {
-      updateFilters({ country: null, region: null, city: null });
+      updateFilters({ country: null });
       showToast("Country filter cleared");
       return;
     }
@@ -586,8 +635,6 @@ export default function DirectoryPage() {
       country: match
         ? { id: match.id, value: match.value, code: match.code }
         : { id: null, value: profileCountry },
-      region: null,
-      city: null,
     });
     showToast(`Showing leads in ${profileCountry}`);
   };
@@ -602,19 +649,15 @@ export default function DirectoryPage() {
       showToast("City filter cleared");
       return;
     }
-    const countryMatch = facets?.countries?.find(
-      (c) =>
-        String(c.value).toLowerCase() ===
-        String(profileCountry || "").toLowerCase()
+    // Only the city filter is applied. The old behaviour also force-selected
+    // the country, which made the two chips impossible to use independently.
+    const cityMatch = facets?.cities?.find(
+      (c) => String(c.value).toLowerCase() === String(profileCity).toLowerCase()
     );
     updateFilters({
-      country: countryMatch
-        ? { id: countryMatch.id, value: countryMatch.value, code: countryMatch.code }
-        : profileCountry
-        ? { id: null, value: profileCountry }
-        : filters.country,
-      region: null,
-      city: { id: null, value: profileCity },
+      city: cityMatch
+        ? { id: cityMatch.id, value: cityMatch.value }
+        : { id: null, value: profileCity },
     });
     showToast(`Showing leads in ${profileCity}`);
   };
@@ -858,14 +901,16 @@ export default function DirectoryPage() {
         key: "country",
         icon: Globe2,
         label: filters.country.value,
-        clear: () => updateFilters({ country: null, region: null, city: null }),
+        // Each tag removes only its own dimension — e.g. clearing the country
+        // must not also wipe a city the user deliberately selected.
+        clear: () => updateFilters({ country: null }),
       });
     if (filters.region)
       tags.push({
         key: "region",
         icon: Map,
         label: filters.region.value,
-        clear: () => updateFilters({ region: null, city: null }),
+        clear: () => updateFilters({ region: null }),
       });
     if (filters.city)
       tags.push({
@@ -1078,9 +1123,16 @@ export default function DirectoryPage() {
               type="button"
               className={`app-filter-geo-btn${filters.geo ? " active" : ""}`}
               onClick={handleNearMe}
+              disabled={geoLoading}
             >
               <Compass size={15} />
-              <span>{filters.geo ? `Near Me · ${Math.round(filters.radius / 1000)} km` : "Near Me"}</span>
+              <span>
+                {geoLoading
+                  ? "Locating…"
+                  : filters.geo
+                  ? `Near Me · ${Math.round(filters.radius / 1000)} km`
+                  : "Near Me"}
+              </span>
             </button>
 
             {filters.geo && (
@@ -1153,19 +1205,27 @@ export default function DirectoryPage() {
               value={filters.country?.id || filters.country?.value || ""}
               onChange={(e) => {
                 const val = e.target.value;
+                // "All" is a one-dimensional reset: it clears only the country
+                // and deliberately keeps any city/state the user picked.
                 if (!val) {
-                  updateFilters({ country: null, region: null, city: null });
+                  updateFilters({ country: null });
                   return;
                 }
                 const match = (facets?.countries || []).find(
                   (c) => String(c.id || c.value) === String(val)
                 );
+                const next = match
+                  ? { id: match.id, value: match.value, code: match.code }
+                  : { id: null, value: val };
+                const sameCountry =
+                  String(filters.country?.value || "").toLowerCase() ===
+                  String(next.value).toLowerCase();
                 updateFilters({
-                  country: match
-                    ? { id: match.id, value: match.value, code: match.code }
-                    : { id: null, value: val },
-                  region: null,
-                  city: null,
+                  country: next,
+                  // Re-affirming the same country keeps the existing state/city
+                  // (the chips toggle them independently); only switching to a
+                  // *different* country resets the stale child selections.
+                  ...(sameCountry ? {} : { region: null, city: null }),
                 });
               }}
             >
@@ -1187,18 +1247,23 @@ export default function DirectoryPage() {
               value={filters.region?.id || filters.region?.value || ""}
               onChange={(e) => {
                 const val = e.target.value;
+                // "All" clears only the state; a chosen city survives.
                 if (!val) {
-                  updateFilters({ region: null, city: null });
+                  updateFilters({ region: null });
                   return;
                 }
                 const match = (facets?.regions || []).find(
                   (r) => String(r.id || r.value) === String(val)
                 );
+                const next = match
+                  ? { id: match.id, value: match.value }
+                  : { id: null, value: val };
+                const sameRegion =
+                  String(filters.region?.value || "").toLowerCase() ===
+                  String(next.value).toLowerCase();
                 updateFilters({
-                  region: match
-                    ? { id: match.id, value: match.value }
-                    : { id: null, value: val },
-                  city: null,
+                  region: next,
+                  ...(sameRegion ? {} : { city: null }),
                 });
               }}
             >
