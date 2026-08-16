@@ -62,20 +62,12 @@ function hasGeo({ lat, lon }) {
 const EARTH_RADIUS_METERS = 6371008.8;
 
 /**
- * Return the SQL expression that measures a lead's distance from the requested
- * point in metres.
- *
- * PostGIS installations use the indexed GEOGRAPHY column. The repository's
- * default `postgres:15` image does not include PostGIS, however, and migration
- * 002 intentionally creates `location` as TEXT there. For that setup we use a
- * Haversine calculation over the always-portable `lat`/`lon` columns instead
- * of emitting `::geography` and crashing with "type geography does not exist".
+ * Exact great-circle distance in metres from the requested point, computed
+ * from the portable `lat`/`lon` columns. Works on every PostgreSQL install —
+ * no PostGIS required. Any NULL input makes the whole expression NULL, which
+ * is exactly how "no coordinates → no distance" should behave.
  */
-function geoDistanceExpression(mode, lonPh, latPh) {
-  if (mode === "postgis") {
-    return `ST_Distance(l.location, ST_MakePoint(${lonPh}, ${latPh})::geography)`;
-  }
-
+function haversineExpression(lonPh, latPh) {
   return `(
     2.0 * ${EARTH_RADIUS_METERS} * ASIN(
       SQRT(
@@ -88,6 +80,41 @@ function geoDistanceExpression(mode, lonPh, latPh) {
       )
     )
   )`;
+}
+
+/**
+ * Cheap latitude prefilter — uses idx_leads_active_lat_lon to discard the
+ * vast majority of rows before the exact (and much more expensive) distance
+ * expression is evaluated. 111,195 metres is approximately one degree of
+ * latitude.
+ */
+function latitudeBandExpression(latPh, radiusPh) {
+  return `l.lat BETWEEN ${latPh} - (${radiusPh} / 111195.0) AND ${latPh} + (${radiusPh} / 111195.0)`;
+}
+
+/**
+ * Return the SQL expression that measures a lead's distance from the requested
+ * point in metres.
+ *
+ * PostGIS installations use the indexed GEOGRAPHY column. The repository's
+ * default `postgres:15` image does not include PostGIS, however, and migration
+ * 002 intentionally creates `location` as TEXT there. For that setup we use a
+ * Haversine calculation over the always-portable `lat`/`lon` columns instead
+ * of emitting `::geography` and crashing with "type geography does not exist".
+ */
+function geoDistanceExpression(mode, lonPh, latPh) {
+  if (mode === "postgis") {
+    // A lead whose coordinates were written straight into lat/lon (pruned
+    // imports, direct SQL, or pre-backfill rows) has a NULL geography column.
+    // Fall back to the Haversine for those rows instead of returning NULL, so
+    // distance sorting stays truthful for every coordinate-bearing lead.
+    return `COALESCE(
+      ST_Distance(l.location, ST_MakePoint(${lonPh}, ${latPh})::geography),
+      ${haversineExpression(lonPh, latPh)}
+    )`;
+  }
+
+  return haversineExpression(lonPh, latPh);
 }
 
 /**
@@ -124,14 +151,26 @@ function buildLeadWhere(f, values, geoOptions = null) {
     const mode = geoOptions?.mode || "coordinates";
 
     if (mode === "postgis") {
-      where += ` AND l.location IS NOT NULL AND ST_DWithin(l.location, ST_MakePoint(${lonPh}, ${latPh})::geography, ${radiusPh})`;
+      // Prefer the indexed GEOGRAPHY search — but a lead whose coordinates
+      // exist only in the plain lat/lon columns (location was never backfilled,
+      // e.g. they were set through direct SQL) must NOT silently vanish from
+      // every "Near Me" search. Give those rows the portable Haversine test.
+      where += ` AND (
+        (l.location IS NOT NULL AND ST_DWithin(l.location, ST_MakePoint(${lonPh}, ${latPh})::geography, ${radiusPh}))
+        OR (
+          l.location IS NULL
+          AND l.lat IS NOT NULL AND l.lon IS NOT NULL
+          AND ${latitudeBandExpression(latPh, radiusPh)}
+          AND ${haversineExpression(lonPh, latPh)} <= ${radiusPh}
+        )
+      )`;
     } else {
-      const distance = geoDistanceExpression(mode, lonPh, latPh);
+      const distance = haversineExpression(lonPh, latPh);
       // A cheap latitude range can use idx_leads_active_lat_lon to discard the
       // vast majority of rows before PostgreSQL evaluates the exact Haversine
       // expression. 111,195 metres is approximately one degree of latitude.
       where += ` AND l.lat IS NOT NULL AND l.lon IS NOT NULL`;
-      where += ` AND l.lat BETWEEN ${latPh} - (${radiusPh} / 111195.0) AND ${latPh} + (${radiusPh} / 111195.0)`;
+      where += ` AND ${latitudeBandExpression(latPh, radiusPh)}`;
       where += ` AND ${distance} <= ${radiusPh}`;
     }
   }
@@ -663,9 +702,16 @@ const resolveLocation = async (geoMapper, { country, country_code, region, city,
   const regionId = countryId && region ? await geoMapper.getRegionId(countryId, region) : null;
   const cityId = countryId && city ? await geoMapper.getCityId(countryId, regionId, city) : null;
 
-  // Use coordinates from record if provided, otherwise null
-  let lat = recordLat ? parseFloat(recordLat) : null;
-  let lon = recordLon ? parseFloat(recordLon) : null;
+  // Use coordinates from record if provided, otherwise null. Note: 0 is a
+  // valid coordinate (equator / prime meridian) — a truthiness check would
+  // silently discard it, mirroring hasGeo()'s explicit zero handling.
+  const toCoordinate = (value) => {
+    if (value === undefined || value === null || value === "") return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  };
+  const lat = toCoordinate(recordLat);
+  const lon = toCoordinate(recordLon);
 
   return { cityId, regionId, countryId, lat, lon };
 };

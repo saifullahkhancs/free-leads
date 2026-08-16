@@ -211,6 +211,31 @@ test("Near Me keeps the indexed PostGIS query when geography is available", asyn
   }
 });
 
+test("Near Me on PostGIS still matches leads whose coordinates live only in lat/lon", async () => {
+  // Leads whose coordinates were written straight into lat/lon (direct SQL,
+  // older imports before the location backfill) have a NULL geography column.
+  // The radius search used to require `l.location IS NOT NULL`, which made
+  // those leads invisible to every "Near Me" search on PostGIS installs.
+  setPostGIS(true);
+  try {
+    await runFilter({ lat: 31.5497, lon: 74.3436, radius: 50000, sort: "distance" });
+
+    for (const entry of [rowQuery(), countQuery()]) {
+      // The WHERE clause must OR in a portable lat/lon (Haversine) test for
+      // rows with a NULL geography column — beside the indexed ST_DWithin.
+      assert.match(entry.text, /ST_DWithin/);
+      assert.match(entry.text, /l\.location IS NULL/);
+      assert.match(entry.text, /ASIN/);
+      assertPlaceholdersBound(entry, "PostGIS geo fallback");
+    }
+    // The distance projection falls back to Haversine for NULL-location rows,
+    // so "nearest first" sorting stays truthful for every lead.
+    assert.match(rowQuery().text, /COALESCE\(\s*ST_Distance/);
+  } finally {
+    setPostGIS(false);
+  }
+});
+
 test("default 'recent' sort orders by created_at, not insertion id", async () => {
   await runFilter({ sort: "recent" });
   assert.match(rowQuery().text, /ORDER BY l\.created_at DESC/);
