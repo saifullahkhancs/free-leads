@@ -21,6 +21,11 @@ router.get("/roles", adminController.getRoles);
 router.get("/audit-logs", adminController.getAuditLogs);
 router.post("/leads/dedup", adminController.runDedup);
 
+// Lead dimensions management (countries, industries and categories)
+router.get("/lead-dimensions", adminController.getLeadDimensions);
+router.patch("/lead-dimensions/:type/:key", adminController.renameLeadDimension);
+router.delete("/lead-dimensions/:type/:key", adminController.deleteLeadDimension);
+
 // Delete all leads
 router.delete("/leads", adminController.deleteAllLeads);
 

@@ -468,6 +468,92 @@ const deletePlan = asyncHandler(async (req, res) => {
   res.status(200).json({ status: "success", data: { deleted: true } });
 });
 
+/** Aggregate and list the dimensions used by leads for the management page. */
+const getLeadDimensions = asyncHandler(async (req, res) => {
+  const [summary, countries, industries, categories] = await Promise.all([
+    query(`SELECT COUNT(*) FILTER (WHERE is_active)::int AS leads,
+                  COUNT(DISTINCT country_id) FILTER (WHERE country_id IS NOT NULL)::int AS countries,
+                  COUNT(DISTINCT industry) FILTER (WHERE industry IS NOT NULL AND industry <> '')::int AS industries,
+                  COUNT(DISTINCT category) FILTER (WHERE category IS NOT NULL AND category <> '')::int AS categories
+           FROM leads`),
+    query(`SELECT c.id, c.name, c.code, COUNT(l.id)::int AS lead_count
+           FROM countries c JOIN leads l ON l.country_id = c.id
+           GROUP BY c.id ORDER BY lead_count DESC, c.name ASC`),
+    query(`SELECT industry AS name, COUNT(*)::int AS lead_count FROM leads
+           WHERE industry IS NOT NULL AND industry <> '' GROUP BY industry
+           ORDER BY lead_count DESC, industry ASC`),
+    query(`SELECT category AS name, COUNT(*)::int AS lead_count FROM leads
+           WHERE category IS NOT NULL AND category <> '' GROUP BY category
+           ORDER BY lead_count DESC, category ASC`),
+  ]);
+  res.json({ status: "success", data: {
+    summary: summary.rows[0], countries: countries.rows,
+    industries: industries.rows, categories: categories.rows,
+  }});
+});
+
+const normalizeDimension = (value) => {
+  const type = String(value || "").toLowerCase();
+  if (!["country", "industry", "category"].includes(type)) {
+    throw new ApiError(400, "Dimension must be country, industry, or category");
+  }
+  return type;
+};
+
+/** Rename a dimension in every related record. */
+const renameLeadDimension = asyncHandler(async (req, res) => {
+  const type = normalizeDimension(req.params.type);
+  const name = String(req.body?.name || "").trim();
+  const maxLength = type === "country" ? 120 : 150;
+  if (!name || name.length > maxLength) throw new ApiError(400, `A valid name up to ${maxLength} characters is required`);
+  const countryId = type === "country" ? Number.parseInt(req.params.key, 10) : null;
+  if (type === "country" && !Number.isInteger(countryId)) throw new ApiError(400, "Invalid country id");
+
+  let affected = 0;
+  await withTransaction(async (client) => {
+    if (type === "country") {
+      const result = await client.query("UPDATE countries SET name = $1 WHERE id = $2 RETURNING id", [name, countryId]);
+      if (!result.rowCount) throw new ApiError(404, "Country not found");
+      const count = await client.query("SELECT COUNT(*)::int AS count FROM leads WHERE country_id = $1", [countryId]);
+      affected = count.rows[0].count;
+    } else {
+      const column = type === "industry" ? "industry" : "category";
+      const oldName = String(req.params.key);
+      const result = await client.query(`UPDATE leads SET ${column} = $1, updated_at = now() WHERE ${column} = $2`, [name, oldName]);
+      affected = result.rowCount;
+      const interestColumn = type === "industry" ? "interest_industry" : "interest_category";
+      await client.query(`UPDATE users SET ${interestColumn} = $1 WHERE ${interestColumn} = $2`, [name, oldName]);
+    }
+  });
+  await auditService.log({ actorId: req.user.id, action: "lead_dimension_rename", entityType: type,
+    metadata: { key: req.params.key, name, affected }, ip: req.ip });
+  res.json({ status: "success", data: { affected, name } });
+});
+
+/** Delete a dimension and all of its related leads, after explicit confirmation. */
+const deleteLeadDimension = asyncHandler(async (req, res) => {
+  const type = normalizeDimension(req.params.type);
+  if (req.body?.confirmation !== "DELETE") throw new ApiError(400, "Type DELETE to confirm this action");
+  const countryId = type === "country" ? Number.parseInt(req.params.key, 10) : null;
+  if (type === "country" && !Number.isInteger(countryId)) throw new ApiError(400, "Invalid country id");
+  let deleted = 0;
+  await withTransaction(async (client) => {
+    if (type === "country") {
+      const result = await client.query("DELETE FROM leads WHERE country_id = $1", [countryId]);
+      deleted = result.rowCount;
+      const country = await client.query("DELETE FROM countries WHERE id = $1 RETURNING id", [countryId]);
+      if (!country.rowCount) throw new ApiError(404, "Country not found");
+    } else {
+      const column = type === "industry" ? "industry" : "category";
+      const result = await client.query(`DELETE FROM leads WHERE ${column} = $1`, [String(req.params.key)]);
+      deleted = result.rowCount;
+    }
+  });
+  await auditService.log({ actorId: req.user.id, action: "lead_dimension_delete", entityType: type,
+    metadata: { key: req.params.key, deleted }, ip: req.ip });
+  res.json({ status: "success", data: { deleted } });
+});
+
 /**
  * DELETE /api/admin/leads — delete all leads (admin only).
  * This is a destructive operation that cannot be undone.
@@ -511,4 +597,7 @@ module.exports = {
   updatePlan,
   deletePlan,
   deleteAllLeads,
+  getLeadDimensions,
+  renameLeadDimension,
+  deleteLeadDimension,
 };

@@ -91,6 +91,21 @@ router.post(
   leadController.parseCsv
 );
 
+// Unmasked management view and update (editors and admins only). Keep /:id/edit
+// before /:id so Express does not consume it as the public detail route.
+router.get(
+  "/:id/edit",
+  authenticate,
+  requireRole("admin", "super_admin", "editor"),
+  leadController.getLeadForEdit
+);
+router.put(
+  "/:id",
+  authenticate,
+  requireRole("admin", "super_admin", "editor"),
+  leadController.updateLead
+);
+
 // NOTE: keep `/landing-stats`, `/stats`, `/import`, `/export`, `/ingest` before `/:id`.
 router.get(
   "/:id",

@@ -25,6 +25,8 @@ import GoogleCallbackPage from "./pages/auth/GoogleCallbackPage";
 // Dashboard (admin workspace)
 import AdminOverviewPage from "./pages/admin/AdminOverviewPage";
 import LeadsPage from "./pages/admin/LeadsPage";
+import EditLeadPage from "./pages/admin/EditLeadPage";
+import LeadManagementPage from "./pages/admin/LeadManagementPage";
 import AddLeadPage from "./pages/admin/AddLeadPage";
 import ImportLeadsPage from "./pages/admin/ImportLeadsPage";
 import UsersPage from "./pages/admin/UsersPage";
@@ -68,6 +70,9 @@ export default function App() {
             <Route path="/admin" element={<DashboardLayout />}>
               <Route index element={<AdminOverviewPage />} />
               <Route path="leads" element={<LeadsPage />} />
+              <Route element={<RoleGuard roles={["admin", "super_admin", "editor"]} />}>
+                <Route path="leads/:id/edit" element={<EditLeadPage />} />
+              </Route>
               <Route path="add-lead" element={<AddLeadPage />} />
               <Route path="import" element={<ImportLeadsPage />} />
 
@@ -78,6 +83,7 @@ export default function App() {
               </Route>
 
               <Route element={<RoleGuard roles={["admin", "super_admin"]} />}>
+                <Route path="lead-management" element={<LeadManagementPage />} />
                 <Route path="plans" element={<AdminPlansPage />} />
                 <Route path="plans/new" element={<AdminPlanEditPage />} />
                 <Route path="plans/:id/edit" element={<AdminPlanEditPage />} />

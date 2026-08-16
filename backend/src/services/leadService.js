@@ -181,6 +181,8 @@ const getLeads = async ({
       l.industry,
       l.category,
       l.phone,
+      l.lat,
+      l.lon,
       c.name as country_name,
       c.code as country_code,
       r.name as region_name,
@@ -1214,10 +1216,83 @@ const getStats = async () => {
   };
 };
 
+const getLeadForManagement = async (id) => {
+  const { rows } = await pool.query(
+    `SELECT l.*, c.name AS country, c.code AS country_code,
+            r.name AS region, ci.name AS city
+     FROM leads l
+     LEFT JOIN countries c ON c.id = l.country_id
+     LEFT JOIN regions r ON r.id = l.region_id
+     LEFT JOIN cities ci ON ci.id = l.city_id
+     WHERE l.id = $1`,
+    [id]
+  );
+  if (!rows[0]) throw new ApiError(404, "Lead not found");
+  return rows[0];
+};
+
+/** Update a lead and remap its location hierarchy and dedup fingerprints. */
+const updateLead = async (id, data) => {
+  const current = await getLeadForManagement(id);
+  const merged = { ...current, ...data };
+  if (!String(merged.full_name || "").trim()) {
+    throw new ApiError(400, "full_name is required");
+  }
+
+  const lat = merged.lat === "" || merged.lat == null ? null : Number(merged.lat);
+  const lon = merged.lon === "" || merged.lon == null ? null : Number(merged.lon);
+  if ((lat != null && (!Number.isFinite(lat) || lat < -90 || lat > 90)) ||
+      (lon != null && (!Number.isFinite(lon) || lon < -180 || lon > 180))) {
+    throw new ApiError(400, "Coordinates are invalid (latitude -90..90, longitude -180..180)");
+  }
+
+  const geoMapper = new GeoMapper();
+  await geoMapper.init();
+  const location = await resolveLocation(geoMapper, {
+    country: merged.country,
+    country_code: merged.country_code,
+    region: merged.region,
+    city: merged.city,
+    lat,
+    lon,
+  });
+  const fp = dedupService.fingerprint(merged);
+
+  await withTransaction(async (client) => {
+    const postgis = await hasPostGIS();
+    const locationSql = location.lat != null && location.lon != null
+      ? (postgis ? "ST_SetSRID(ST_MakePoint($26, $25), 4326)::geography" : "$26::text || ' ' || $25::text")
+      : "NULL";
+    await client.query(
+      `UPDATE leads SET
+        full_name=$2, headline=$3, about=$4, email=$5, phone=$6,
+        linkedin_url=$7, twitter_url=$8, facebook_url=$9, website_url=$10,
+        city_id=$11, region_id=$12, country_id=$13, industry=$14, category=$15,
+        company_name=$16, job_title=$17, source=$18, is_verified=$19,
+        is_active=$20, email_hash=$21, phone_hash=$22, website_hash=$23,
+        biz_hash=$24, lat=$25, lon=$26, location=${locationSql}, updated_at=now()
+       WHERE id=$1`,
+      [id, String(merged.full_name).trim(), merged.headline || null, merged.about || null,
+       merged.email || null, merged.phone || null, merged.linkedin_url || null,
+       merged.twitter_url || null, merged.facebook_url || null, merged.website_url || null,
+       location.cityId, location.regionId, location.countryId, merged.industry || null,
+       merged.category || deriveCategory(merged.industry), merged.company_name || null,
+       merged.job_title || null, merged.source || "manual", Boolean(merged.is_verified),
+       merged.is_active !== false, fp.email_hash, fp.phone_hash, fp.website_hash,
+       fp.biz_hash, location.lat, location.lon]
+    );
+    await client.query("DELETE FROM lead_hashes WHERE lead_id = $1", [id]);
+  });
+  await dedupService.recordHashes(id, fp);
+  return getLeadForManagement(id);
+};
+
 module.exports = {
   getLeads,
   getFacets,
   getLeadById,
+  getLeadForManagement,
+  updateLead,
   exportLeads,
   createLead,
   importLeadsCsv,

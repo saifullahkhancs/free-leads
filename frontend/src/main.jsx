@@ -14,6 +14,7 @@ import "./styles/landing.css";
 import "./styles/landing-cards.css";
 import "./styles/globe.css";
 import "./styles/dashboard.css";
+import "./styles/lead-management.css";
 import "./styles/app.css";
 import "./styles/site-layout.css";
 import "./styles/site-header.css";
