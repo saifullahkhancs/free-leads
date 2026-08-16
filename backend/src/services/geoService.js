@@ -1,5 +1,6 @@
 const env = require("../config/env");
 const ApiError = require("../utils/ApiError");
+const { canonicalCityName } = require("../utils/locationNormalizer");
 
 /**
  * Free geocoding for the map location picker.
@@ -19,13 +20,15 @@ const NOMINATIM_URL = "https://nominatim.openstreetmap.org";
 
 function normalizeNominatim(place) {
   const a = place.address || {};
-  const city = a.city || a.town || a.village || a.municipality || a.county;
+  // Prefer the provider's city-level field. Smaller values such as suburb,
+  // neighbourhood and quarter are intentionally never used as directory cities.
+  const city = canonicalCityName(a.city || a.town || a.village || a.municipality || a.county);
   const region = a.state || a.province || a.region || a.county;
   return {
     label: place.display_name,
     lat: parseFloat(place.lat),
     lng: parseFloat(place.lon),
-    city: city || null,
+    city,
     region: region || null,
     country: a.country || null,
     countryCode: (a.country_code || "").toUpperCase() || null,
@@ -38,7 +41,7 @@ function normalizeGeoapify(feature) {
     label: p.formatted || p.name_long || p.name || null,
     lat: typeof p.lat === "number" ? p.lat : parseFloat(p.lat),
     lng: typeof p.lon === "number" ? p.lon : parseFloat(p.lon),
-    city: p.city || null,
+    city: canonicalCityName(p.city || p.town || p.municipality),
     region: p.state || p.county || null,
     country: p.country || null,
     countryCode: (p.country_code || "").toUpperCase() || null,
@@ -111,7 +114,9 @@ async function reverse(lat, lng) {
 
   const url =
     `${NOMINATIM_URL}/reverse?lat=${lat}&lon=${lng}` +
-    `&format=jsonv2&addressdetails=1&zoom=12`;
+    // City-level zoom avoids classifying a suburb/cantonment as the selected
+    // city while preserving the exact coordinates and full display label.
+    `&format=jsonv2&addressdetails=1&zoom=10`;
   const data = await fetchJson(url, {
     "User-Agent": env.NOMINATIM_USER_AGENT,
     // Same as search: force English (or configured language) instead of the
