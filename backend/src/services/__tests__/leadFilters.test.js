@@ -216,11 +216,20 @@ test("facets cascade the state/city lists from a country given by name", async (
   for (const entry of captured) assertPlaceholdersBound(entry, "facets by country name");
 });
 
-test("facets do not query states/cities until a country is chosen", async () => {
+test("facets return state/city options even without a country (filters enabled)", async () => {
   captured.length = 0;
   await leadService.getFacets({ category: "Technology" });
-  assert.ok(!captured.some((c) => /r\.id AS id/.test(c.text)));
-  assert.ok(!captured.some((c) => /ci\.id AS id/.test(c.text)));
+
+  const regionFacet = captured.find((c) => /r\.id AS id/.test(c.text));
+  const cityFacet = captured.find((c) => /ci\.id AS id/.test(c.text));
+
+  // The State and City filters must be usable on their own, so the facet
+  // queries run globally when no country is selected. They stay scoped to the
+  // other active filters (here: category).
+  assert.ok(regionFacet, "a global region facet query should run");
+  assert.ok(cityFacet, "a global city facet query should run");
+  assert.match(regionFacet.text, /l\.category = \$1/);
+  assert.match(cityFacet.text, /l\.category = \$1/);
 });
 
 test("the country facet list is not collapsed by the selected country", async () => {

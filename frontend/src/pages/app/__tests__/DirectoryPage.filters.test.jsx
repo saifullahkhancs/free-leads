@@ -134,6 +134,23 @@ describe("DirectoryPage filters reach the API", () => {
     });
   });
 
+  it("keeps State and City filters enabled and sends their ids", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("Real Person");
+
+    const selects = document.querySelectorAll(".app-filter-dropdown-select");
+    // State (3) and City (4) must not be disabled before a country is picked.
+    expect(selects[3]).not.toBeDisabled();
+    expect(selects[4]).not.toBeDisabled();
+
+    await user.selectOptions(selects[3], "3"); // state
+    await waitFor(() => expect(lastLeadParams().region_id).toBe(3));
+
+    await user.selectOptions(selects[4], "4"); // city
+    await waitFor(() => expect(lastLeadParams().city_id).toBe(4));
+  });
+
   it("sends the verified flag", async () => {
     const user = userEvent.setup();
     renderPage();

@@ -49,6 +49,15 @@ function formatCount(n) {
   return String(n);
 }
 
+/** Only send location ids when they are real numeric ids. Some facet sources
+ * (e.g. the local demo facets) store the name itself as the `id`, and sending
+ * "United States" as `country_id` makes the backend silently drop the filter. */
+function numericId(value) {
+  if (value === undefined || value === null || value === "") return undefined;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : undefined;
+}
+
 const EMPTY_FILTERS = {
   category: "",
   industry: "",
@@ -149,9 +158,9 @@ export default function DirectoryPage() {
         q: query.trim() || undefined,
         category: f.category || undefined,
         industry: f.industry || undefined,
-        country_id: f.country?.id || undefined,
-        region_id: f.region?.id || undefined,
-        city_id: f.city?.id || undefined,
+        country_id: numericId(f.country?.id),
+        region_id: numericId(f.region?.id),
+        city_id: numericId(f.city?.id),
         verified: f.verifiedOnly ? "true" : undefined,
         sort: sortBy !== "recent" ? sortBy : undefined,
       };
@@ -160,12 +169,12 @@ export default function DirectoryPage() {
       // from the signed-in user's profile, which never carries a facet id.
       // Send the label too, otherwise the filter is silently dropped and the
       // directory looks like it ignored the selection entirely.
-      if (!f.country?.id && f.country?.value) {
+      if (!numericId(f.country?.id) && f.country?.value) {
         if (f.country.code) params.country_code = f.country.code;
         else params.country = f.country.value;
       }
-      if (!f.region?.id && f.region?.value) params.region = f.region.value;
-      if (!f.city?.id && f.city?.value) params.city = f.city.value;
+      if (!numericId(f.region?.id) && f.region?.value) params.region = f.region.value;
+      if (!numericId(f.city?.id) && f.city?.value) params.city = f.city.value;
 
       if (f.geo) {
         params.lat = f.geo.lat;
@@ -316,17 +325,17 @@ export default function DirectoryPage() {
         q: submittedQ.trim() || undefined,
         category: filters.category || undefined,
         industry: filters.industry || undefined,
-        country_id: filters.country?.id || undefined,
-        region_id: filters.region?.id || undefined,
+        country_id: numericId(filters.country?.id),
+        region_id: numericId(filters.region?.id),
         verified: filters.verifiedOnly ? "true" : undefined,
       };
       // Mirror the name-only fallbacks used by buildParams so the cascading
       // state/city lists still resolve when we only know the country's label.
-      if (!filters.country?.id && filters.country?.value) {
+      if (!numericId(filters.country?.id) && filters.country?.value) {
         if (filters.country.code) facetParams.country_code = filters.country.code;
         else facetParams.country = filters.country.value;
       }
-      if (!filters.region?.id && filters.region?.value) {
+      if (!numericId(filters.region?.id) && filters.region?.value) {
         facetParams.region = filters.region.value;
       }
       const res = await api.getLeadFacets(facetParams);
@@ -1176,7 +1185,6 @@ export default function DirectoryPage() {
             <select
               className="app-filter-dropdown-select"
               value={filters.region?.id || filters.region?.value || ""}
-              disabled={!filters.country}
               onChange={(e) => {
                 const val = e.target.value;
                 if (!val) {
@@ -1210,7 +1218,6 @@ export default function DirectoryPage() {
             <select
               className="app-filter-dropdown-select"
               value={filters.city?.id || filters.city?.value || ""}
-              disabled={!filters.country}
               onChange={(e) => {
                 const val = e.target.value;
                 if (!val) {
