@@ -100,19 +100,22 @@ router.get(
   leadController.getLeadById
 );
 
-// Geocoding endpoints (admin only)
-router.post(
-  "/geocode/:id",
-  authenticate,
-  requireRole("admin", "super_admin"),
-  leadController.geocodeLead
-);
-
+// Geocoding endpoints (admin only).
+// IMPORTANT: keep `/geocode/batch` BEFORE `/geocode/:id`, otherwise Express
+// matches "batch" as the `:id` parameter and tries to geocode a lead whose id
+// is the string "batch" (which fails with a cast error).
 router.post(
   "/geocode/batch",
   authenticate,
   requireRole("admin", "super_admin"),
   leadController.runGeocodingBatch
+);
+
+router.post(
+  "/geocode/:id",
+  authenticate,
+  requireRole("admin", "super_admin"),
+  leadController.geocodeLead
 );
 
 module.exports = router;

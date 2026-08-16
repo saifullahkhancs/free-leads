@@ -4,11 +4,15 @@
  * Rate limit: 1 request per second
  */
 
+const env = require("../config/env");
+
 class GeocodingService {
   constructor() {
     this.baseUrl = 'https://nominatim.openstreetmap.org/search';
     this.rateLimitDelay = 1000; // 1 second between requests
     this.lastRequestTime = 0;
+    // Nominatim's usage policy requires a valid, identifying User-Agent.
+    this.userAgent = env.NOMINATIM_USER_AGENT || 'FreeLeads-Geocoding/1.0';
   }
 
   /**
@@ -39,7 +43,7 @@ class GeocodingService {
 
       const response = await fetch(url, {
         headers: {
-          'User-Agent': 'FreeLeads-Geocoding/1.0' // Required by Nominatim policy
+          'User-Agent': this.userAgent // Required by Nominatim policy
         }
       });
 

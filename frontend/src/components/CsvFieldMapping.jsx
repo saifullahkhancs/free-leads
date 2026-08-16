@@ -46,12 +46,34 @@ const FIELD_ALIASES = {
   facebook_url: ["facebook", "facebook url", "facebook profile", "fb url"],
   website_url: ["website", "website url", "web url", "site", "homepage"],
   company_name: ["company", "company name", "organization", "organisation", "employer"],
-  job_title: ["job title", "position", "role", "designation"],
+  job_title: ["job title", "title", "position", "role", "designation"],
   industry: ["industry", "sector", "business sector"],
   country: ["country", "country name", "nation"],
   country_code: ["country code", "iso code", "country iso", "country iso2"],
-  region: ["region", "state", "province", "state province", "state/province"],
-  city: ["city", "city name", "town"],
+  region: [
+    "region",
+    "state",
+    "province",
+    "state province",
+    "state/province",
+    "primary state",
+    "parent state",
+    "primary state province",
+    "parent state province",
+    "primary state name",
+    "parent state name",
+    "primary province",
+    "parent province",
+  ],
+  city: [
+    "city",
+    "city name",
+    "town",
+    "primary city",
+    "parent city",
+    "primary city name",
+    "parent city name",
+  ],
   lat: ["lat", "latitude", "gps lat"],
   lon: ["lon", "lng", "longitude", "gps lon", "gps lng"],
 };
@@ -63,7 +85,7 @@ const normalize = (value) => String(value || "")
   .replace(/[^a-z0-9 ]/g, "")
   .replace(/\s+/g, " ");
 
-function buildAutomaticMapping(headers) {
+export function buildAutomaticMapping(headers) {
   const output = {};
   const used = new Set();
 
@@ -76,12 +98,16 @@ function buildAutomaticMapping(headers) {
     }
   });
 
-  // A very common CSV shape: first_name + last_name. Combine it automatically.
+  // A very common CSV shape: first_name + last_name. Combine it automatically,
+  // inserting a middle name between the first and last name when present.
   if (!output.full_name) {
     const first = headers.find((h) => ["first name", "firstname", "given name"].includes(normalize(h)));
+    const middle = headers.find((h) => ["middle name", "middlename", "middle initial"].includes(normalize(h)));
     const last = headers.find((h) => ["last name", "lastname", "surname", "family name"].includes(normalize(h)));
     if (first && last) {
-      output.full_name = { type: "combined", csvFields: [first, last], separator: "space" };
+      output.full_name = middle
+        ? { type: "combined", csvFields: [first, middle, last], separator: "space" }
+        : { type: "combined", csvFields: [first, last], separator: "space" };
     }
   }
   return output;

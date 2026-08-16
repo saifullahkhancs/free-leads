@@ -5,6 +5,7 @@ const { pool, query, withTransaction } = require("../config/db");
 const { parse } = require("csv-parse");
 const ApiError = require("../utils/ApiError");
 const GeoMapper = require("../utils/GeoMapper");
+const { hasPostGIS } = require("../utils/postgis");
 const dedupService = require("./dedupService");
 const quotaService = require("./quotaService");
 const auditService = require("./auditService");
@@ -365,9 +366,6 @@ const getFacets = async ({
     return { where, values };
   };
 
-  // A country is "chosen" however the UI expressed it.
-  const hasCountry = Boolean(country_id || country_code || country);
-
   // The location tables are always joined so the WHERE clause can filter on
   // `c.code` / `r.name` / `ci.name` regardless of which facet is being built.
   // `requiredJoin` upgrades the relevant LEFT JOIN to an INNER JOIN so a facet
@@ -409,27 +407,24 @@ const getFacets = async ({
       ["country", "region", "city"]
     ),
 
-    // States/regions: only meaningful once a country is chosen. Scoped to that
-    // country but not to the selected region/city.
-    hasCountry
-      ? facetQuery(
-          "r.id AS id, r.name AS value",
-          "region",
-          "r.id, r.name",
-          ["region", "city"]
-        )
-      : Promise.resolve([]),
+    // States/regions: always available so the State filter can be used on its
+    // own. Scoped to the chosen country (and any other filters), but never to
+    // the selected region/city, so the list doesn't collapse to one entry.
+    facetQuery(
+      "r.id AS id, r.name AS value",
+      "region",
+      "r.id, r.name",
+      ["region", "city"]
+    ),
 
-    // Cities: only meaningful once a country (and usually a state) is chosen.
-    // Scoped to the country + region, but not to the selected city itself.
-    hasCountry
-      ? facetQuery(
-          "ci.id AS id, ci.name AS value",
-          "city",
-          "ci.id, ci.name",
-          ["city"]
-        )
-      : Promise.resolve([]),
+    // Cities: always available so the City filter can be used on its own.
+    // Scoped to the chosen country + region, but not to the selected city.
+    facetQuery(
+      "ci.id AS id, ci.name AS value",
+      "city",
+      "ci.id, ci.name",
+      ["city"]
+    ),
 
     (async () => {
       const { where, values } = buildWhere();
@@ -728,19 +723,29 @@ const insertLeadBatch = async (client, rows, fingerprints = []) => {
     cols
   );
 
-  // Update PostGIS location for records that have coordinates
+  // Update the geospatial `location` column for records that have coordinates.
+  // On PostGIS it is a GEOGRAPHY(POINT, 4326); on plain PostgreSQL it is a
+  // TEXT fallback ("lon lat"), where ST_MakePoint/ST_SetSRID do not exist.
   const coordinates = rows.map((row, index) => ({
     id: inserted[index].id,
     lat: row.lat,
     lon: row.lon
-  })).filter(coord => coord.lat && coord.lon);
+  })).filter(coord => coord.lat != null && coord.lon != null);
 
   if (coordinates.length > 0) {
+    const postgis = await hasPostGIS();
     for (const coord of coordinates) {
-      await client.query(
-        `UPDATE leads SET location = ST_SetSRID(ST_MakePoint($1, $2), 4326) WHERE id = $3`,
-        [coord.lon, coord.lat, coord.id]
-      );
+      if (postgis) {
+        await client.query(
+          `UPDATE leads SET location = ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography WHERE id = $3`,
+          [coord.lon, coord.lat, coord.id]
+        );
+      } else {
+        await client.query(
+          `UPDATE leads SET location = $1 WHERE id = $2`,
+          [`${coord.lon} ${coord.lat}`, coord.id]
+        );
+      }
     }
   }
 
