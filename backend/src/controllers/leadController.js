@@ -4,25 +4,14 @@ const quotaService = require("../services/quotaService");
 const geocodingJobService = require("../services/geocodingJobService");
 const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/ApiError");
+const { hasFullLeadAccess, getPrivilegedLeadVisibility } = require("../utils/leadVisibility");
 const busboy = require("busboy");
 
-function isRolePaid(user) {
-  return user && (user.roles || []).some((r) => ["admin", "super_admin"].includes(r));
-}
+const isRolePaid = hasFullLeadAccess;
 
 const resolveVisibility = async (user) => {
-  if (user && isRolePaid(user)) {
-    return {
-      show_email: true,
-      show_phone: true,
-      show_linkedin: true,
-      show_twitter: true,
-      show_website: true,
-      show_about: true,
-      can_view_contact: true,
-      is_paid: true,
-    };
-  }
+  const privilegedVisibility = getPrivilegedLeadVisibility(user);
+  if (privilegedVisibility) return privilegedVisibility;
   const userId = user?.id || null;
   const [hasPaid, plan] = await Promise.all([
     userId ? quotaService.hasActivePaidPlan(userId) : Promise.resolve(false),
@@ -37,6 +26,7 @@ const resolveVisibility = async (user) => {
     show_about: plan.show_about !== undefined ? Boolean(plan.show_about) : Boolean(plan.can_view_contact),
     can_view_contact: Boolean(plan.can_view_contact),
     is_paid: !!hasPaid || Boolean(plan.can_view_contact),
+    has_full_access: false,
   };
 };
 
@@ -198,6 +188,16 @@ const getLeadById = asyncHandler(async (req, res) => {
   res.json({
     status: "success",
     data: lead,
+    access: {
+      show_email: visibility.show_email,
+      show_phone: visibility.show_phone,
+      show_linkedin: visibility.show_linkedin,
+      show_twitter: visibility.show_twitter,
+      show_website: visibility.show_website,
+      show_about: visibility.show_about,
+      can_view_contact: visibility.can_view_contact,
+      has_full_access: visibility.has_full_access,
+    },
   });
 });
 

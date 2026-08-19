@@ -184,24 +184,21 @@ export default function LeadFilterPanel({
         </div>
       </div>
 
-      {/* Verified toggle — the single most-used refinement, kept at the top. */}
-      <label className={`filter-toggle${verifiedOnly ? " active" : ""}`}>
-        <input
-          type="checkbox"
-          checked={verifiedOnly}
-          onChange={(e) => onChange({ verifiedOnly: e.target.checked })}
-        />
-        <span className="filter-toggle-track">
-          <span className="filter-toggle-thumb" />
-        </span>
-        <span className="filter-toggle-text">
+      {/* Verified refinement — a regular pressed button, not a switch. */}
+      <button
+        type="button"
+        className={`filter-verified-btn${verifiedOnly ? " active" : ""}`}
+        onClick={() => onChange({ verifiedOnly: !verifiedOnly })}
+        aria-pressed={verifiedOnly}
+      >
+        <span className="filter-verified-text">
           <BadgeCheck size={14} />
           Verified leads only
           {facets?.totals?.verified != null && (
             <em>{formatCount(facets.totals.verified)}</em>
           )}
         </span>
-      </label>
+      </button>
 
       <FacetGroup
         icon={Layers}

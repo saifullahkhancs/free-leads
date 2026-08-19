@@ -30,7 +30,7 @@ import { initialsOf } from "../utils/format";
 
 export const NAV_ITEMS = [
   { to: "/app", label: "Home", icon: Globe2, end: true },
-  { to: "/app/search", label: "Search Leads", icon: Compass },
+  { to: "/app/search", label: "Free Leads", icon: Compass },
   { to: "/app/plans", label: "Pricing & Plans", icon: Sparkles },
   { to: "/app/blog", label: "Blog", icon: FileText },
   { to: "/app/contact", label: "Contact Us", icon: Mail },

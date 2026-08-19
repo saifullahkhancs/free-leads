@@ -5,25 +5,29 @@ import {
   Briefcase,
   Building2,
   Check,
-  ChevronLeft,
-  ChevronRight,
   Copy,
   ExternalLink,
   Globe,
-  Info,
   Linkedin,
   Lock,
   Mail,
   MapPin,
+  Phone,
   ShieldCheck,
-  Sparkles,
   Users,
   X,
 } from "lucide-react";
 import { avatarColor, initialsOf, locationString } from "../utils/format";
 import { isLeadSaved, saveLead, removeSavedLead } from "../utils/savedLeads";
 
-export default function LeadDetailModal({ lead, onClose, onPrev, onNext }) {
+export default function LeadDetailModal({
+  lead,
+  access = null,
+  hasFullAccess = false,
+  loading = false,
+  error = null,
+  onClose,
+}) {
   const [saved, setSaved] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [copiedSummary, setCopiedSummary] = useState(false);
@@ -34,18 +38,33 @@ export default function LeadDetailModal({ lead, onClose, onPrev, onNext }) {
     }
   }, [lead]);
 
-  // Keyboard shortcut: Escape to close, Arrow keys for navigation
+  // This modal is intentionally scoped to one person. Escape closes it; arrow
+  // keys do not move to another result.
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Escape") onClose();
-      if (e.key === "ArrowLeft" && onPrev) onPrev();
-      if (e.key === "ArrowRight" && onNext) onNext();
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose, onPrev, onNext]);
+  }, [onClose]);
 
   if (!lead) return null;
+
+  const canViewPrivateContact = Boolean(
+    hasFullAccess ||
+      access?.can_view_contact ||
+      access?.show_phone ||
+      access?.show_linkedin ||
+      access?.show_twitter ||
+      access?.show_website
+  );
+  const socialLinks = [
+    { key: "linkedin", href: lead.linkedin_url, label: "LinkedIn", Icon: Linkedin },
+    { key: "twitter", href: lead.twitter_url, label: "Twitter / X", Icon: ExternalLink },
+    { key: "facebook", href: lead.facebook_url, label: "Facebook", Icon: ExternalLink },
+    { key: "website", href: lead.website_url, label: "Website", Icon: Globe },
+  ].filter((item) => item.href);
+  const hasSocialLinks = socialLinks.length > 0;
 
   const handleToggleSave = () => {
     if (saved) {
@@ -66,7 +85,7 @@ export default function LeadDetailModal({ lead, onClose, onPrev, onNext }) {
   };
 
   const handleCopySummary = () => {
-    const summary = `${lead.full_name}\n${lead.job_title || ""} at ${lead.company_name || ""}\nIndustry: ${lead.industry || "N/A"}\nLocation: ${locationString(lead) || "N/A"}\nEmail: ${lead.email || "N/A"}`;
+    const summary = `${lead.full_name}\n${lead.job_title || ""} at ${lead.company_name || ""}\nIndustry: ${lead.industry || "N/A"}\nLocation: ${locationString(lead) || "N/A"}\nEmail: ${lead.email || "N/A"}\nPhone: ${lead.phone || "N/A"}\nLinkedIn: ${lead.linkedin_url || "N/A"}\nWebsite: ${lead.website_url || "N/A"}`;
     navigator.clipboard.writeText(summary);
     setCopiedSummary(true);
     setTimeout(() => setCopiedSummary(false), 2000);
@@ -94,16 +113,6 @@ export default function LeadDetailModal({ lead, onClose, onPrev, onNext }) {
           </div>
 
           <div className="lead-modal-actions">
-            {onPrev && (
-              <button className="lead-modal-btn" onClick={onPrev} title="Previous Lead">
-                <ChevronLeft size={16} />
-              </button>
-            )}
-            {onNext && (
-              <button className="lead-modal-btn" onClick={onNext} title="Next Lead">
-                <ChevronRight size={16} />
-              </button>
-            )}
             <button
               className={`lead-modal-btn${saved ? " saved" : ""}`}
               onClick={handleToggleSave}
@@ -124,6 +133,17 @@ export default function LeadDetailModal({ lead, onClose, onPrev, onNext }) {
         </div>
 
         <div className="lead-modal-body">
+          {loading && (
+            <div className="lead-modal-load-state" role="status">
+              Loading complete contact details…
+            </div>
+          )}
+          {error && (
+            <div className="lead-modal-load-state error" role="alert">
+              {error} Showing the information already loaded in the list.
+            </div>
+          )}
+
           <h2 className="lead-modal-name">{lead.full_name}</h2>
           <div className="lead-modal-role">
             {lead.headline || `${lead.job_title || "Lead"} ${lead.company_name ? `at ${lead.company_name}` : ""}`}
@@ -179,6 +199,16 @@ export default function LeadDetailModal({ lead, onClose, onPrev, onNext }) {
             </div>
 
             <div className="lead-modal-field">
+              <label>Phone Number</label>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <Phone size={14} color="var(--app-ink-faint)" />
+                <span style={{ fontFamily: "'DM Mono', monospace", fontSize: "12.5px" }}>
+                  {lead.phone || (canViewPrivateContact ? "Not available" : "Protected")}
+                </span>
+              </div>
+            </div>
+
+            <div className="lead-modal-field">
               <label>Verification Status</label>
               <div>
                 {lead.is_verified ? (
@@ -200,54 +230,31 @@ export default function LeadDetailModal({ lead, onClose, onPrev, onNext }) {
             </>
           )}
 
-          {/* Social Links & Masking Notice */}
+          {/* Social Links & access-aware availability notice */}
           <div className="lead-modal-contact-card">
-            {lead.linkedin_url || lead.website_url ? (
+            {hasSocialLinks || canViewPrivateContact ? (
               <ShieldCheck size={20} style={{ flex: "none" }} />
             ) : (
               <Lock size={20} style={{ flex: "none" }} />
             )}
             <div style={{ flex: 1 }}>
-              {lead.linkedin_url || lead.website_url ? (
-                <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-                  {lead.linkedin_url && (
-                    <a
-                      href={lead.linkedin_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 5,
-                        fontWeight: 700,
-                        color: "var(--app-green)",
-                        textDecoration: "underline",
-                      }}
-                    >
-                      <Linkedin size={14} /> View LinkedIn Profile <ExternalLink size={12} />
+              {loading ? (
+                <div>Checking private contact and social information…</div>
+              ) : hasSocialLinks ? (
+                <div className="lead-modal-social-links">
+                  {socialLinks.map(({ key, href, label, Icon }) => (
+                    <a key={key} href={href} target="_blank" rel="noreferrer">
+                      <Icon size={14} /> View {label} <ExternalLink size={12} />
                     </a>
-                  )}
-                  {lead.website_url && (
-                    <a
-                      href={lead.website_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 5,
-                        fontWeight: 700,
-                        color: "var(--app-green)",
-                        textDecoration: "underline",
-                      }}
-                    >
-                      <Globe size={14} /> Visit Website <ExternalLink size={12} />
-                    </a>
-                  )}
+                  ))}
+                </div>
+              ) : canViewPrivateContact ? (
+                <div>
+                  <strong>Full access enabled:</strong> No private social profiles or website are stored for this lead.
                 </div>
               ) : (
                 <div>
-                  <strong>Privacy Protected:</strong> Direct contact phone and private socials are masked for free members. Verified accounts and team plans unlock direct enrichment.
+                  <strong>Privacy Protected:</strong> Direct contact phone and private socials are masked for free members. Team plans unlock direct enrichment.
                 </div>
               )}
             </div>

@@ -101,10 +101,16 @@ BEGIN
 END
 $$;
 
--- pg_trgm for partial name/company search
+-- Keep pg_trgm available for future fuzzy/partial name and company search.
+-- The GIN trigram indexes are intentionally disabled to reduce the current
+-- storage footprint and lead-ingestion write amplification. Migration 018
+-- removes them from existing databases; preserve the definitions here so they
+-- can be re-enabled when the application adds matching ILIKE/trigram queries.
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
-CREATE INDEX IF NOT EXISTS idx_leads_company_trgm  ON leads USING GIN (company_name gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS idx_leads_full_name_trgm ON leads USING GIN (full_name gin_trgm_ops);
+-- CREATE INDEX IF NOT EXISTS idx_leads_company_trgm
+--   ON leads USING GIN (company_name gin_trgm_ops);
+-- CREATE INDEX IF NOT EXISTS idx_leads_full_name_trgm
+--   ON leads USING GIN (full_name gin_trgm_ops);
 
 -- Location indexes
 CREATE INDEX IF NOT EXISTS idx_regions_country     ON regions (country_id);
