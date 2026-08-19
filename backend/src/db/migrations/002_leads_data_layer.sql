@@ -86,7 +86,8 @@ CREATE INDEX IF NOT EXISTS idx_leads_country_id    ON leads (country_id);
 CREATE INDEX IF NOT EXISTS idx_leads_region_id     ON leads (region_id);
 CREATE INDEX IF NOT EXISTS idx_leads_city_id       ON leads (city_id);
 CREATE INDEX IF NOT EXISTS idx_leads_industry      ON leads (industry);
-CREATE INDEX IF NOT EXISTS idx_leads_country_city  ON leads (country_id, city_id);
+-- Removed for capacity/ingest optimization: See Migration 016 & INDEX_SETTINGS.md
+-- CREATE INDEX IF NOT EXISTS idx_leads_country_city  ON leads (country_id, city_id);
 
 -- GIN index for full-text search
 CREATE INDEX IF NOT EXISTS idx_leads_search_vector ON leads USING GIN (search_vector);

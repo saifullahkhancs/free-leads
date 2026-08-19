@@ -920,33 +920,11 @@ const insertLeadBatch = async (client, rows, fingerprints = []) => {
   return inserted.map((r) => r.id);
 };
 
-/** Multi-row insert of dedup fingerprints into the global ledger. */
+/** Multi-row insert of dedup fingerprints into the global ledger (disabled for max ingest throughput). */
 const recordHashesBatch = async (client, ids, fingerprints) => {
-  const entries = [];
-  ids.forEach((leadId, i) => {
-    const fp = fingerprints[i];
-    entries.push(
-      ["email", fp.email_hash, leadId],
-      ["phone", fp.phone_hash, leadId],
-      ["website", fp.website_hash, leadId],
-      ["biz", fp.biz_hash, leadId]
-    );
-  });
-  if (entries.length === 0) return;
-  const typeArr = [];
-  const hashArr = [];
-  const leadArr = [];
-  entries.forEach(([t, h, lid]) => {
-    typeArr.push(t);
-    hashArr.push(h);
-    leadArr.push(lid);
-  });
-  await client.query(
-    `INSERT INTO lead_hashes (hash_type, hash, lead_id)
-     SELECT * FROM UNNEST($1::text[], $2::text[], $3::bigint[])
-     ON CONFLICT (hash_type, hash) DO NOTHING`,
-    [typeArr, hashArr, leadArr]
-  );
+  // Global lead_hashes ledger is disabled/dropped for maximum leads throughput.
+  // Preserved for future re-enablement.
+  return;
 };
 
 /**
