@@ -11,7 +11,7 @@ This document is the single source of truth for all database indexes and table s
 3. [Master Index Matrix](#3-master-index-matrix)
 4. [Master Database Tables Matrix](#4-master-database-tables-matrix)
 5. [Detailed Index Specifications](#5-detailed-index-specifications)
-   - [A. Active Search, Fuzzy Matching & Geospatial Indexes (`leads`)](#a-active-search-fuzzy-matching--geospatial-indexes-leads)
+   - [A. Active Full-Text Search & Geospatial Indexes (`leads`)](#a-active-full-text-search--geospatial-indexes-leads)
    - [B. Active Location & Taxonomy Hierarchy Indexes (`leads`)](#b-active-location--taxonomy-hierarchy-indexes-leads)
    - [C. Active Primary Key & Keyset Pagination (`leads`)](#c-active-primary-key--keyset-pagination-leads)
    - [D. Active Auxiliary Table Indexes (`users`, `billing`, `auth`, `geo`)](#d-active-auxiliary-table-indexes)
@@ -19,6 +19,7 @@ This document is the single source of truth for all database indexes and table s
    - [A. Removed Composite Indexes (`country_city`, `active_locations`, `category_industry`)](#a-removed-composite-indexes)
    - [B. Removed Low-Cardinality Index (`is_verified`)](#b-removed-low-cardinality-index-is_verified)
    - [C. Removed Ingest Hash Indexes & Ledger (`lead_hashes`)](#c-removed-ingest-hash-indexes--ledger-lead_hashes)
+   - [D. Disabled Trigram Indexes (`company_name`, `full_name`)](#d-disabled-trigram-indexes-company_name-full_name)
 7. [Proposed Future Indexes](#7-proposed-future-indexes)
 8. [Index Maintenance & Bulk Import Guidelines (5M Scale)](#8-index-maintenance--bulk-import-guidelines-5m-scale)
 
@@ -29,27 +30,27 @@ This document is the single source of truth for all database indexes and table s
 To maximize the number of leads the database can store without running out of disk space or RAM:
 
 1. **Write Amplification Reduction**:
-   - Each index on `leads` forces PostgreSQL to perform random disk I/O updates during every `INSERT`/`UPDATE`.
-   - By trimming down non-essential composite indexes, hash indexes, and low-selectivity boolean indexes, the database now writes to **only 10 core indexes on `leads`** instead of 20+.
-   - This eliminates **~10,000,000 index writes per 1M rows imported** during streaming CSV uploads.
+   - Each index on `leads` forces PostgreSQL to update another structure during every `INSERT`/`UPDATE`.
+   - Non-essential composite, hash, low-selectivity boolean, and currently unused trigram indexes are disabled.
+   - The two trigram indexes remain documented for future fuzzy search, but current full-text search is served by `idx_leads_search_vector` instead.
 
 2. **Disk & RAM Cache Optimization**:
-   - Dropping composite indexes and the separate `lead_hashes` ledger frees up **over 50% of the index footprint**.
-   - PostgreSQL's `shared_buffers` cache is freed up to store active lead search data rather than redundant composite B-Trees.
+   - Dropping unused indexes and the separate `lead_hashes` ledger frees disk and cache for indexes used by current application queries.
+   - PostgreSQL's `shared_buffers` cache can retain active lead search data instead of unused GIN trigram pages.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                       ACTIVE LEADS TABLE INDEX SUITE (10)                   │
+│             ACTIVE LEADS INDEX SUITE (11 INCLUDING PRIMARY KEY)             │
 ├────────────────────────┬──────────────────────────┬─────────────────────────┤
-│ 1. Search & Geo (4)    │ 2. Location (3)          │ 3. Taxonomy (2)         │
+│ 1. Search & Geo (4)    │ 2. Location (3)          │ 3. Taxonomy/Range (3)   │
 │ - search_vector (GIN)  │ - country_id (B-Tree)    │ - category (B-Tree)     │
-│ - company_name (trgm)  │ - region_id (B-Tree)     │ - industry (B-Tree)     │
-│ - full_name (trgm)     │ - city_id (B-Tree)       │                         │
-│ - location (GiST)      │                          │                         │
+│ - location (GiST)*     │ - region_id (B-Tree)     │ - industry (B-Tree)     │
+│ - lat/lon partial      │ - city_id (B-Tree)       │ - num_employees partial │
+│ - active lat/lon       │                          │                         │
 ├────────────────────────┴──────────────────────────┴─────────────────────────┤
-│ 4. Coordinates (1)                                │ 5. Primary Key (1)      │
-│ - (lat, lon) partial                              │ - leads_pkey (id)       │
-└───────────────────────────────────────────────────┴─────────────────────────┘
+│ 4. Primary Key (1): leads_pkey (id)                                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+* `idx_leads_location` exists only when PostGIS is available.
 ```
 
 ---
@@ -74,29 +75,31 @@ $$\text{Lead Identity Key} = \text{normalized}(\text{full\_name}) + \text{"::"} 
 |---|---|---|---|---|---|---|
 | **1** | `leads_pkey` | `leads` | `(id)` | B-Tree (Unique) | Keyset pagination (`id > cursor`), Single Lead Lookup | **Implemented** |
 | **2** | `idx_leads_search_vector` | `leads` | `(search_vector)` | GIN | Global keyword search (`q=...` full-text tsquery) | **Implemented** |
-| **3** | `idx_leads_company_trgm` | `leads` | `(company_name gin_trgm_ops)` | GIN (`pg_trgm`) | Fuzzy company name search, typo tolerance, autocomplete | **Implemented** |
-| **4** | `idx_leads_full_name_trgm` | `leads` | `(full_name gin_trgm_ops)` | GIN (`pg_trgm`) | Fuzzy person name search, partial name matches | **Implemented** |
-| **5** | `idx_leads_location` | `leads` | `(location)` | GiST (PostGIS) | "Near Me" radius search (`ST_DWithin`, `ST_Distance`) | **Implemented** |
-| **6** | `idx_leads_lat_lon` | `leads` | `(lat, lon) WHERE ...` | B-Tree (Partial) | Coordinate bounds & non-PostGIS geo lookups | **Implemented** |
-| **7** | `idx_leads_country_id` | `leads` | `(country_id)` | B-Tree | Country filter dropdown, country-level aggregations | **Implemented** |
-| **8** | `idx_leads_region_id` | `leads` | `(region_id)` | B-Tree | State / Province filter dropdown | **Implemented** |
-| **9** | `idx_leads_city_id` | `leads` | `(city_id)` | B-Tree | City filter dropdown | **Implemented** |
-| **10** | `idx_leads_category` | `leads` | `(category)` | B-Tree | Top-level category dropdown filter | **Implemented** |
-| **11** | `idx_leads_industry` | `leads` | `(industry)` | B-Tree | Exact industry filter dropdown & DISTINCT list | **Implemented** |
-| **12** | `idx_leads_country_city` | `leads` | `(country_id, city_id)` | B-Tree Composite | Combined Country + City drill-down filtering | **Removed from DB** |
-| **13** | `idx_leads_active_country` | `leads` | `(is_active, country_id)` | B-Tree Composite | Active country facet counts (`getFacets`) | **Removed from DB** |
-| **14** | `idx_leads_active_region` | `leads` | `(is_active, region_id)` | B-Tree Composite | Active state facet counts (`getFacets`) | **Removed from DB** |
-| **15** | `idx_leads_active_city` | `leads` | `(is_active, city_id)` | B-Tree Composite | Active city facet counts (`getFacets`) | **Removed from DB** |
-| **16** | `idx_leads_category_industry` | `leads` | `(category, industry)` | B-Tree Composite | Cascading category → industry facet aggregation | **Removed from DB** |
-| **17** | `idx_leads_verified` | `leads` | `(is_verified)` | B-Tree | "Verified Only" toggle filter | **Removed from DB** |
-| **18** | `idx_leads_email_hash` | `leads` | `(email_hash)` | B-Tree | Ingest dedup & admin email matching | **Removed from DB (To Be Included in Future)** |
-| **19** | `idx_leads_phone_hash` | `leads` | `(phone_hash)` | B-Tree | Ingest dedup & admin phone matching | **Removed from DB (To Be Included in Future)** |
-| **20** | `idx_leads_website_hash` | `leads` | `(website_hash)` | B-Tree | Ingest dedup & admin domain matching | **Removed from DB (To Be Included in Future)** |
-| **21** | `idx_leads_biz_hash` | `leads` | `(biz_hash)` | B-Tree | Ingest dedup & business identity matching | **Removed from DB (To Be Included in Future)** |
-| **22** | `uq_lead_hashes_type_hash` | `lead_hashes` | `(hash_type, hash)` | B-Tree Unique | Global cross-file deduplication ledger | **Removed from DB (To Be Included in Future)** |
-| **23** | `idx_leads_created_at_id` | `leads` | `(created_at DESC, id DESC)` | B-Tree Composite | Default "Recent" recency sort pagination | **Not Implemented (Proposed)** |
-| **24** | `idx_leads_verified_partial` | `leads` | `(id) WHERE is_verified = TRUE` | B-Tree Partial | Verified leads fast filter with low footprint | **Not Implemented (Proposed)** |
-| **25** | `idx_leads_company_sort` | `leads` | `(company_name ASC, id ASC)` | B-Tree Composite | Alphabetical company sorting | **Not Implemented (Proposed)** |
+| **3** | `idx_leads_location` | `leads` | `(location)` | GiST (PostGIS) | "Near Me" radius search (`ST_DWithin`, `ST_Distance`) | **Implemented when PostGIS is available** |
+| **4** | `idx_leads_lat_lon` | `leads` | `(lat, lon) WHERE ...` | B-Tree (Partial) | Coordinate bounds & non-PostGIS geo lookups | **Implemented** |
+| **5** | `idx_leads_active_lat_lon` | `leads` | `(lat, lon) WHERE is_active = TRUE AND ...` | B-Tree (Partial) | Active-lead coordinate prefilter for Haversine search | **Implemented** |
+| **6** | `idx_leads_country_id` | `leads` | `(country_id)` | B-Tree | Country filter dropdown, country-level aggregations | **Implemented** |
+| **7** | `idx_leads_region_id` | `leads` | `(region_id)` | B-Tree | State / Province filter dropdown | **Implemented** |
+| **8** | `idx_leads_city_id` | `leads` | `(city_id)` | B-Tree | City filter dropdown | **Implemented** |
+| **9** | `idx_leads_category` | `leads` | `(category)` | B-Tree | Top-level category dropdown filter | **Implemented** |
+| **10** | `idx_leads_industry` | `leads` | `(industry)` | B-Tree | Exact industry filter dropdown & DISTINCT list | **Implemented** |
+| **11** | `idx_leads_num_employees` | `leads` | `(num_employees) WHERE num_employees IS NOT NULL` | B-Tree (Partial) | Employee-count filtering | **Implemented** |
+| **12** | `idx_leads_company_trgm` | `leads` | `(company_name gin_trgm_ops)` | GIN (`pg_trgm`) | Future fuzzy company search and autocomplete | **Removed from DB (To Be Included in Future)** |
+| **13** | `idx_leads_full_name_trgm` | `leads` | `(full_name gin_trgm_ops)` | GIN (`pg_trgm`) | Future fuzzy person-name search | **Removed from DB (To Be Included in Future)** |
+| **14** | `idx_leads_country_city` | `leads` | `(country_id, city_id)` | B-Tree Composite | Combined Country + City drill-down filtering | **Removed from DB** |
+| **15** | `idx_leads_active_country` | `leads` | `(is_active, country_id)` | B-Tree Composite | Active country facet counts (`getFacets`) | **Removed from DB** |
+| **16** | `idx_leads_active_region` | `leads` | `(is_active, region_id)` | B-Tree Composite | Active state facet counts (`getFacets`) | **Removed from DB** |
+| **17** | `idx_leads_active_city` | `leads` | `(is_active, city_id)` | B-Tree Composite | Active city facet counts (`getFacets`) | **Removed from DB** |
+| **18** | `idx_leads_category_industry` | `leads` | `(category, industry)` | B-Tree Composite | Cascading category → industry facet aggregation | **Removed from DB** |
+| **19** | `idx_leads_verified` | `leads` | `(is_verified)` | B-Tree | "Verified Only" toggle filter | **Removed from DB** |
+| **20** | `idx_leads_email_hash` | `leads` | `(email_hash)` | B-Tree | Ingest dedup & admin email matching | **Removed from DB (To Be Included in Future)** |
+| **21** | `idx_leads_phone_hash` | `leads` | `(phone_hash)` | B-Tree | Ingest dedup & admin phone matching | **Removed from DB (To Be Included in Future)** |
+| **22** | `idx_leads_website_hash` | `leads` | `(website_hash)` | B-Tree | Ingest dedup & admin domain matching | **Removed from DB (To Be Included in Future)** |
+| **23** | `idx_leads_biz_hash` | `leads` | `(biz_hash)` | B-Tree | Ingest dedup & business identity matching | **Removed from DB (To Be Included in Future)** |
+| **24** | `uq_lead_hashes_type_hash` | `lead_hashes` | `(hash_type, hash)` | B-Tree Unique | Global cross-file deduplication ledger | **Removed from DB (To Be Included in Future)** |
+| **25** | `idx_leads_created_at_id` | `leads` | `(created_at DESC, id DESC)` | B-Tree Composite | Default "Recent" recency sort pagination | **Not Implemented (Proposed)** |
+| **26** | `idx_leads_verified_partial` | `leads` | `(id) WHERE is_verified = TRUE` | B-Tree Partial | Verified leads fast filter with low footprint | **Not Implemented (Proposed)** |
+| **27** | `idx_leads_company_sort` | `leads` | `(company_name ASC, id ASC)` | B-Tree Composite | Alphabetical company sorting | **Not Implemented (Proposed)** |
 
 ---
 
@@ -129,7 +132,7 @@ $$\text{Lead Identity Key} = \text{normalized}(\text{full\_name}) + \text{"::"} 
 
 ## 5. Detailed Index Specifications
 
-### A. Active Search, Fuzzy Matching & Geospatial Indexes (`leads`)
+### A. Active Full-Text Search & Geospatial Indexes (`leads`)
 
 #### 1. `idx_leads_search_vector`
 - **Table**: `leads`
@@ -142,29 +145,7 @@ $$\text{Lead Identity Key} = \text{normalized}(\text{full\_name}) + \text{"::"} 
   ```
 - **Status**: `Implemented`
 
-#### 2. `idx_leads_company_trgm`
-- **Table**: `leads`
-- **Columns**: `company_name` using `gin_trgm_ops`
-- **Index Type**: GIN Trigram (`pg_trgm` extension)
-- **What it does**: Breaks company names into 3-character slices (trigrams) for substring matching without sequential scans.
-- **Target Search / Query**:
-  ```sql
-  SELECT * FROM leads WHERE company_name ILIKE '%acme%';
-  ```
-- **Status**: `Implemented`
-
-#### 3. `idx_leads_full_name_trgm`
-- **Table**: `leads`
-- **Columns**: `full_name` using `gin_trgm_ops`
-- **Index Type**: GIN Trigram (`pg_trgm` extension)
-- **What it does**: Enables fuzzy and substring matching on person names.
-- **Target Search / Query**:
-  ```sql
-  SELECT * FROM leads WHERE full_name ILIKE '%johnson%';
-  ```
-- **Status**: `Implemented`
-
-#### 4. `idx_leads_location`
+#### 2. `idx_leads_location`
 - **Table**: `leads`
 - **Columns**: `location` (`GEOGRAPHY(POINT, 4326)`)
 - **Index Type**: Generalized Search Tree (GiST / PostGIS R-Tree)
@@ -176,36 +157,50 @@ $$\text{Lead Identity Key} = \text{normalized}(\text{full\_name}) + \text{"::"} 
   ```
 - **Status**: `Implemented`
 
-#### 5. `idx_leads_lat_lon`
+#### 3. `idx_leads_lat_lon`
 - **Table**: `leads`
-- **Columns**: `(lat, lon)` WHERE `lat IS NOT NULL AND lon IS NOT NULL`
+- **Columns**: `(lat, lon) WHERE lat IS NOT NULL AND lon IS NOT NULL`
 - **Index Type**: B-Tree Composite Partial
-- **What it does**: Coordinate bounds and non-PostGIS geo fallback.
+- **What it does**: General coordinate bounds and non-PostGIS geo fallback.
+- **Status**: `Implemented`
+
+#### 4. `idx_leads_active_lat_lon`
+- **Table**: `leads`
+- **Columns**: `(lat, lon) WHERE is_active = TRUE AND lat IS NOT NULL AND lon IS NOT NULL`
+- **Index Type**: B-Tree Composite Partial
+- **What it does**: Prefilters active rows by latitude before the portable Haversine calculation.
 - **Status**: `Implemented`
 
 ---
 
 ### B. Active Location & Taxonomy Hierarchy Indexes (`leads`)
 
-#### 6. `idx_leads_country_id`, `idx_leads_region_id`, `idx_leads_city_id`
+#### 5. `idx_leads_country_id`, `idx_leads_region_id`, `idx_leads_city_id`
 - **Table**: `leads`
 - **Columns**: `country_id`, `region_id`, `city_id` (Integer Foreign Keys)
 - **Index Type**: B-Tree (Single-column)
 - **What it does**: Direct foreign key lookups and standalone location filtering.
 - **Status**: `Implemented`
 
-#### 7. `idx_leads_category`
+#### 6. `idx_leads_category`
 - **Table**: `leads`
 - **Columns**: `category` (`VARCHAR(150)`)
 - **Index Type**: B-Tree
 - **What it does**: Fast indexing on top-level broad categories (*Technology*, *Healthcare*, *Finance*, etc.).
 - **Status**: `Implemented`
 
-#### 8. `idx_leads_industry`
+#### 7. `idx_leads_industry`
 - **Table**: `leads`
 - **Columns**: `industry` (`VARCHAR(150)`)
 - **Index Type**: B-Tree
 - **What it does**: Exact sub-industry filtering and `SELECT DISTINCT industry` queries.
+- **Status**: `Implemented`
+
+#### 8. `idx_leads_num_employees`
+- **Table**: `leads`
+- **Columns**: `(num_employees) WHERE num_employees IS NOT NULL`
+- **Index Type**: B-Tree Partial
+- **What it does**: Supports future employee-count range filters without indexing null values.
 - **Status**: `Implemented`
 
 ---
@@ -268,6 +263,18 @@ The following 5 composite indexes have been **removed from the database** (via M
 - **Removed via**: Migration `015_drop_lead_hashes_and_hash_indexes.sql`
 - **Reason**: Deduplication now operates on **`(full_name + email)`** in memory. Standalone hash columns on `leads` remain, while the separate `lead_hashes` ledger and 4 hash indexes are dropped to maximize throughput.
 
+### D. Disabled Trigram Indexes (`company_name`, `full_name`)
+- **Removed via**: Migration `018_drop_trigram_indexes.sql`
+- **Indexes**: `idx_leads_company_trgm` and `idx_leads_full_name_trgm`
+- **Reason**: Current application search uses `search_vector @@ plainto_tsquery(...)`; it does not use `ILIKE` or trigram-similarity predicates. The GIN trigram indexes therefore consumed storage and slowed lead writes without serving the current query path.
+- **Future use**: Keep the `pg_trgm` extension installed. Re-enable these indexes when fuzzy company/name search is implemented:
+  ```sql
+  CREATE INDEX CONCURRENTLY idx_leads_company_trgm
+    ON leads USING GIN (company_name gin_trgm_ops);
+  CREATE INDEX CONCURRENTLY idx_leads_full_name_trgm
+    ON leads USING GIN (full_name gin_trgm_ops);
+  ```
+
 ---
 
 ## 7. Proposed Future Indexes
@@ -283,19 +290,17 @@ The following 5 composite indexes have been **removed from the database** (via M
 ## 8. Index Maintenance & Bulk Import Guidelines (5M Scale)
 
 ### 1. High-Volume Seeding (>2M rows)
-1. Drop the heavy full-text and trigram indexes before the bulk import:
+1. Drop the active full-text index before the bulk import:
    ```sql
    DROP INDEX IF EXISTS idx_leads_search_vector;
-   DROP INDEX IF EXISTS idx_leads_company_trgm;
-   DROP INDEX IF EXISTS idx_leads_full_name_trgm;
    ```
 2. Stream and import the CSV records.
-3. Rebuild the search indexes in parallel without locking the table:
+3. Rebuild the active search index without blocking normal writes:
    ```sql
    CREATE INDEX CONCURRENTLY idx_leads_search_vector ON leads USING GIN (search_vector);
-   CREATE INDEX CONCURRENTLY idx_leads_company_trgm ON leads USING GIN (company_name gin_trgm_ops);
-   CREATE INDEX CONCURRENTLY idx_leads_full_name_trgm ON leads USING GIN (full_name gin_trgm_ops);
    ```
+
+The two trigram indexes are already disabled. Re-enable them only when fuzzy company/name queries are added, using the definitions in Section 6.D.
 
 ### 2. Routine Maintenance
 - Run `ANALYZE leads;` after importing large datasets so the query planner has updated column statistics.

@@ -39,6 +39,7 @@ describe("/app/search (Search Leads page) — full app render", () => {
 
     expect(await screen.findByText("Alex Chen")).toBeInTheDocument();
     expect(screen.getByText("Notion")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Free Leads" })).toBeInTheDocument();
 
     const countNumber = document.querySelector(".app-count-number");
     expect(countNumber).toHaveTextContent("16");

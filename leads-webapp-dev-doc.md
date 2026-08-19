@@ -231,14 +231,16 @@ CREATE INDEX idx_leads_industry      ON leads (industry);
 CREATE INDEX idx_leads_country_city  ON leads (country_id, city_id);
 CREATE INDEX idx_leads_search_vector ON leads USING GIN (search_vector);
 CREATE INDEX idx_leads_location      ON leads USING GIST (location);
-CREATE INDEX idx_leads_company_trgm  ON leads USING GIN (company_name gin_trgm_ops); -- pg_trgm for partial name search
+-- Disabled for now; retained for future fuzzy/partial company and name search:
+-- CREATE INDEX idx_leads_company_trgm  ON leads USING GIN (company_name gin_trgm_ops);
+-- CREATE INDEX idx_leads_full_name_trgm ON leads USING GIN (full_name gin_trgm_ops);
 CREATE INDEX idx_usage_logs_user_created ON usage_logs (user_id, created_at);
 CREATE INDEX idx_regions_country     ON regions (country_id);
 CREATE INDEX idx_cities_region       ON cities (region_id);
 ```
 
 - Use a `tsvector` generated column (`full_name || company_name || headline`) with a trigger or `GENERATED ALWAYS AS` for fast full-text search instead of `ILIKE '%x%'` scans.
-- Use `pg_trgm` for fuzzy/partial matches on names and companies.
+- Keep `pg_trgm` available for future fuzzy/partial name and company matching. Its GIN indexes are currently disabled by Migration 018 because current search uses `search_vector`.
 - Facet counts (e.g. "how many leads per country") become a cheap `GROUP BY country_id` joined against the small `countries` table, instead of aggregating over raw text.
 - Always paginate with **keyset pagination** (`WHERE id > last_id ORDER BY id LIMIT 50`) rather than `OFFSET`, which degrades badly past a few hundred thousand rows.
 - Consider table partitioning by `country` or `created_at` only if query patterns show it helps — don't add this complexity pre-emptively.

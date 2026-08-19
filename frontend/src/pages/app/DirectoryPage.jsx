@@ -18,6 +18,7 @@ import {
   Mail,
   Map,
   MapPin,
+  Phone,
   RefreshCw,
   Search,
   SlidersHorizontal,
@@ -29,6 +30,7 @@ import {
 import * as api from "../../api/client";
 import LeadDetailModal from "../../components/LeadDetailModal";
 import LeadFilterPanel from "../../components/LeadFilterPanel";
+import TableFieldSelector from "../../components/TableFieldSelector";
 import { useAuth } from "../../context/AuthContext";
 import { avatarColor, categoryBadgeVariant, formatDate, initialsOf, locationString } from "../../utils/format";
 import { DEFAULT_MOCK_LEADS } from "../../utils/mockLeads";
@@ -70,6 +72,57 @@ const EMPTY_FILTERS = {
   radius: 50000,
 };
 
+const TABLE_FIELD_OPTIONS = [
+  { id: "lead", label: "Lead & role", description: "Name, avatar and headline" },
+  { id: "company", label: "Company", description: "Current company name" },
+  { id: "employees", label: "Employees", description: "Company employee count" },
+  { id: "category", label: "Category", description: "Broad business category" },
+  { id: "industry", label: "Industry", description: "Specific industry" },
+  { id: "location", label: "Location", description: "City, state and country" },
+  { id: "email", label: "Email", description: "Visible or plan-masked email" },
+  { id: "phone", label: "Phone", description: "Visible contact phone" },
+  { id: "status", label: "Verification", description: "Verified or standard status" },
+  { id: "added", label: "Added date", description: "Date added to the directory" },
+];
+
+// Preserve the table users already know as the default; optional contact/date
+// columns can be enabled from the Display fields selector when needed.
+const DEFAULT_TABLE_FIELDS = [
+  "lead",
+  "company",
+  "employees",
+  "category",
+  "industry",
+  "location",
+  "status",
+];
+const TABLE_FIELDS_STORAGE_KEY = "freeleads_table_fields_v1";
+const TABLE_FIELD_IDS = new Set(TABLE_FIELD_OPTIONS.map((field) => field.id));
+
+function normalizeTableFields(fields) {
+  if (!Array.isArray(fields)) return [...DEFAULT_TABLE_FIELDS];
+  const selected = new Set(fields.filter((field) => TABLE_FIELD_IDS.has(field)));
+  const normalized = TABLE_FIELD_OPTIONS.map((field) => field.id).filter((field) => selected.has(field));
+  return normalized.length ? normalized : [...DEFAULT_TABLE_FIELDS];
+}
+
+function loadTableFields() {
+  try {
+    return normalizeTableFields(JSON.parse(localStorage.getItem(TABLE_FIELDS_STORAGE_KEY)));
+  } catch {
+    return [...DEFAULT_TABLE_FIELDS];
+  }
+}
+
+function saveTableFields(fields) {
+  try {
+    localStorage.setItem(TABLE_FIELDS_STORAGE_KEY, JSON.stringify(fields));
+  } catch {
+    // A private/locked-down browser may deny storage; customization still works
+    // for the current page session.
+  }
+}
+
 export default function DirectoryPage() {
   const { user } = useAuth();
 
@@ -97,8 +150,12 @@ export default function DirectoryPage() {
 
   // ---- UI --------------------------------------------------------------------
   const [viewMode, setViewMode] = useState("table");
+  const [visibleTableFields, setVisibleTableFields] = useState(loadTableFields);
   const [filtersOpen, setFiltersOpen] = useState(false); // mobile drawer
   const [selectedLead, setSelectedLead] = useState(null);
+  const [selectedLeadAccess, setSelectedLeadAccess] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState(null);
   const [savedLeadIds, setSavedLeadIds] = useState(new Set());
   const [copiedId, setCopiedId] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
@@ -111,6 +168,7 @@ export default function DirectoryPage() {
 
   const requestSeq = useRef(0);
   const facetSeq = useRef(0);
+  const detailRequestSeq = useRef(0);
   const searchInputRef = useRef(null);
   // True once we've fallen back to the bundled demo dataset (API unreachable or
   // empty database). While in demo mode, filters are applied locally so the UI
@@ -134,6 +192,30 @@ export default function DirectoryPage() {
     window.addEventListener("storage", refreshSavedSet);
     return () => window.removeEventListener("storage", refreshSavedSet);
   }, [refreshSavedSet]);
+
+  const visibleTableFieldSet = useMemo(
+    () => new Set(visibleTableFields),
+    [visibleTableFields]
+  );
+
+  const toggleTableField = useCallback((fieldId) => {
+    if (!TABLE_FIELD_IDS.has(fieldId)) return;
+    setVisibleTableFields((current) => {
+      const isVisible = current.includes(fieldId);
+      if (isVisible && current.length === 1) return current;
+      const next = normalizeTableFields(
+        isVisible ? current.filter((field) => field !== fieldId) : [...current, fieldId]
+      );
+      saveTableFields(next);
+      return next;
+    });
+  }, []);
+
+  const resetTableFields = useCallback(() => {
+    const defaults = [...DEFAULT_TABLE_FIELDS];
+    saveTableFields(defaults);
+    setVisibleTableFields(defaults);
+  }, []);
 
   // Cmd/Ctrl+K or "/" focuses the search box.
   useEffect(() => {
@@ -780,7 +862,7 @@ export default function DirectoryPage() {
     const chips = [
       {
         id: "all",
-        label: "All Leads",
+        label: "Free Leads",
         icon: Sparkles,
         active:
           !filters.category &&
@@ -1036,16 +1118,36 @@ export default function DirectoryPage() {
     }
   };
 
-  // Modal navigation
-  const modalIndex = selectedLead
-    ? processedLeads.findIndex((l) => l.id === selectedLead.id)
-    : -1;
-  const handlePrevLead =
-    modalIndex > 0 ? () => setSelectedLead(processedLeads[modalIndex - 1]) : null;
-  const handleNextLead =
-    modalIndex >= 0 && modalIndex < processedLeads.length - 1
-      ? () => setSelectedLead(processedLeads[modalIndex + 1])
-      : null;
+  // Open exactly one lead and fetch its dedicated detail payload. The list row
+  // is shown immediately while the full, role-aware response is loading.
+  const openLeadDetails = useCallback(async (lead) => {
+    if (!lead?.id) return;
+    const requestId = ++detailRequestSeq.current;
+    setSelectedLead(lead);
+    setSelectedLeadAccess(null);
+    setDetailError(null);
+    setDetailLoading(true);
+
+    try {
+      const response = await api.getLeadById(lead.id);
+      if (requestId !== detailRequestSeq.current) return;
+      setSelectedLead(response?.data || lead);
+      setSelectedLeadAccess(response?.access || null);
+    } catch (err) {
+      if (requestId !== detailRequestSeq.current) return;
+      setDetailError(err.message || "Could not load the complete lead details.");
+    } finally {
+      if (requestId === detailRequestSeq.current) setDetailLoading(false);
+    }
+  }, []);
+
+  const closeLeadDetails = useCallback(() => {
+    detailRequestSeq.current += 1;
+    setSelectedLead(null);
+    setSelectedLeadAccess(null);
+    setDetailError(null);
+    setDetailLoading(false);
+  }, []);
 
   const panelProps = {
     facets,
@@ -1113,15 +1215,13 @@ export default function DirectoryPage() {
 
         {/* Div 2: default quick filters row — Verified Only + Country/City/Industry/Category chips + Near Me */}
         <div className="app-filter-extras-div">
-          <label className={`app-filter-verify-toggle${filters.verifiedOnly ? " active" : ""}`}>
-            <input
-              type="checkbox"
-              checked={filters.verifiedOnly}
-              onChange={(e) => updateFilters({ verifiedOnly: e.target.checked })}
-            />
-            <span className="app-filter-verify-track">
-              <span className="app-filter-verify-thumb" />
-            </span>
+          <button
+            type="button"
+            className={`app-filter-verify-btn${filters.verifiedOnly ? " active" : ""}`}
+            onClick={() => updateFilters({ verifiedOnly: !filters.verifiedOnly })}
+            aria-pressed={filters.verifiedOnly}
+            title={filters.verifiedOnly ? "Show all leads" : "Show verified leads only"}
+          >
             <span className="app-filter-verify-text">
               <BadgeCheck size={15} />
               Verified Only
@@ -1129,7 +1229,7 @@ export default function DirectoryPage() {
                 <em className="app-filter-verify-count">{formatCount(facets.totals.verified)}</em>
               )}
             </span>
-          </label>
+          </button>
 
           {profileChips.map((chip) => {
             const Icon = chip.icon;
@@ -1419,6 +1519,15 @@ export default function DirectoryPage() {
                 {filters.geo && <option value="distance">Nearest First</option>}
               </select>
 
+              {viewMode === "table" && (
+                <TableFieldSelector
+                  fields={TABLE_FIELD_OPTIONS}
+                  visibleFields={visibleTableFields}
+                  onToggle={toggleTableField}
+                  onReset={resetTableFields}
+                />
+              )}
+
               <div className="app-view-toggle">
                 <button
                   type="button"
@@ -1576,7 +1685,7 @@ export default function DirectoryPage() {
                   <article
                     key={lead.id}
                     className="lead-card"
-                    onClick={() => setSelectedLead(lead)}
+                    onClick={() => openLeadDetails(lead)}
                   >
                     <div className="lead-card-top">
                       <div
@@ -1687,13 +1796,16 @@ export default function DirectoryPage() {
               <table className="app-table">
                 <thead>
                   <tr>
-                    <th>Lead & Role</th>
-                    <th>Company</th>
-                    <th>Employees</th>
-                    <th>Category</th>
-                    <th>Industry</th>
-                    <th>Location</th>
-                    <th>Status</th>
+                    {visibleTableFieldSet.has("lead") && <th>Lead & Role</th>}
+                    {visibleTableFieldSet.has("company") && <th>Company</th>}
+                    {visibleTableFieldSet.has("employees") && <th>Employees</th>}
+                    {visibleTableFieldSet.has("category") && <th>Category</th>}
+                    {visibleTableFieldSet.has("industry") && <th>Industry</th>}
+                    {visibleTableFieldSet.has("location") && <th>Location</th>}
+                    {visibleTableFieldSet.has("email") && <th>Email</th>}
+                    {visibleTableFieldSet.has("phone") && <th>Phone</th>}
+                    {visibleTableFieldSet.has("status") && <th>Verification</th>}
+                    {visibleTableFieldSet.has("added") && <th>Added</th>}
                     <th style={{ textAlign: "right" }}>Actions</th>
                   </tr>
                 </thead>
@@ -1703,70 +1815,97 @@ export default function DirectoryPage() {
                     const isCopied = copiedId === lead.id;
 
                     return (
-                      <tr key={lead.id} onClick={() => setSelectedLead(lead)}>
-                        <td>
-                          <div className="table-lead-cell">
-                            <div
-                              className="table-lead-avatar"
-                              style={{ background: avatarColor(lead.full_name) }}
-                            >
-                              {initialsOf(lead)}
-                            </div>
-                            <div>
-                              <div className="table-lead-name">{lead.full_name}</div>
-                              <div className="table-lead-headline">
-                                {lead.headline || lead.job_title || "Lead profile"}
+                      <tr key={lead.id} onClick={() => openLeadDetails(lead)}>
+                        {visibleTableFieldSet.has("lead") && (
+                          <td>
+                            <div className="table-lead-cell">
+                              <div
+                                className="table-lead-avatar"
+                                style={{ background: avatarColor(lead.full_name) }}
+                              >
+                                {initialsOf(lead)}
+                              </div>
+                              <div>
+                                <div className="table-lead-name">{lead.full_name}</div>
+                                <div className="table-lead-headline">
+                                  {lead.headline || lead.job_title || "Lead profile"}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </td>
-                        <td>
-                          <span className="lead-pill lead-pill-company">
-                            <Building2 size={12} /> {lead.company_name || "—"}
-                          </span>
-                        </td>
-                        <td>
-                          {lead.num_employees != null
-                            ? Number(lead.num_employees).toLocaleString()
-                            : <span className="faint">—</span>}
-                        </td>
-                        <td>
-                          <span
-                            className={`lead-pill lead-pill-category is-${categoryBadgeVariant(
-                              categoryOf(lead)
-                            )}`}
-                          >
-                            {categoryOf(lead) || "—"}
-                          </span>
-                        </td>
-                        <td>
-                          <span className="lead-pill lead-pill-industry">
-                            {lead.industry || "—"}
-                          </span>
-                        </td>
-                        <td>
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 5,
-                              color: "var(--app-ink-muted)",
-                              fontSize: "12.5px",
-                            }}
-                          >
-                            <MapPin size={13} color="var(--app-ink-faint)" />
-                            {locationString(lead) || "—"}
-                          </div>
-                        </td>
-                        <td>
-                          {lead.is_verified ? (
-                            <span className="lead-pill lead-pill-verified">
-                              <BadgeCheck size={12} /> Verified
+                          </td>
+                        )}
+                        {visibleTableFieldSet.has("company") && (
+                          <td>
+                            <span className="lead-pill lead-pill-company">
+                              <Building2 size={12} /> {lead.company_name || "—"}
                             </span>
-                          ) : (
-                            <span className="lead-pill lead-pill-company">Standard</span>
-                          )}
-                        </td>
+                          </td>
+                        )}
+                        {visibleTableFieldSet.has("employees") && (
+                          <td>
+                            {lead.num_employees != null ? (
+                              Number(lead.num_employees).toLocaleString()
+                            ) : (
+                              <span className="faint">—</span>
+                            )}
+                          </td>
+                        )}
+                        {visibleTableFieldSet.has("category") && (
+                          <td>
+                            <span
+                              className={`lead-pill lead-pill-category is-${categoryBadgeVariant(
+                                categoryOf(lead)
+                              )}`}
+                            >
+                              {categoryOf(lead) || "—"}
+                            </span>
+                          </td>
+                        )}
+                        {visibleTableFieldSet.has("industry") && (
+                          <td>
+                            <span className="lead-pill lead-pill-industry">
+                              {lead.industry || "—"}
+                            </span>
+                          </td>
+                        )}
+                        {visibleTableFieldSet.has("location") && (
+                          <td>
+                            <div className="table-field-value">
+                              <MapPin size={13} />
+                              {locationString(lead) || "—"}
+                            </div>
+                          </td>
+                        )}
+                        {visibleTableFieldSet.has("email") && (
+                          <td>
+                            <div className="table-field-value table-field-contact">
+                              <Mail size={13} />
+                              {lead.email || "—"}
+                            </div>
+                          </td>
+                        )}
+                        {visibleTableFieldSet.has("phone") && (
+                          <td>
+                            <div className="table-field-value table-field-contact">
+                              <Phone size={13} />
+                              {lead.phone || "—"}
+                            </div>
+                          </td>
+                        )}
+                        {visibleTableFieldSet.has("status") && (
+                          <td>
+                            {lead.is_verified ? (
+                              <span className="lead-pill lead-pill-verified">
+                                <BadgeCheck size={12} /> Verified
+                              </span>
+                            ) : (
+                              <span className="lead-pill lead-pill-company">Standard</span>
+                            )}
+                          </td>
+                        )}
+                        {visibleTableFieldSet.has("added") && (
+                          <td className="table-field-date">{formatDate(lead.created_at)}</td>
+                        )}
                         <td>
                           <div
                             className="table-actions-cell"
@@ -1794,7 +1933,7 @@ export default function DirectoryPage() {
                               type="button"
                               className="app-header-btn"
                               style={{ padding: "5px 10px", fontSize: "11.5px" }}
-                              onClick={() => setSelectedLead(lead)}
+                              onClick={() => openLeadDetails(lead)}
                             >
                               View
                             </button>
@@ -1814,7 +1953,7 @@ export default function DirectoryPage() {
                   <div
                     key={lead.id}
                     className="compact-card"
-                    onClick={() => setSelectedLead(lead)}
+                    onClick={() => openLeadDetails(lead)}
                   >
                     <div
                       className="compact-avatar"
@@ -1878,9 +2017,14 @@ export default function DirectoryPage() {
       {selectedLead && (
         <LeadDetailModal
           lead={selectedLead}
-          onClose={() => setSelectedLead(null)}
-          onPrev={handlePrevLead}
-          onNext={handleNextLead}
+          access={selectedLeadAccess}
+          hasFullAccess={Boolean(
+            selectedLeadAccess?.has_full_access ||
+              user?.roles?.some((role) => ["admin", "super_admin"].includes(role))
+          )}
+          loading={detailLoading}
+          error={detailError}
+          onClose={closeLeadDetails}
         />
       )}
 

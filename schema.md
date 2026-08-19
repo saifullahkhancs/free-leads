@@ -72,8 +72,8 @@ For complete specifications of all index relations, target queries, status, and 
 | `search_vector` | GIN | Full-text search (`q=`) | Implemented |
 | `location` | GIST | Geospatial radius search ("Near Me") | Implemented |
 | `lat, lon` (Partial) | B-Tree | Coordinate bounds & non-PostGIS geo fallback | Implemented |
-| `company_name` | GIN (trgm) | Fuzzy company matching & autocomplete | Implemented |
-| `full_name` | GIN (trgm) | Fuzzy name matching | Implemented |
+| `company_name` | GIN (trgm) | Future fuzzy company matching & autocomplete | **Removed from DB (To Be Included in Future)** (Migration 018) |
+| `full_name` | GIN (trgm) | Future fuzzy name matching | **Removed from DB (To Be Included in Future)** (Migration 018) |
 | `country_id` | B-Tree | Country filtering & joins | Implemented |
 | `region_id` | B-Tree | Region/State filtering & joins | Implemented |
 | `city_id` | B-Tree | City filtering & joins | Implemented |

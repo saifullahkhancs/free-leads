@@ -17,6 +17,7 @@ import { MemoryRouter } from "react-router-dom";
 
 vi.mock("../../../api/client", () => ({
   getLeads: vi.fn(),
+  getLeadById: vi.fn(),
   getLeadFacets: vi.fn(),
   exportLeads: vi.fn(),
   getMyBilling: vi.fn(),
@@ -80,6 +81,24 @@ describe("DirectoryPage filters reach the API", () => {
     api.getLeadFacets.mockResolvedValue({ data: FACETS });
     api.getLeads.mockResolvedValue({
       data: { leads: [LEAD], nextCursor: null, total: 1 },
+    });
+    api.getLeadById.mockResolvedValue({
+      data: {
+        ...LEAD,
+        phone: "+1 555 0100",
+        linkedin_url: "https://linkedin.com/in/real-person",
+        website_url: "https://real.example",
+      },
+      access: {
+        show_email: true,
+        show_phone: true,
+        show_linkedin: true,
+        show_twitter: true,
+        show_website: true,
+        show_about: true,
+        can_view_contact: true,
+        has_full_access: true,
+      },
     });
   });
 
@@ -151,14 +170,63 @@ describe("DirectoryPage filters reach the API", () => {
     await waitFor(() => expect(lastLeadParams().city_id).toBe(4));
   });
 
-  it("sends the verified flag", async () => {
+  it("uses a simple button to send the verified flag", async () => {
     const user = userEvent.setup();
     renderPage();
     await screen.findByText("Real Person");
 
-    await user.click(document.querySelector(".app-filter-verify-toggle input"));
+    const verifiedButton = screen.getByRole("button", { name: /verified only/i });
+    expect(verifiedButton).toHaveAttribute("aria-pressed", "false");
+    expect(verifiedButton.querySelector("input")).toBeNull();
+
+    await user.click(verifiedButton);
 
     await waitFor(() => expect(lastLeadParams().verified).toBe("true"));
+    expect(verifiedButton).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("opens one complete lead record without previous/next navigation", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("Real Person");
+
+    await user.click(screen.getByRole("button", { name: "View" }));
+
+    await waitFor(() => expect(api.getLeadById).toHaveBeenCalledWith(1));
+    expect(await screen.findByText("+1 555 0100")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /view linkedin/i })).toBeInTheDocument();
+    expect(screen.queryByText(/Privacy Protected:/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /previous lead/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /next lead/i })).not.toBeInTheDocument();
+  });
+
+  it("lets users choose and persist the fields shown in table view", async () => {
+    const user = userEvent.setup();
+    const view = renderPage();
+    await screen.findByText("Real Person");
+
+    // Existing table columns remain the default; optional contact fields start hidden.
+    expect(screen.getByRole("columnheader", { name: "Company" })).toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: "Email" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /display fields/i }));
+    expect(screen.getByRole("dialog", { name: "Choose table fields" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("checkbox", { name: /email/i }));
+    await user.click(screen.getByRole("checkbox", { name: /industry/i }));
+
+    expect(screen.getByRole("columnheader", { name: "Email" })).toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: "Industry" })).not.toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem("freeleads_table_fields_v1"))).toEqual(
+      expect.arrayContaining(["email"])
+    );
+
+    // The same choices are restored when the directory is opened again.
+    view.unmount();
+    renderPage();
+    await screen.findByText("Real Person");
+    expect(screen.getByRole("columnheader", { name: "Email" })).toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: "Industry" })).not.toBeInTheDocument();
   });
 
   it("keeps real API results instead of falling back to demo data", async () => {

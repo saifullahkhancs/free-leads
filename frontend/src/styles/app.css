@@ -251,56 +251,34 @@
   padding-top: 4px;
 }
 
-.app-filter-verify-toggle {
+.app-filter-verify-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
   padding: 7px 14px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--line);
   background: var(--bg);
+  color: var(--ink);
+  font: inherit;
   cursor: pointer;
   user-select: none;
   transition: all 0.18s ease;
 }
 
-.app-filter-verify-toggle input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
+.app-filter-verify-btn:hover {
+  border-color: #a7f3d0;
+  background: var(--success-soft);
 }
 
-.app-filter-verify-track {
-  width: 28px;
-  height: 16px;
-  border-radius: 10px;
-  background: var(--line-strong);
-  position: relative;
-  transition: background-color 0.2s ease;
+.app-filter-verify-btn:focus-visible {
+  outline: 2px solid var(--success);
+  outline-offset: 2px;
 }
 
-.app-filter-verify-thumb {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #fff;
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  transition: transform 0.2s ease;
-}
-
-.app-filter-verify-toggle.active {
+.app-filter-verify-btn.active {
   border-color: var(--green);
   background: rgba(79, 70, 229, 0.12);
-}
-
-.app-filter-verify-toggle.active .app-filter-verify-track {
-  background: var(--green);
-}
-
-.app-filter-verify-toggle.active .app-filter-verify-thumb {
-  transform: translateX(12px);
 }
 
 .app-filter-verify-text {
@@ -622,6 +600,181 @@
   font-size: 12.5px;
   outline: none;
   cursor: pointer;
+}
+
+/* Table/list-view column customization */
+.app-field-selector {
+  position: relative;
+}
+
+.app-field-selector-trigger {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--panel);
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.app-field-selector-trigger:hover,
+.app-field-selector-trigger.active {
+  border-color: var(--light-indigo-border);
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.app-field-selector-trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+.app-field-selector-trigger em {
+  min-width: 21px;
+  padding: 2px 6px;
+  border-radius: var(--radius-pill);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-style: normal;
+  text-align: center;
+}
+
+.app-field-selector-trigger > svg:last-child {
+  transition: transform 0.16s ease;
+}
+
+.app-field-selector-trigger > svg:last-child.open {
+  transform: rotate(180deg);
+}
+
+.app-field-selector-menu {
+  position: absolute;
+  z-index: 80;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(300px, calc(100vw - 32px));
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  box-shadow: var(--shadow-lg);
+}
+
+.app-field-selector-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  border-bottom: 1px solid var(--line-subtle);
+  background: var(--panel-subtle);
+}
+
+.app-field-selector-head strong,
+.app-field-selector-head small {
+  display: block;
+}
+
+.app-field-selector-head strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.app-field-selector-head small {
+  margin-top: 2px;
+  color: var(--ink-faint);
+  font-size: 10.5px;
+}
+
+.app-field-selector-head button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 7px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--primary);
+  font: inherit;
+  font-size: 10.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.app-field-selector-head button:hover {
+  background: var(--primary-light);
+}
+
+.app-field-selector-options {
+  max-height: min(390px, 60vh);
+  overflow-y: auto;
+  padding: 7px;
+}
+
+.app-field-selector-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color 0.14s ease;
+}
+
+.app-field-selector-option:hover,
+.app-field-selector-option.selected {
+  background: var(--primary-light);
+}
+
+.app-field-selector-option.locked {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.app-field-selector-option input {
+  width: 15px;
+  height: 15px;
+  margin: 2px 0 0;
+  accent-color: var(--primary);
+  flex: 0 0 auto;
+}
+
+.app-field-selector-option span,
+.app-field-selector-option strong,
+.app-field-selector-option small {
+  display: block;
+  min-width: 0;
+}
+
+.app-field-selector-option strong {
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.app-field-selector-option small {
+  margin-top: 2px;
+  color: var(--ink-faint);
+  font-size: 10.5px;
+  line-height: 1.3;
+}
+
+.app-field-selector-note {
+  margin: 0;
+  padding: 9px 14px 11px;
+  border-top: 1px solid var(--line-subtle);
+  color: var(--ink-faint);
+  font-size: 10px;
+  line-height: 1.4;
 }
 
 .app-view-toggle {
@@ -958,12 +1111,13 @@
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
-  overflow: hidden;
+  overflow-x: auto;
   box-shadow: var(--shadow-sm);
 }
 
 .app-table {
-  width: 100%;
+  width: max-content;
+  min-width: 100%;
   border-collapse: collapse;
   text-align: left;
 }
@@ -977,6 +1131,7 @@
   letter-spacing: 0.05em;
   padding: 14px 18px;
   border-bottom: 1px solid var(--line);
+  white-space: nowrap;
 }
 
 .app-table td {
@@ -984,6 +1139,7 @@
   border-bottom: 1px solid var(--line);
   font-size: 13px;
   color: var(--ink);
+  vertical-align: middle;
 }
 
 .app-table tbody tr {
@@ -1021,8 +1177,39 @@
 }
 
 .table-lead-headline {
-  font-size: 11.5px;
+  max-width: 260px;
+  overflow: hidden;
   color: var(--ink-faint);
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table-field-value {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 260px;
+  color: var(--app-ink-muted);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+.table-field-value svg {
+  flex: 0 0 auto;
+  color: var(--app-ink-faint);
+}
+
+.table-field-contact {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+
+.table-field-date {
+  color: var(--ink-muted) !important;
+  font-family: var(--font-mono);
+  font-size: 11.5px !important;
+  white-space: nowrap;
 }
 
 .table-actions-cell {
@@ -1221,6 +1408,23 @@
   padding: 20px 24px 28px;
 }
 
+.lead-modal-load-state {
+  margin: 0 0 14px;
+  padding: 9px 12px;
+  border: 1px solid var(--light-indigo-border);
+  border-radius: var(--radius-sm);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.lead-modal-load-state.error {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
 .lead-modal-name {
   font-size: 22px;
   font-weight: 700;
@@ -1298,6 +1502,22 @@
 
 .lead-modal-contact-card svg {
   color: var(--green-hover);
+}
+
+.lead-modal-social-links {
+  display: flex;
+  align-items: center;
+  gap: 10px 14px;
+  flex-wrap: wrap;
+}
+
+.lead-modal-social-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--app-green);
+  font-weight: 700;
+  text-decoration: underline;
 }
 
 /* ==========================================================================
@@ -2941,7 +3161,7 @@
 /* Filter surfaces: light tints + subtle borders */
 .app-filter-profile-chip,
 .app-filter-geo-btn,
-.app-filter-verify-toggle,
+.app-filter-verify-btn,
 .app-filter-radius-group,
 .app-filter-dropdown-select {
   background: var(--card);
@@ -2997,12 +3217,11 @@
   font-weight: 700;
 }
 
-/* "Verified" is a success state, so it stays green. */
-.app-filter-verify-toggle.active {
+/* "Verified" is a success state, so the pressed button stays green. */
+.app-filter-verify-btn.active {
   border-color: #a7f3d0;
   background: var(--success-soft);
 }
-.app-filter-verify-toggle.active .app-filter-verify-track { background: var(--success); }
 .app-filter-verify-text svg { color: var(--success-dark); }
 .app-filter-verify-count { color: var(--success-dark); background: var(--success-soft); }
 
