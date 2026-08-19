@@ -7,14 +7,16 @@ ALTER TABLE leads
     ADD COLUMN IF NOT EXISTS category VARCHAR(150);
 
 CREATE INDEX IF NOT EXISTS idx_leads_category ON leads (category);
-CREATE INDEX IF NOT EXISTS idx_leads_category_industry ON leads (category, industry);
-CREATE INDEX IF NOT EXISTS idx_leads_verified ON leads (is_verified);
+-- Removed for capacity/ingest optimization: See Migration 016 & INDEX_SETTINGS.md
+-- CREATE INDEX IF NOT EXISTS idx_leads_category_industry ON leads (category, industry);
+-- Deprecated & Removed: idx_leads_verified removed to optimize bulk import throughput and avoid low-cardinality index overhead.
+-- See Migration 014 and INDEX_SETTINGS.md.
+-- CREATE INDEX IF NOT EXISTS idx_leads_verified ON leads (is_verified);
 
--- Composite indexes used by the cascading location facets
--- (country → region → city, always scoped to active leads).
-CREATE INDEX IF NOT EXISTS idx_leads_active_country ON leads (is_active, country_id);
-CREATE INDEX IF NOT EXISTS idx_leads_active_region  ON leads (is_active, region_id);
-CREATE INDEX IF NOT EXISTS idx_leads_active_city    ON leads (is_active, city_id);
+-- Composite indexes removed for capacity/ingest optimization (See Migration 016 & INDEX_SETTINGS.md):
+-- CREATE INDEX IF NOT EXISTS idx_leads_active_country ON leads (is_active, country_id);
+-- CREATE INDEX IF NOT EXISTS idx_leads_active_region  ON leads (is_active, region_id);
+-- CREATE INDEX IF NOT EXISTS idx_leads_active_city    ON leads (is_active, city_id);
 
 -- Backfill a sensible category for existing rows from their industry so the
 -- new filter is never empty on an already-populated database. Order matches

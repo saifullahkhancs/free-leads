@@ -165,12 +165,12 @@ const getAuditLogs = asyncHandler(async (req, res) => {
 });
 
 /**
- * POST /api/admin/leads/dedup — pure-SQL duplicate finder (admin only).
- * body: { fields: ['email','phone','website','biz'], mode: 'preview'|'mark'|'delete' }
+ * POST /api/admin/leads/dedup — duplicate finder on (full_name + email) (admin only).
+ * body: { fields: ['full_name','email'], mode: 'preview'|'mark'|'delete' }
  */
 const runDedup = asyncHandler(async (req, res) => {
-  const ALLOWED_FIELDS = ["email", "phone", "website", "biz"];
-  const fields = (req.body?.fields || ["email"])
+  const ALLOWED_FIELDS = ["full_name", "email", "phone", "website", "biz"];
+  const fields = (req.body?.fields || ["full_name", "email"])
     .filter((f) => ALLOWED_FIELDS.includes(f));
   if (fields.length === 0) throw new ApiError(400, "No valid dedup fields");
 

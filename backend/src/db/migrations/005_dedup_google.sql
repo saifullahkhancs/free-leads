@@ -15,22 +15,22 @@ ALTER TABLE leads
     ADD COLUMN IF NOT EXISTS is_duplicate  BOOLEAN DEFAULT FALSE,
     ADD COLUMN IF NOT EXISTS duplicate_of  BIGINT;
 
-CREATE INDEX IF NOT EXISTS idx_leads_email_hash   ON leads (email_hash);
-CREATE INDEX IF NOT EXISTS idx_leads_phone_hash   ON leads (phone_hash);
-CREATE INDEX IF NOT EXISTS idx_leads_website_hash ON leads (website_hash);
-CREATE INDEX IF NOT EXISTS idx_leads_biz_hash     ON leads (biz_hash);
+-- Deprecated / Removed for performance to maximize lead capacity:
+-- See Migration 015, schema.md and INDEX_SETTINGS.md
+-- CREATE INDEX IF NOT EXISTS idx_leads_email_hash   ON leads (email_hash);
+-- CREATE INDEX IF NOT EXISTS idx_leads_phone_hash   ON leads (phone_hash);
+-- CREATE INDEX IF NOT EXISTS idx_leads_website_hash ON leads (website_hash);
+-- CREATE INDEX IF NOT EXISTS idx_leads_biz_hash     ON leads (biz_hash);
 
--- Global dedup ledger — every fingerprint ever inserted, so dedup works across
--- the whole import history, not just within a single file.
-CREATE TABLE IF NOT EXISTS lead_hashes (
-    id          BIGSERIAL PRIMARY KEY,
-    hash        VARCHAR(40) NOT NULL,
-    hash_type   VARCHAR(20) NOT NULL,      -- 'email'|'phone'|'website'|'biz'
-    lead_id     BIGINT REFERENCES leads(id) ON DELETE CASCADE,
-    created_at  TIMESTAMPTZ DEFAULT now()
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS uq_lead_hashes_type_hash ON lead_hashes (hash_type, hash);
+-- Global dedup ledger — removed for initial scale-up; to be re-enabled in future.
+-- CREATE TABLE IF NOT EXISTS lead_hashes (
+--     id          BIGSERIAL PRIMARY KEY,
+--     hash        VARCHAR(40) NOT NULL,
+--     hash_type   VARCHAR(20) NOT NULL,      -- 'email'|'phone'|'website'|'biz'
+--     lead_id     BIGINT REFERENCES leads(id) ON DELETE CASCADE,
+--     created_at  TIMESTAMPTZ DEFAULT now()
+-- );
+-- CREATE UNIQUE INDEX IF NOT EXISTS uq_lead_hashes_type_hash ON lead_hashes (hash_type, hash);
 
 -- ---------------------------------------------------------------------------
 -- Users: Google OAuth link (only present when the account uses "Sign in with
