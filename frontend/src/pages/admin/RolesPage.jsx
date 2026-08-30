@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2, ShieldCheck } from "lucide-react";
 import * as api from "../../api/client";
 
@@ -13,13 +13,32 @@ export default function RolesPage() {
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const abortControllerRef = useRef(null);
 
   useEffect(() => {
+    // Cancel any in-flight request before starting a new one
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const { signal } = controller;
+
     api
-      .getRoles()
-      .then((res) => setRoles(res.roles || []))
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+      .getRoles(signal)
+      .then((res) => {
+        if (!signal.aborted) setRoles(res.roles || []);
+      })
+      .catch((err) => {
+        if (err?.name === "AbortError" || signal.aborted) return;
+        setError(err.message);
+      })
+      .finally(() => {
+        if (!signal.aborted) setLoading(false);
+      });
+
+    // Cleanup: abort the request if the component unmounts or effect re-runs
+    return () => controller.abort();
   }, []);
 
   return (

@@ -47,22 +47,56 @@ export default function LeadsPage() {
   const [totalLeads, setTotalLeads] = useState(0);
   const limit = 20;
   const requestSeq = useRef(0);
+  const statsFacetsAbortControllerRef = useRef(null);
+  const regionsAbortControllerRef = useRef(null);
+  const leadsAbortControllerRef = useRef(null);
 
   useEffect(() => {
-    Promise.all([api.getLeadStats(), api.getLeadFacets()]).then(([stats, facets]) => {
-      if (stats?.data?.industries) setIndustries(stats.data.industries);
-      setCountries(facets?.data?.countries || []);
-      setRegions(facets?.data?.regions || []);
-    }).catch(() => {});
+    // Cancel any in-flight request before starting a new one
+    if (statsFacetsAbortControllerRef.current) {
+      statsFacetsAbortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    statsFacetsAbortControllerRef.current = controller;
+    const { signal } = controller;
+
+    Promise.all([api.getLeadStats(signal), api.getLeadFacets(undefined, signal)])
+      .then(([stats, facets]) => {
+        if (signal.aborted) return;
+        if (stats?.data?.industries) setIndustries(stats.data.industries);
+        setCountries(facets?.data?.countries || []);
+        setRegions(facets?.data?.regions || []);
+      })
+      .catch((err) => {
+        if (err?.name === "AbortError" || signal.aborted) return;
+      });
+
+    // Cleanup: abort the request if the component unmounts or effect re-runs
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
-    api.getLeadFacets({ country_id: countryId || undefined })
-      .then((res) => setRegions(res?.data?.regions || []))
-      .catch(() => {});
+    // Cancel any in-flight request before starting a new one
+    if (regionsAbortControllerRef.current) {
+      regionsAbortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    regionsAbortControllerRef.current = controller;
+
+    api
+      .getLeadFacets({ country_id: countryId || undefined }, controller.signal)
+      .then((res) => {
+        if (!controller.signal.aborted) setRegions(res?.data?.regions || []);
+      })
+      .catch((err) => {
+        if (err?.name === "AbortError" || controller.signal.aborted) return;
+      });
+
+    // Cleanup: abort the request if the component unmounts or effect re-runs
+    return () => controller.abort();
   }, [countryId]);
 
-  const fetchLeads = async ({ reset = false, cursor = null, geo, page = 1, filters = null } = {}) => {
+  const fetchLeads = async ({ reset = false, cursor = null, geo, page = 1, filters = null } = {}, signal) => {
     const seq = ++requestSeq.current;
     const setter = reset ? setLoading : setLoadingMore;
     setter(true);
@@ -86,7 +120,7 @@ export default function LeadsPage() {
         params.radius = selectedGeo.radius || 50000;
         params.sort = "distance";
       }
-      const response = await api.getLeads(params);
+      const response = await api.getLeads(params, signal);
       if (seq !== requestSeq.current) return;
       if (reset) {
         setLeads(response.data.leads);
@@ -98,20 +132,39 @@ export default function LeadsPage() {
       setTotalLeads(response.data.total || response.data.leads.length);
       setNextCursor(response.data.nextCursor);
     } catch (err) {
+      // Ignore aborted requests (caused by StrictMode double-invocation or rapid filter changes)
+      if (err?.name === "AbortError" || signal?.aborted) return;
       if (seq === requestSeq.current) setError(err.message);
     } finally {
       if (seq === requestSeq.current) setter(false);
     }
   };
 
+  // Abort any in-flight lead fetch before kicking off a new one, then hand the
+  // request a fresh signal. Used by both the mount effect and user actions.
+  const runFetchLeads = (opts) => {
+    if (leadsAbortControllerRef.current) {
+      leadsAbortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    leadsAbortControllerRef.current = controller;
+    fetchLeads(opts, controller.signal);
+  };
+
   useEffect(() => {
-    fetchLeads({ reset: true });
+    runFetchLeads({ reset: true });
+    // Cleanup: abort the request if the component unmounts or effect re-runs
+    return () => {
+      if (leadsAbortControllerRef.current) {
+        leadsAbortControllerRef.current.abort();
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
-    fetchLeads({ reset: true });
+    runFetchLeads({ reset: true });
   };
 
   const handleNearMe = () => {
@@ -126,7 +179,7 @@ export default function LeadsPage() {
       const nextGeo = { ...geo, radius: 50000 };
       setGeoFilter(nextGeo);
       setQ("");
-      fetchLeads({
+      runFetchLeads({
         reset: true,
         geo: nextGeo,
         filters: { q: "", industry, countryId, regionId },
@@ -168,7 +221,7 @@ export default function LeadsPage() {
     setCountryId("");
     setRegionId("");
     setGeoFilter(null);
-    fetchLeads({
+    runFetchLeads({
       reset: true,
       page: 1,
       geo: null,
@@ -178,7 +231,7 @@ export default function LeadsPage() {
 
   const handlePageChange = (newPage) => {
     if (newPage < 1 || newPage > Math.ceil(totalLeads / limit)) return;
-    fetchLeads({ reset: false, page: newPage });
+    runFetchLeads({ reset: false, page: newPage });
   };
 
   const handleDeleteAll = async () => {
@@ -206,7 +259,7 @@ export default function LeadsPage() {
     try {
       await api.geocodeLead(leadId);
       // Refresh the leads to show updated coordinates
-      fetchLeads({ reset: true, page: currentPage });
+      runFetchLeads({ reset: true, page: currentPage });
     } catch (err) {
       setError(err.message || "Failed to geocode lead");
     } finally {
@@ -240,7 +293,7 @@ export default function LeadsPage() {
                       try {
                         const result = await api.runGeocodingBatch();
                         alert(`Geocoding complete: ${result.data.totalSuccess} success, ${result.data.totalFailed} failed`);
-                        fetchLeads({ reset: true, page: 1 });
+                        runFetchLeads({ reset: true, page: 1 });
                       } catch (err) {
                         alert(`Geocoding failed: ${err.message}`);
                       }

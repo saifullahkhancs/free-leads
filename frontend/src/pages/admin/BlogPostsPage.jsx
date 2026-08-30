@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   CheckCircle2,
@@ -29,26 +29,44 @@ export default function BlogPostsPage() {
   const [error, setError] = useState(null);
   const [toast, setToast] = useState("");
   const [deletingId, setDeletingId] = useState(null);
+  const abortControllerRef = useRef(null);
 
-  const loadPosts = async (status = statusFilter) => {
+  const loadPosts = async (status = statusFilter, signal) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.adminListPosts({ status: status || undefined, limit: 100 });
+      const res = await api.adminListPosts({ status: status || undefined, limit: 100 }, signal);
       setPosts(res?.data?.posts || []);
     } catch (err) {
+      if (err?.name === "AbortError" || signal?.aborted) return;
       setError(err?.message || "Couldn't load blog posts.");
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadPosts();
+    // Cancel any in-flight request before starting a new one
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    loadPosts(undefined, controller.signal);
+    // Cleanup: abort the request if the component unmounts or effect re-runs
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
-    loadPosts(statusFilter);
+    // Cancel any in-flight request before starting a new one
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    loadPosts(statusFilter, controller.signal);
+    // Cleanup: abort the request if the component unmounts or effect re-runs
+    return () => controller.abort();
   }, [statusFilter]);
 
   // Show toast from edit page navigation

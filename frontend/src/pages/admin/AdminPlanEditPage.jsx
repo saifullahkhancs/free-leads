@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   AlertCircle,
@@ -77,18 +77,25 @@ export default function AdminPlanEditPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
+  const abortControllerRef = useRef(null);
 
   useEffect(() => {
     if (isNew) {
       setLoading(false);
       return;
     }
-    let cancelled = false;
+    // Cancel any in-flight request before starting a new one
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const { signal } = controller;
     const load = async () => {
       setLoading(true);
       setError("");
       try {
-        const res = await api.getAdminPlans();
+        const res = await api.getAdminPlans(signal);
         const list = res?.data || [];
         let found = list.find((p) => String(p.id) === String(id));
         if (!found) found = list.find((p) => p.code === id);
@@ -96,7 +103,7 @@ export default function AdminPlanEditPage() {
           found = DEFAULT_PLANS.find((p) => String(p.id) === String(id) || p.code === id);
         }
         if (!found) throw new Error("Plan not found");
-        if (!cancelled) {
+        if (!signal.aborted) {
           setPlan({
             ...EMPTY_PLAN,
             ...found,
@@ -111,13 +118,15 @@ export default function AdminPlanEditPage() {
           });
         }
       } catch (err) {
-        if (!cancelled) setError(err.message || "Failed to load plan.");
+        if (err?.name === "AbortError" || signal.aborted) return;
+        setError(err.message || "Failed to load plan.");
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!signal.aborted) setLoading(false);
       }
     };
     load();
-    return () => { cancelled = true; };
+    // Cleanup: abort the request if the component unmounts or effect re-runs
+    return () => controller.abort();
   }, [id, isNew]);
 
   const setField = (key, value) => {
