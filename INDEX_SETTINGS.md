@@ -38,6 +38,23 @@ To maximize the number of leads the database can store without running out of di
    - Dropping unused indexes and the separate `lead_hashes` ledger frees disk and cache for indexes used by current application queries.
    - PostgreSQL's `shared_buffers` cache can retain active lead search data instead of unused GIN trigram pages.
 
+3. **Partial Indexes for NOT NULL Columns** (Mandatory Rule):
+   - **Rule**: All indexes on nullable columns MUST use a `WHERE column IS NOT NULL` clause to exclude NULL values from the index.
+   - **Rationale**: Many `leads` columns (e.g., `country_id`, `region_id`, `city_id`, `industry`, `category`) are frequently NULL because the source data doesn't always provide them. Indexing NULL values wastes disk space and inflates index size without providing query benefits, since queries typically filter for `IS NOT NULL` or specific values.
+   - **Example**: Instead of `CREATE INDEX idx_leads_country_id ON leads (country_id);`, use:
+     ```sql
+     CREATE INDEX idx_leads_country_id ON leads (country_id) WHERE country_id IS NOT NULL;
+     ```
+   - **Benefits**:
+     - **Smaller index size**: Only rows with actual values are indexed, reducing index bloat by 30-80% for sparse columns.
+     - **Faster writes**: Fewer index entries per `INSERT`/`UPDATE` means lower write amplification.
+     - **Better cache efficiency**: More useful index entries fit in `shared_buffers`.
+   - **Current Implementation**: `idx_leads_num_employees` already follows this pattern:
+     ```sql
+     CREATE INDEX idx_leads_num_employees ON leads (num_employees) WHERE num_employees IS NOT NULL;
+     ```
+   - **Action Required**: Convert existing full indexes on `country_id`, `region_id`, `city_id`, `industry`, and `category` to partial indexes (see Migration Roadmap below).
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │             ACTIVE LEADS INDEX SUITE (11 INCLUDING PRIMARY KEY)             │

@@ -124,7 +124,7 @@ function saveTableFields(fields) {
 }
 
 export default function DirectoryPage() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
 
   // ---- Search + filter state -------------------------------------------------
   const [q, setQ] = useState("");
@@ -166,6 +166,8 @@ export default function DirectoryPage() {
   // { radius, nearestDistance, leadsWithCoordinates, matchingLeads }
   const [geoInfo, setGeoInfo] = useState(null);
 
+  const leadsAbortControllerRef = useRef(null);
+  const facetsAbortControllerRef = useRef(null);
   const requestSeq = useRef(0);
   const facetSeq = useRef(0);
   const detailRequestSeq = useRef(0);
@@ -323,7 +325,7 @@ export default function DirectoryPage() {
   // handle all further filtering.
   // ---------------------------------------------------------------------------
   const fetchLeads = useCallback(
-    async ({ cursor = null, page = 1, ...overrides } = {}) => {
+    async ({ cursor = null, page = 1, ...overrides } = {}, signal) => {
       const seq = ++requestSeq.current;
       const isAppend = Boolean(cursor);
       (isAppend ? setLoadingMore : setLoading)(true);
@@ -346,7 +348,7 @@ export default function DirectoryPage() {
         params.limit = limit;
         params.offset = (page - 1) * limit;
 
-        const response = await api.getLeads(params);
+        const response = await api.getLeads(params, signal);
         if (seq !== requestSeq.current) return;
 
         if (response?.data?.quota) setQuota(response.data.quota);
@@ -378,6 +380,8 @@ export default function DirectoryPage() {
           setCurrentPage(page);
         }
       } catch (err) {
+        // Ignore aborted requests (caused by StrictMode double-invocation or rapid filter changes)
+        if (err?.name === "AbortError" || signal?.aborted) return;
         if (seq !== requestSeq.current) return;
         if (err?.status === 429) {
           setError(
@@ -427,7 +431,7 @@ export default function DirectoryPage() {
   // ---------------------------------------------------------------------------
   // Fetch facets whenever a filter that scopes them changes.
   // ---------------------------------------------------------------------------
-  const fetchFacets = useCallback(async () => {
+  const fetchFacets = useCallback(async (signal) => {
     const seq = ++facetSeq.current;
     setFacetsLoading(true);
     try {
@@ -448,7 +452,7 @@ export default function DirectoryPage() {
       if (!numericId(filters.region?.id) && filters.region?.value) {
         facetParams.region = filters.region.value;
       }
-      const res = await api.getLeadFacets(facetParams);
+      const res = await api.getLeadFacets(facetParams, signal);
       if (seq !== facetSeq.current) return;
 
       const data = res?.data;
@@ -465,7 +469,9 @@ export default function DirectoryPage() {
         // Backend reachable but no data yet — derive facets from the demo set.
         setFacets(buildLocalFacets(DEFAULT_MOCK_LEADS, localFilterShape()));
       }
-    } catch {
+    } catch (err) {
+      // Ignore aborted requests (caused by StrictMode double-invocation or rapid filter changes)
+      if (err?.name === "AbortError" || signal?.aborted) return;
       if (seq !== facetSeq.current) return;
       setFacets(buildLocalFacets(DEFAULT_MOCK_LEADS, localFilterShape()));
       // Without the API, suggest from the profile we already have in context.
@@ -492,11 +498,30 @@ export default function DirectoryPage() {
   ]);
 
   // Re-run the search whenever any server-side filter changes.
+  // Guard: only fetch when auth is ready to avoid duplicate calls from auth state changes.
+  // Note: In development mode with React 18 StrictMode, this effect will run twice on mount.
+  // This is intentional React behavior to catch bugs. The sequence tracking (requestSeq) ensures
+  // only the latest response updates the UI. In production builds, effects run exactly once.
   useEffect(() => {
+    if (authLoading) return;
+    
+    // Cancel any in-flight request before starting a new one
+    if (leadsAbortControllerRef.current) {
+      leadsAbortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    leadsAbortControllerRef.current = controller;
+    
     setCurrentPage(1);
-    fetchLeads({ page: 1 });
+    fetchLeads({ page: 1 }, controller.signal);
+    
+    // Cleanup: abort the request if the component unmounts or effect re-runs
+    return () => {
+      controller.abort();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    authLoading,
     submittedQ,
     filters.category,
     filters.industry,
@@ -512,13 +537,38 @@ export default function DirectoryPage() {
 
   const handlePageChange = (newPage) => {
     if (newPage < 1 || newPage > Math.ceil(totalLeads / limit)) return;
-    fetchLeads({ page: newPage });
+    // Cancel any in-flight request before starting a new one
+    if (leadsAbortControllerRef.current) {
+      leadsAbortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    leadsAbortControllerRef.current = controller;
+    fetchLeads({ page: newPage }, controller.signal);
   };
 
+  // Fetch facets when filters change.
+  // Note: In development mode with React 18 StrictMode, this effect will run twice on mount.
+  // This is intentional React behavior. The sequence tracking (facetSeq) ensures only the latest
+  // response updates the UI. In production builds, effects run exactly once.
   useEffect(() => {
-    fetchFacets();
+    if (authLoading) return;
+    
+    // Cancel any in-flight request before starting a new one
+    if (facetsAbortControllerRef.current) {
+      facetsAbortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    facetsAbortControllerRef.current = controller;
+    
+    fetchFacets(controller.signal);
+    
+    // Cleanup: abort the request if the component unmounts or effect re-runs
+    return () => {
+      controller.abort();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    authLoading,
     submittedQ,
     filters.category,
     filters.industry,
