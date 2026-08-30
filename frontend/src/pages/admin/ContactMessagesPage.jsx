@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Check,
   ChevronDown,
@@ -43,27 +43,64 @@ export default function ContactMessagesPage() {
   const [reply, setReply] = useState("");
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState("");
+  const listAbortControllerRef = useRef(null);
+  const statsAbortControllerRef = useRef(null);
+  const activeAbortControllerRef = useRef(null);
 
-  const loadList = async (status = statusFilter) => {
+  const loadList = async (status = statusFilter, signal) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.getContactMessages({ status: status || undefined, limit: 100 });
+      const res = await api.getContactMessages({ status: status || undefined, limit: 100 }, signal);
       setMessages(res?.data?.messages || []);
     } catch (err) {
+      if (err?.name === "AbortError" || signal?.aborted) return;
       setError(err?.message || "Couldn't load contact messages.");
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadList();
-    api.getContactStats().then((r) => setStats(r?.data || null)).catch(() => {});
+    // Cancel any in-flight request before starting a new one
+    if (listAbortControllerRef.current) {
+      listAbortControllerRef.current.abort();
+    }
+    const listController = new AbortController();
+    listAbortControllerRef.current = listController;
+    loadList(undefined, listController.signal);
+
+    if (statsAbortControllerRef.current) {
+      statsAbortControllerRef.current.abort();
+    }
+    const statsController = new AbortController();
+    statsAbortControllerRef.current = statsController;
+    api
+      .getContactStats(statsController.signal)
+      .then((r) => {
+        if (!statsController.signal.aborted) setStats(r?.data || null);
+      })
+      .catch((err) => {
+        if (err?.name === "AbortError" || statsController.signal.aborted) return;
+      });
+
+    // Cleanup: abort the requests if the component unmounts or effect re-runs
+    return () => {
+      listController.abort();
+      statsController.abort();
+    };
   }, []);
 
   useEffect(() => {
-    loadList(statusFilter);
+    // Cancel any in-flight request before starting a new one
+    if (listAbortControllerRef.current) {
+      listAbortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    listAbortControllerRef.current = controller;
+    loadList(statusFilter, controller.signal);
+    // Cleanup: abort the request if the component unmounts or effect re-runs
+    return () => controller.abort();
   }, [statusFilter]);
 
   useEffect(() => {
@@ -72,20 +109,25 @@ export default function ContactMessagesPage() {
       setReply("");
       return;
     }
-    let cancelled = false;
+    // Cancel any in-flight request before starting a new one
+    if (activeAbortControllerRef.current) {
+      activeAbortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    activeAbortControllerRef.current = controller;
     api
-      .getContactMessage(activeId)
+      .getContactMessage(activeId, controller.signal)
       .then((res) => {
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
         setActive(res?.data || null);
         setReply(res?.data?.admin_reply || "");
       })
       .catch((err) => {
-        if (!cancelled) setError(err?.message || "Couldn't load message.");
+        if (err?.name === "AbortError" || controller.signal.aborted) return;
+        setError(err?.message || "Couldn't load message.");
       });
-    return () => {
-      cancelled = true;
-    };
+    // Cleanup: abort the request if the component unmounts or effect re-runs
+    return () => controller.abort();
   }, [activeId]);
 
   const showToast = (msg) => {

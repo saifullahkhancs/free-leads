@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -27,31 +27,44 @@ export default function AdminOverviewPage() {
   const [contactStats, setContactStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const abortControllerRef = useRef(null);
 
   useEffect(() => {
-    let cancelled = false;
+    // Cancel any in-flight request before starting a new one
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const { signal } = controller;
+
     api
-      .getLeadStats()
+      .getLeadStats(signal)
       .then((res) => {
-        if (!cancelled) setStats(res.data);
+        if (!signal.aborted) setStats(res.data);
       })
       .catch((err) => {
-        if (!cancelled) setError(err.message);
+        if (err?.name === "AbortError" || signal.aborted) return;
+        setError(err.message);
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!signal.aborted) setLoading(false);
       });
     // Only fetch contact stats if the user can see them (admins only).
     if (isAdmin) {
       api
-        .getContactStats()
+        .getContactStats(signal)
         .then((res) => {
-          if (!cancelled) setContactStats(res?.data || null);
+          if (!signal.aborted) setContactStats(res?.data || null);
         })
-        .catch(() => {});
+        .catch((err) => {
+          if (err?.name === "AbortError" || signal.aborted) return;
+        });
     }
+
+    // Cleanup: abort the request if the component unmounts or effect re-runs
     return () => {
-      cancelled = true;
+      controller.abort();
     };
   }, [isAdmin]);
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Check,
@@ -34,25 +34,35 @@ export default function AdminPlansPage() {
   const [plans, setPlans] = useState(() => mergePlansWithDefaults([]));
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState("");
+  const abortControllerRef = useRef(null);
 
-  const loadPlans = async () => {
+  const loadPlans = async (signal) => {
     setLoading(true);
     try {
-      const res = await api.getAdminPlans();
+      const res = await api.getAdminPlans(signal);
       if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
         setPlans(res.data);
       } else {
         setPlans(mergePlansWithDefaults([]));
       }
-    } catch {
+    } catch (err) {
+      if (err?.name === "AbortError" || signal?.aborted) return;
       setPlans(mergePlansWithDefaults([]));
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadPlans();
+    // Cancel any in-flight request before starting a new one
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    loadPlans(controller.signal);
+    // Cleanup: abort the request if the component unmounts or effect re-runs
+    return () => controller.abort();
   }, []);
 
   // Show toast passed from edit page via navigation state, then clear it

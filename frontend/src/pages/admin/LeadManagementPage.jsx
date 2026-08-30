@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Database, Factory, FolderTree, Globe2, Loader2, Pencil, Search, Trash2, X } from "lucide-react";
 import * as api from "../../api/client";
 
@@ -17,12 +17,32 @@ export default function LeadManagementPage() {
   const [confirmation, setConfirmation] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const abortControllerRef = useRef(null);
 
-  const load = () => {
+  const load = (signal) => {
     setError("");
-    return api.getLeadDimensions().then((res) => setData(res.data)).catch((err) => setError(err.message));
+    return api
+      .getLeadDimensions(signal)
+      .then((res) => {
+        if (!signal?.aborted) setData(res.data);
+      })
+      .catch((err) => {
+        if (err?.name === "AbortError" || signal?.aborted) return;
+        setError(err.message);
+      });
   };
-  useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    // Cancel any in-flight request before starting a new one
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    load(controller.signal);
+    // Cleanup: abort the request if the component unmounts or effect re-runs
+    return () => controller.abort();
+  }, []);
 
   const list = data?.[active === "country" ? "countries" : `${active}s`] || [];
   const filtered = useMemo(() => list.filter((item) => item.name.toLowerCase().includes(query.toLowerCase())), [list, query]);

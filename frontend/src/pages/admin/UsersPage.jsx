@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2, ShieldCheck, UserPlus, Users as UsersIcon } from "lucide-react";
 import * as api from "../../api/client";
 import { useAuth } from "../../context/AuthContext";
@@ -20,23 +20,42 @@ export default function UsersPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newUser, setNewUser] = useState({ email: "", password: "", firstName: "", lastName: "", role: "user" });
+  const abortControllerRef = useRef(null);
 
-  const loadUsers = async () => {
+  const loadUsers = async (signal) => {
     setLoading(true);
     setError(null);
     try {
-      const data = await api.getAllUsers();
-      setUsers(data.users || []);
+      const data = await api.getAllUsers(signal);
+      if (!signal?.aborted) setUsers(data.users || []);
     } catch (err) {
+      if (err?.name === "AbortError" || signal?.aborted) return;
       setError(err.message);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadUsers();
-    api.getRoles().then((res) => setRoles(res.roles || [])).catch(() => {});
+    // Cancel any in-flight request before starting a new one
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    loadUsers(controller.signal);
+    api
+      .getRoles(controller.signal)
+      .then((res) => {
+        if (!controller.signal.aborted) setRoles(res.roles || []);
+      })
+      .catch((err) => {
+        if (err?.name === "AbortError" || controller.signal.aborted) return;
+      });
+
+    // Cleanup: abort the request if the component unmounts or effect re-runs
+    return () => controller.abort();
   }, []);
 
   const handleCreate = async (e) => {

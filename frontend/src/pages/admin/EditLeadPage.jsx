@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, CheckCircle2, Loader2, Save } from "lucide-react";
 import * as api from "../../api/client";
@@ -33,12 +33,28 @@ export default function EditLeadPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
+  const abortControllerRef = useRef(null);
 
   useEffect(() => {
-    api.getLeadForEdit(id)
+    // Cancel any in-flight request before starting a new one
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    api.getLeadForEdit(id, controller.signal)
       .then((res) => setForm(res.data))
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (err?.name === "AbortError" || controller.signal.aborted) return;
+        setError(err.message);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+
+    // Cleanup: abort the request if the component unmounts or effect re-runs
+    return () => controller.abort();
   }, [id]);
 
   const set = (key) => (event) => {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -33,15 +33,21 @@ export default function BlogPostEditPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
+  const abortControllerRef = useRef(null);
 
   useEffect(() => {
     if (isNew) return;
-    let cancelled = false;
+    // Cancel any in-flight request before starting a new one
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
     setLoading(true);
     api
-      .adminGetPost(id)
+      .adminGetPost(id, controller.signal)
       .then((res) => {
-        if (cancelled) return;
+        if (controller.signal.aborted) return;
         const p = res?.data;
         if (!p) {
           setError("Post not found.");
@@ -56,14 +62,14 @@ export default function BlogPostEditPage() {
         });
       })
       .catch((err) => {
-        if (!cancelled) setError(err?.message || "Couldn't load this post.");
+        if (err?.name === "AbortError" || controller.signal.aborted) return;
+        setError(err?.message || "Couldn't load this post.");
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       });
-    return () => {
-      cancelled = true;
-    };
+    // Cleanup: abort the request if the component unmounts or effect re-runs
+    return () => controller.abort();
   }, [id, isNew]);
 
   const handleChange = (key) => (e) => {

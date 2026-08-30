@@ -205,8 +205,8 @@ export async function getLandingLeadStats() {
   return request("/api/leads/landing-stats", { method: "GET", skipAuth: true });
 }
 
-export async function getLeadStats() {
-  return request("/api/leads/stats", { method: "GET" });
+export async function getLeadStats(signal) {
+  return request("/api/leads/stats", { method: "GET", signal });
 }
 
 /** Create a single lead manually (requires editor/admin role server-side). */
@@ -217,16 +217,16 @@ export async function createLead(payload) {
   });
 }
 
-export async function getLeadForEdit(id) {
-  return request(`/api/leads/${id}/edit`);
+export async function getLeadForEdit(id, signal) {
+  return request(`/api/leads/${id}/edit`, { signal });
 }
 
 export async function updateLead(id, payload) {
   return request(`/api/leads/${id}`, { method: "PUT", body: payload });
 }
 
-export async function getLeadDimensions() {
-  return request("/api/admin/lead-dimensions");
+export async function getLeadDimensions(signal) {
+  return request("/api/admin/lead-dimensions", { signal });
 }
 
 export async function renameLeadDimension(type, key, name) {
@@ -342,8 +342,8 @@ export async function trySilentLogin() {
 // -----------------------------------------------------------------------
 // Admin endpoints (requires admin/super_admin role)
 // -----------------------------------------------------------------------
-export async function getAllUsers() {
-  return request("/api/admin/users", { method: "GET" });
+export async function getAllUsers(signal) {
+  return request("/api/admin/users", { method: "GET", signal });
 }
 
 export async function getUserById(id) {
@@ -371,8 +371,8 @@ export async function toggleUserActive(userId, is_active) {
   });
 }
 
-export async function getRoles() {
-  return request("/api/admin/roles", { method: "GET" });
+export async function getRoles(signal) {
+  return request("/api/admin/roles", { method: "GET", signal });
 }
 
 // -----------------------------------------------------------------------
@@ -382,8 +382,8 @@ export async function getPlans() {
   return request("/api/plans", { method: "GET" });
 }
 
-export async function getAdminPlans() {
-  return request("/api/admin/plans", { method: "GET" });
+export async function getAdminPlans(signal) {
+  return request("/api/admin/plans", { method: "GET", signal });
 }
 
 export async function createAdminPlan(planData) {
@@ -544,17 +544,17 @@ export async function submitContactForm(payload) {
 }
 
 /** Admin: list contact messages with optional status filter. */
-export async function getContactMessages(params = {}) {
+export async function getContactMessages(params = {}, signal) {
   const query = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
     if (v !== undefined && v !== null && v !== "") query.append(k, v);
   });
-  return request(`/api/contact?${query.toString()}`, { method: "GET" });
+  return request(`/api/contact?${query.toString()}`, { method: "GET", signal });
 }
 
 /** Admin: get a single contact message (and auto-mark as read). */
-export async function getContactMessage(id) {
-  return request(`/api/contact/${id}`, { method: "GET" });
+export async function getContactMessage(id, signal) {
+  return request(`/api/contact/${id}`, { method: "GET", signal });
 }
 
 /** Admin: patch a contact message (status and/or reply). */
@@ -563,8 +563,8 @@ export async function updateContactMessage(id, payload) {
 }
 
 /** Admin: dashboard tile stats for contact messages. */
-export async function getContactStats() {
-  return request("/api/contact/stats", { method: "GET" });
+export async function getContactStats(signal) {
+  return request("/api/contact/stats", { method: "GET", signal });
 }
 
 // -----------------------------------------------------------------------
@@ -589,17 +589,17 @@ export async function getPublishedPostBySlug(slug) {
 }
 
 /** Admin: list all blog posts (any status). */
-export async function adminListPosts(params = {}) {
+export async function adminListPosts(params = {}, signal) {
   const query = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
     if (v !== undefined && v !== null && v !== "") query.append(k, v);
   });
-  return request(`/api/blog/admin/all?${query.toString()}`, { method: "GET" });
+  return request(`/api/blog/admin/all?${query.toString()}`, { method: "GET", signal });
 }
 
 /** Admin: get a single post (any status) by id. */
-export async function adminGetPost(id) {
-  return request(`/api/blog/admin/${id}`, { method: "GET" });
+export async function adminGetPost(id, signal) {
+  return request(`/api/blog/admin/${id}`, { method: "GET", signal });
 }
 
 /** Admin: create a new blog post. */
