@@ -6,7 +6,7 @@ const API_BASE = import.meta.env.VITE_API_URL ?? "";
 // one refresh request per failed request.
 let refreshPromise = null;
 
-async function rawRequest(path, { method = "GET", body, headers = {}, skipAuth = false } = {}) {
+async function rawRequest(path, { method = "GET", body, headers = {}, skipAuth = false, signal } = {}) {
   const finalHeaders = { ...headers };
   if (body !== undefined) finalHeaders["Content-Type"] = "application/json";
 
@@ -18,6 +18,7 @@ async function rawRequest(path, { method = "GET", body, headers = {}, skipAuth =
     headers: finalHeaders,
     credentials: "include", // sends/receives the httpOnly refresh cookie
     body: body !== undefined ? JSON.stringify(body) : undefined,
+    signal,
   });
 
   return response;
@@ -170,12 +171,12 @@ export async function geoReverse(lat, lng) {
 // ---------------------------------------------------------------------------
 // Lead endpoints
 // ---------------------------------------------------------------------------
-export async function getLeads(params = {}) {
+export async function getLeads(params = {}, signal) {
   const query = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
     if (value) query.append(key, value);
   });
-  return request(`/api/leads?${query.toString()}`);
+  return request(`/api/leads?${query.toString()}`, { signal });
 }
 
 export async function getLeadById(id) {
@@ -189,14 +190,14 @@ export async function getLeadById(id) {
  * filters so the options cascade (category narrows industries, country
  * narrows states, etc.).
  */
-export async function getLeadFacets(params = {}) {
+export async function getLeadFacets(params = {}, signal) {
   const query = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== "" && value !== false) {
       query.append(key, value);
     }
   });
-  return request(`/api/leads/facets?${query.toString()}`);
+  return request(`/api/leads/facets?${query.toString()}`, { signal });
 }
 
 /** Public aggregate counts used by the marketing landing page. */
