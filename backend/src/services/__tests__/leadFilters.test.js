@@ -291,8 +291,16 @@ test("a non-geo empty search does not run the geo diagnostic", async () => {
   assert.equal(captured.find((c) => /nearest_distance/.test(c.text)), undefined);
 });
 
-test("default 'recent' sort orders by created_at, not insertion id", async () => {
+// TEMP: until idx_leads_created_at_id is added, the default sort returns the
+// first-inserted leads (id ASC) instead of the newest. This is a cheap PK
+// index scan rather than an unindexed full sort over the whole table.
+test("default 'recent' sort returns first-inserted leads (id ASC) — temporary", async () => {
   await runFilter({ sort: "recent" });
+  assert.match(rowQuery().text, /ORDER BY l\.id ASC/);
+});
+
+test("\"newest\" still orders by created_at DESC (kept as the escape hatch)", async () => {
+  await runFilter({ sort: "newest" });
   assert.match(rowQuery().text, /ORDER BY l\.created_at DESC/);
 });
 

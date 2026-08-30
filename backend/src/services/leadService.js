@@ -349,8 +349,13 @@ const getLeads = async ({
   }
 
   const ORDER_BY = {
-    // "recent" is the UI default and must actually order by recency.
-    recent: "l.created_at DESC NULLS LAST, l.id DESC",
+    // TEMP: the default "recent" ordering used to compile to
+    // `ORDER BY created_at DESC`, which (with no idx_leads_created_at_id yet)
+    // forces a full sort/scan of the whole table on every first-page search.
+    // Until that index lands, return the first-inserted leads (id ASC) instead
+    // of the latest — the primary-key index makes this a cheap top-N scan.
+    // `newest` below keeps the latest-first definition for when we restore it.
+    recent: "l.id ASC",
     name: "l.full_name ASC, l.id ASC",
     company: "l.company_name ASC NULLS LAST, l.id ASC",
     verified: "l.is_verified DESC, l.id ASC",
