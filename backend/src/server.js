@@ -3,6 +3,7 @@ const env = require("./config/env");
 const { pool } = require("./config/db");
 const { redis } = require("./config/redis");
 const { runMigrations } = require("./db/migrate");
+const { startImportWorker, stopImportWorker } = require("./jobs/importWorker");
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -48,6 +49,13 @@ async function start() {
   await pool.query("SELECT 1");
   await redis.ping();
 
+  // Background CSV import worker (Redis/BullMQ). Runs inside the API process
+  // by default; set IMPORT_WORKER_ENABLED=false and run `npm run worker` in a
+  // separate process to scale it out.
+  if (env.IMPORT_WORKER_ENABLED) {
+    startImportWorker();
+  }
+
   const server = app.listen(env.PORT, () => {
     // eslint-disable-next-line no-console
     console.log(`Auth API listening on http://localhost:${env.PORT} [${env.NODE_ENV}]`);
@@ -60,6 +68,7 @@ async function start() {
   const shutdown = async (signal) => {
     // eslint-disable-next-line no-console
     console.log(`${signal} received, shutting down...`);
+    await stopImportWorker().catch(() => {});
     server.close(async () => {
       await pool.end();
       redis.disconnect();

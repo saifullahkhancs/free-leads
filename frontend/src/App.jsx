@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import AuthGuard from "./components/AuthGuard";
 import RoleGuard from "./components/RoleGuard";
+import SessionExpiredModal from "./components/SessionExpiredModal";
 import DashboardLayout from "./components/DashboardLayout";
 import AppShell from "./components/AppShell";
 import LandingPage from "./pages/LandingPage";
@@ -42,6 +43,10 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        {/* Global "session expired — log in again" popup card. Renders above
+            whatever page the user is on; logging in inside it resumes work
+            on the same page. */}
+        <SessionExpiredModal />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />

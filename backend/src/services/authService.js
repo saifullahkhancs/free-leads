@@ -275,7 +275,7 @@ async function issueTokens(user, roles, meta = {}) {
   const accessToken = createAccessToken({ sub: user.id, email: user.email, roles });
   const refreshToken = createRefreshToken({ sub: user.id }, jti);
 
-  const expiresAt = new Date(Date.now() + env.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60 * 1000);
+  const expiresAt = new Date(Date.now() + env.REFRESH_TOKEN_EXPIRE_MINUTES * 60 * 1000);
   await query(
     `INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at, user_agent, ip_address)
      VALUES ($1, $2, $3, $4, $5, $6)`,

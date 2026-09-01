@@ -6,6 +6,22 @@ const API_BASE = import.meta.env.VITE_API_URL ?? "";
 // one refresh request per failed request.
 let refreshPromise = null;
 
+// True once this tab has had a working session (login or successful silent
+// refresh). Used to tell "session expired mid-use" apart from "was never
+// logged in", so the session-expired popup only appears for the former.
+let hadActiveSession = false;
+
+/** Fired when a logged-in session can no longer be refreshed. */
+export const SESSION_EXPIRED_EVENT = "auth:session-expired";
+
+function emitSessionExpired() {
+  try {
+    window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
+  } catch {
+    // non-browser environment (tests) — ignore
+  }
+}
+
 async function rawRequest(path, { method = "GET", body, headers = {}, skipAuth = false, signal } = {}) {
   const finalHeaders = { ...headers };
   if (body !== undefined) finalHeaders["Content-Type"] = "application/json";
@@ -29,11 +45,17 @@ async function refreshAccessToken() {
     refreshPromise = rawRequest("/api/auth/refresh", { method: "POST", skipAuth: true })
       .then(async (response) => {
         if (!response.ok) {
+          const sessionWasActive = hadActiveSession || Boolean(getAccessToken());
           clearAccessToken();
+          if (sessionWasActive) {
+            hadActiveSession = false;
+            emitSessionExpired();
+          }
           return null;
         }
         const data = await response.json();
         setAccessToken(data.access_token);
+        hadActiveSession = true;
         return data.access_token;
       })
       .finally(() => {
@@ -101,6 +123,7 @@ export async function login(email, password) {
     body: { email, password },
   });
   setAccessToken(data.access_token);
+  hadActiveSession = true;
   return data;
 }
 
@@ -153,6 +176,7 @@ export async function logout() {
     await request("/api/auth/logout", { method: "POST", skipAuth: true });
   } finally {
     clearAccessToken();
+    hadActiveSession = false;
   }
 }
 
@@ -274,42 +298,67 @@ export async function importLeadsCsv(csv, source = "csv_upload", thirdArg = {}) 
 }
 
 /**
- * Bulk-import leads from a CSV File (requires editor/admin role server-side).
+ * Upload a CSV File for a background import job (requires editor/admin role).
  * Sent as multipart/form-data so the file streams to the server instead of
- * being read fully into memory (avoids out-of-memory on 1M+ row files).
+ * being read fully into memory. The server stages the file and returns a
+ * queued job immediately — poll it with getImportJob().
  * `options`: { source, limit, offset, fieldMapping }.
+ * Resolves to { queued: true, job: {...} } inside `data`.
  */
 export async function importLeadsFile(file, { source = "csv_upload", limit, offset, fieldMapping } = {}) {
-  const formData = new FormData();
-  // Busboy emits multipart parts in order. Send metadata first so the server
-  // has the mapping before it starts consuming the streamed file.
-  formData.append("source", source);
-  if (fieldMapping) formData.append("fieldMapping", JSON.stringify(fieldMapping));
-  formData.append("file", file);
+  const buildFormData = () => {
+    const formData = new FormData();
+    // Busboy emits multipart parts in order. Send metadata first so the server
+    // has the mapping before it starts consuming the streamed file.
+    formData.append("source", source);
+    if (limit) formData.append("limit", String(limit));
+    if (offset) formData.append("offset", String(offset));
+    if (fieldMapping) formData.append("fieldMapping", JSON.stringify(fieldMapping));
+    formData.append("file", file);
+    return formData;
+  };
 
-  const query = new URLSearchParams();
-  if (limit) query.set("limit", String(limit));
-  if (offset) query.set("offset", String(offset));
+  const doUpload = () => {
+    const token = getAccessToken();
+    const headers = {};
+    if (token) headers.Authorization = `Bearer ${token}`;
+    // Note: no Content-Type header — the browser sets the multipart boundary.
+    return fetch(`${API_BASE}/api/leads/import`, {
+      method: "POST",
+      headers,
+      credentials: "include",
+      body: buildFormData(),
+    });
+  };
 
-  const token = getAccessToken();
-  const headers = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
-  // Note: no Content-Type header — the browser sets the multipart boundary.
+  let response = await doUpload();
+  if (response.status === 401) {
+    const newToken = await refreshAccessToken();
+    if (newToken) response = await doUpload();
+  }
 
-  const suffix = query.size ? `?${query.toString()}` : "";
-  const response = await fetch(`${API_BASE}/api/leads/import${suffix}`, {
-    method: "POST",
-    headers,
-    credentials: "include",
-    body: formData,
-  });
+  const data = await parseBody(response);
+  if (!response.ok) throw buildError(data, response);
+  return data;
+}
 
-  return parseBody(response).then((data) => {
-    if (!response.ok) {
-      throw buildError(data, response);
-    }
-    return data;
-  });
+// ---------------------------------------------------------------------------
+// Background import jobs (Redis/BullMQ queue on the server)
+// ---------------------------------------------------------------------------
+
+/** Recent import jobs for the current user (admins see all). */
+export async function listImportJobs(limit = 10) {
+  return request(`/api/leads/import-jobs?limit=${limit}`, { method: "GET" });
+}
+
+/** Live progress/result for one background import job. */
+export async function getImportJob(jobId) {
+  return request(`/api/leads/import-jobs/${jobId}`, { method: "GET" });
+}
+
+/** Ask a queued/running import job to stop (already-imported rows are kept). */
+export async function cancelImportJob(jobId) {
+  return request(`/api/leads/import-jobs/${jobId}/cancel`, { method: "POST" });
 }
 
 /** Parse CSV and return headers and sample data. Supports row range for large files. */

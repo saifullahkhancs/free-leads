@@ -3,10 +3,17 @@ const authService = require("../services/authService");
 const quotaService = require("../services/quotaService");
 const geocodingJobService = require("../services/geocodingJobService");
 const leadsCacheService = require("../services/leadsCacheService");
+const importJobService = require("../services/importJobService");
+const { enqueueImportJob } = require("../jobs/importQueue");
 const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/ApiError");
+const env = require("../config/env");
 const { hasFullLeadAccess, getPrivilegedLeadVisibility } = require("../utils/leadVisibility");
 const busboy = require("busboy");
+const fs = require("fs");
+const fsp = require("fs/promises");
+const path = require("path");
+const { randomUUID } = require("crypto");
 
 const isRolePaid = hasFullLeadAccess;
 
@@ -377,10 +384,14 @@ function parseRowWindow(value, fallback) {
  *
  * Supports two bodies:
  *   - multipart/form-data: field `file` (the .csv) + optional `source`,
- *     `limit`, `offset` form fields. The file is streamed to the parser, so
- *     multi-million-row files never load into memory.
+ *     `limit`, `offset`, `fieldMapping` form fields. The file is staged on
+ *     disk and imported by the Redis (BullMQ) background worker — the request
+ *     returns a job id immediately, so big files can never hit the reverse
+ *     proxy timeout (the old 503 on live).
  *   - application/json: `{ csv: "<text>", source?, limit?, offset? }`.
- *     Kept for backwards compatibility / programmatic use.
+ *     Small payloads (≤ IMPORT_SYNC_MAX_ROWS data rows) are imported
+ *     synchronously and return the result inline, exactly as before. Larger
+ *     payloads are transparently queued as a background job.
  *
  * `limit` caps how many data rows are imported (from the start of the file);
  * `offset` skips that many data rows first (import a window, e.g. rows
@@ -393,18 +404,122 @@ const importLeads = asyncHandler(async (req, res) => {
   const offset = parseRowWindow(req.body?.offset ?? req.query?.offset, 0);
   const options = { limit, offset, fieldMapping };
 
-  // Large files use multipart uploads so the CSV streams in without buffering.
+  // Multipart uploads (the big-file path) are always processed as a
+  // background job: stage the stream to disk, enqueue, respond immediately.
   if (req.is("multipart/form-data")) {
-    const result = await importLeadsMultipart(req, options);
-    return res.json({ status: "success", data: result });
+    const job = await stageMultipartImport(req, options);
+    return res.status(202).json({ status: "success", data: { queued: true, job: serializeJob(job) } });
   }
 
   if (!csv || typeof csv !== "string" || !csv.trim()) {
     throw new ApiError(400, "CSV content is required (send { csv: '<text>' })");
   }
 
+  // Rough data-row count (lines minus header). Small imports stay synchronous
+  // so the UI gets an instant result; anything bigger goes to the queue.
+  const approxDataRows = countCsvLines(csv) - 1;
+  const effectiveRows = limit > 0 ? Math.min(limit, approxDataRows) : approxDataRows;
+  if (effectiveRows > env.IMPORT_SYNC_MAX_ROWS) {
+    const job = await enqueueCsvTextImport(req.user, csv, source || "csv_upload", options);
+    return res.status(202).json({ status: "success", data: { queued: true, job: serializeJob(job) } });
+  }
+
   const result = await leadService.importLeadsCsv(csv, source || "csv_upload", options);
   res.json({ status: "success", data: result });
+});
+
+/** Count non-empty lines without materializing an array of rows. */
+function countCsvLines(text) {
+  let count = 0;
+  let lineHasContent = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === "\n") {
+      if (lineHasContent) count += 1;
+      lineHasContent = false;
+    } else if (ch !== "\r" && ch !== " " && ch !== "\t") {
+      lineHasContent = true;
+    }
+  }
+  if (lineHasContent) count += 1;
+  return count;
+}
+
+/** BIGINT columns come back from pg as strings — return numbers to the UI. */
+function serializeJob(job) {
+  if (!job) return job;
+  const toNum = (v) => (v === null || v === undefined ? v : Number(v));
+  return {
+    id: job.id,
+    filename: job.filename,
+    source: job.source,
+    status: job.status,
+    options: job.options,
+    total_rows: toNum(job.total_rows),
+    processed: toNum(job.processed),
+    imported: toNum(job.imported),
+    skipped: toNum(job.skipped),
+    failed: toNum(job.failed),
+    errors: job.errors || [],
+    error_message: job.error_message,
+    created_at: job.created_at,
+    started_at: job.started_at,
+    finished_at: job.finished_at,
+  };
+}
+
+async function ensureUploadDir() {
+  await fsp.mkdir(env.IMPORT_UPLOAD_DIR, { recursive: true });
+}
+
+/** Persist a JSON-body CSV that is too big for sync import, then enqueue it. */
+async function enqueueCsvTextImport(user, csvText, source, options) {
+  await ensureUploadDir();
+  const filePath = path.join(env.IMPORT_UPLOAD_DIR, `${randomUUID()}.csv`);
+  await fsp.writeFile(filePath, csvText, "utf8");
+  const job = await importJobService.createJob({
+    userId: user?.id || null,
+    filename: "inline.csv",
+    filePath,
+    source,
+    options,
+  });
+  await enqueueImportJob(job.id);
+  return job;
+}
+
+/**
+ * GET /api/leads/import-jobs — recent import jobs for the current user
+ * (admins/super_admins see everyone's jobs).
+ */
+const listImportJobs = asyncHandler(async (req, res) => {
+  const allowAny = Boolean(req.user?.roles?.some((r) => ["admin", "super_admin"].includes(r)));
+  const jobs = await importJobService.listJobs({
+    userId: req.user.id,
+    allowAny,
+    limit: req.query.limit,
+  });
+  res.json({ status: "success", data: { jobs: jobs.map(serializeJob) } });
+});
+
+/** GET /api/leads/import-jobs/:jobId — live progress for one job. */
+const getImportJob = asyncHandler(async (req, res) => {
+  const allowAny = Boolean(req.user?.roles?.some((r) => ["admin", "super_admin"].includes(r)));
+  const job = await importJobService.getJob(req.params.jobId, {
+    userId: req.user.id,
+    allowAny,
+  });
+  res.json({ status: "success", data: { job: serializeJob(job) } });
+});
+
+/** POST /api/leads/import-jobs/:jobId/cancel — stop a queued/running job. */
+const cancelImportJob = asyncHandler(async (req, res) => {
+  const allowAny = Boolean(req.user?.roles?.some((r) => ["admin", "super_admin"].includes(r)));
+  const job = await importJobService.requestCancel(req.params.jobId, {
+    userId: req.user.id,
+    allowAny,
+  });
+  res.json({ status: "success", data: { job: serializeJob(job) } });
 });
 
 /**
@@ -431,21 +546,26 @@ const parseCsv = asyncHandler(async (req, res) => {
 });
 
 /**
- * Handle a multipart/form-data CSV import. The uploaded file stream is handed
- * straight to the service (which pipes it into the CSV parser), so memory stays
- * flat regardless of file size.
+ * Stage a multipart/form-data CSV upload on disk and enqueue a background
+ * import job. The request finishes as soon as the upload is stored — the
+ * actual import runs in the BullMQ worker, so no gateway timeout is possible.
  */
-const importLeadsMultipart = (req, { limit, offset, fieldMapping }) =>
+const stageMultipartImport = (req, { limit, offset, fieldMapping }) =>
   new Promise((resolve, reject) => {
     const Busboy = require("busboy");
     const bb = Busboy({ headers: req.headers, limits: { files: 1 } });
     let source = "csv_upload";
     let mapping = fieldMapping || null;
-    let importOutcome = null;
+    let jobLimit = limit;
+    let jobOffset = offset;
+    let filename = "upload.csv";
     let sawFile = false;
+    let stagingOutcome = null;
 
     bb.on("field", (name, value) => {
       if (name === "source" && value) source = value;
+      if (name === "limit" && value) jobLimit = parseRowWindow(value, jobLimit);
+      if (name === "offset" && value) jobOffset = parseRowWindow(value, jobOffset);
       if (name === "fieldMapping" && value) {
         try {
           mapping = JSON.parse(value);
@@ -455,30 +575,54 @@ const importLeadsMultipart = (req, { limit, offset, fieldMapping }) =>
       }
     });
 
-    bb.on("file", (name, stream) => {
+    bb.on("file", (name, stream, info) => {
       if (sawFile) {
         stream.resume(); // ignore any additional files
         return;
       }
       sawFile = true;
-      // Consume the file immediately. Waiting for Busboy's `close` event before
-      // reading causes a deadlock because `close` is emitted only after the file
-      // stream has been consumed. Metadata fields are appended before the file
-      // by the browser client, so source/mapping are available here.
-      importOutcome = leadService
-        .importLeadsFromStream(stream, source, { limit, offset, fieldMapping: mapping })
-        .then((result) => ({ result }), (error) => ({ error }));
+      if (info?.filename) filename = info.filename;
+
+      // Stream the upload straight to disk (never buffered in memory).
+      stagingOutcome = (async () => {
+        await ensureUploadDir();
+        const filePath = path.join(env.IMPORT_UPLOAD_DIR, `${randomUUID()}.csv`);
+        await new Promise((res2, rej2) => {
+          const out = fs.createWriteStream(filePath);
+          stream.pipe(out);
+          stream.on("error", rej2);
+          out.on("error", rej2);
+          out.on("finish", res2);
+        });
+        return filePath;
+      })().then(
+        (filePath) => ({ filePath }),
+        (error) => ({ error })
+      );
     });
 
     bb.on("error", (err) => reject(err));
 
     bb.on("close", async () => {
-      if (!sawFile || !importOutcome) {
-        return reject(new ApiError(400, "No CSV file received (expected multipart field 'file')"));
+      try {
+        if (!sawFile || !stagingOutcome) {
+          return reject(new ApiError(400, "No CSV file received (expected multipart field 'file')"));
+        }
+        const outcome = await stagingOutcome;
+        if (outcome.error) return reject(outcome.error);
+
+        const job = await importJobService.createJob({
+          userId: req.user?.id || null,
+          filename,
+          filePath: outcome.filePath,
+          source,
+          options: { limit: jobLimit, offset: jobOffset, fieldMapping: mapping },
+        });
+        await enqueueImportJob(job.id);
+        resolve(job);
+      } catch (err) {
+        reject(err);
       }
-      const outcome = await importOutcome;
-      if (outcome.error) return reject(outcome.error);
-      resolve(outcome.result);
     });
 
     req.pipe(bb);
@@ -540,6 +684,9 @@ module.exports = {
   exportLeads,
   createLead,
   importLeads,
+  listImportJobs,
+  getImportJob,
+  cancelImportJob,
   parseCsv,
   ingestLeads,
   getLandingStats,

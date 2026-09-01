@@ -84,6 +84,27 @@ router.post(
   leadController.importLeads
 );
 
+// Background import job monitoring (Redis/BullMQ queue). Keep these before
+// the generic /:id route.
+router.get(
+  "/import-jobs",
+  authenticate,
+  requireRole("admin", "super_admin", "editor"),
+  leadController.listImportJobs
+);
+router.get(
+  "/import-jobs/:jobId",
+  authenticate,
+  requireRole("admin", "super_admin", "editor"),
+  leadController.getImportJob
+);
+router.post(
+  "/import-jobs/:jobId/cancel",
+  authenticate,
+  requireRole("admin", "super_admin", "editor"),
+  leadController.cancelImportJob
+);
+
 router.post(
   "/parse-csv",
   authenticate,
@@ -106,7 +127,7 @@ router.put(
   leadController.updateLead
 );
 
-// NOTE: keep `/landing-stats`, `/stats`, `/import`, `/export`, `/ingest` before `/:id`.
+// NOTE: keep `/landing-stats`, `/stats`, `/import`, `/import-jobs`, `/export`, `/ingest` before `/:id`.
 router.get(
   "/:id",
   authenticate,

@@ -1725,3 +1725,9 @@
   color: var(--success-dark);
   border-color: #a7f3d0;
 }
+
+/* Indeterminate progress shimmer for background import jobs */
+@keyframes importJobPulse {
+  from { margin-left: 0; }
+  to { margin-left: 60%; }
+}

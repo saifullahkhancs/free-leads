@@ -12,7 +12,7 @@ const REFRESH_COOKIE_OPTIONS = {
   secure: env.REFRESH_COOKIE_SECURE,
   sameSite: "strict",
   path: "/api/auth", // only sent to auth endpoints that need it
-  maxAge: env.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60 * 1000,
+  maxAge: env.REFRESH_TOKEN_EXPIRE_MINUTES * 60 * 1000,
 };
 
 function setRefreshCookie(res, token) {

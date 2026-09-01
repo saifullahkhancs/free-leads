@@ -945,15 +945,24 @@ const recordHashesBatch = async (client, ids, fingerprints) => {
  *             0 / Infinity means "import everything".
  *   - offset: number of DATA rows to skip from the start of the source
  *             (lets you re-import a range, e.g. rows 100001–200000).
- *   - onProgress: optional callback(rowsAttempted) fired per imported row.
+ *   - onProgress: optional (async) callback({ processed, imported, skipped,
+ *             failed }) fired after every flushed batch.
+ *   - shouldAbort: optional (async) callback checked between batches; when it
+ *             returns true the import stops cleanly (already-committed batches
+ *             are kept) and the result carries `cancelled: true`.
  *
- * Returns { imported, skipped, failed, total, errors } where `total` is the
- * number of data rows in the whole source (not just the imported window).
+ * Each batch is committed in its own transaction so a long import never holds
+ * a single giant transaction open (which caused lock buildup and gateway
+ * timeouts on the live server) and progress survives a crash/cancel.
+ *
+ * Returns { imported, skipped, failed, total, attempted, errors, cancelled }
+ * where `total` is the number of data rows in the whole source (not just the
+ * imported window).
  */
 const bulkInsertFromIterable = async (
   getIterator,
   source = "csv_upload",
-  { limit = Infinity, offset = 0, fieldMapping = null, onProgress } = {}
+  { limit = Infinity, offset = 0, fieldMapping = null, onProgress, shouldAbort } = {}
 ) => {
   // A non-positive limit means "no limit" (import everything).
   if (!(limit > 0)) limit = Infinity;
@@ -972,11 +981,10 @@ const bulkInsertFromIterable = async (
   let dataRows = 0;   // every data row seen in the source (drives `total`)
   let attempted = 0;  // rows we actually tried to import (after offset, before limit)
   let offsetLeft = offset;
+  let cancelled = false;
 
   const client = await pool.connect();
   try {
-    await client.query("BEGIN");
-
     for await (const record of getIterator()) {
       dataRows += 1;
       const displayRow = dataRows + 1; // +1 because row 1 is the header
@@ -987,11 +995,12 @@ const bulkInsertFromIterable = async (
         continue;
       }
 
-      // Once the requested `limit` has been reached, stop importing but keep
-      // counting so the response's `total` still reflects the whole file.
-      if (attempted >= limit) continue;
+      // Once the requested `limit` has been reached, stop importing. We also
+      // stop READING here (instead of draining the rest of the source just to
+      // count it) so a 1M-row file with limit=5000 finishes in seconds;
+      // `total` then reflects the rows seen up to the stop point.
+      if (attempted >= limit) break;
       attempted += 1;
-      if (onProgress) onProgress(attempted);
 
       // Re-map arbitrary CSV columns to the standard lead fields when a
       // field mapping was provided.
@@ -1013,16 +1022,22 @@ const bulkInsertFromIterable = async (
         batch.push({ record: { ...mapped, source }, cityId, regionId, countryId, lat, lon });
         if (batch.length >= BATCH_SIZE) {
           await flushBatch(client);
+          if (onProgress) {
+            await onProgress({ processed: attempted, imported, skipped, failed: errors.length });
+          }
+          if (shouldAbort && (await shouldAbort())) {
+            cancelled = true;
+            break;
+          }
         }
       } catch (err) {
         errors.push({ row: displayRow, error: err.message });
       }
     }
     await flushBatch(client);
-    await client.query("COMMIT");
-  } catch (err) {
-    await client.query("ROLLBACK");
-    throw err;
+    if (onProgress) {
+      await onProgress({ processed: attempted, imported, skipped, failed: errors.length });
+    }
   } finally {
     client.release();
   }
@@ -1042,13 +1057,22 @@ const bulkInsertFromIterable = async (
     const survivorSet = new Set(survivors);
     const survivorRows = batch.filter((b) => survivorSet.has(b.record));
     const survivorFp = fingerprints;
-    const ids = await insertLeadBatch(client, survivorRows, survivorFp);
-    await recordHashesBatch(client, ids, survivorFp);
-    imported += ids.length;
+    // One short transaction per batch: keeps locks brief and lets progress
+    // survive cancellation or a crash mid-import.
+    await client.query("BEGIN");
+    try {
+      const ids = await insertLeadBatch(client, survivorRows, survivorFp);
+      await recordHashesBatch(client, ids, survivorFp);
+      await client.query("COMMIT");
+      imported += ids.length;
+    } catch (err) {
+      await client.query("ROLLBACK");
+      throw err;
+    }
     batch = [];
   }
 
-  return { imported, skipped, failed: errors.length, total: dataRows, errors };
+  return { imported, skipped, failed: errors.length, total: dataRows, attempted, errors, cancelled };
 };
 
 /**
