@@ -1,6 +1,6 @@
 const crypto = require("crypto");
 const { query, withTransaction } = require("../config/db");
-const redis = require("../config/redis");
+const { redis } = require("../config/redis");
 const env = require("../config/env");
 const ApiError = require("../utils/ApiError");
 const { canonicalCityName } = require("../utils/locationNormalizer");

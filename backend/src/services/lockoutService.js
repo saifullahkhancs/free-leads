@@ -1,4 +1,4 @@
-const redis = require("../config/redis");
+const { redis } = require("../config/redis");
 const env = require("../config/env");
 
 /**

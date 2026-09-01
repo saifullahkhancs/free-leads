@@ -2,6 +2,7 @@ const leadService = require("../services/leadService");
 const authService = require("../services/authService");
 const quotaService = require("../services/quotaService");
 const geocodingJobService = require("../services/geocodingJobService");
+const leadsCacheService = require("../services/leadsCacheService");
 const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/ApiError");
 const { hasFullLeadAccess, getPrivilegedLeadVisibility } = require("../utils/leadVisibility");
@@ -42,6 +43,8 @@ function toInt(value) {
 }
 
 const getLeads = asyncHandler(async (req, res) => {
+  const requestStartTime = Date.now();
+  
   const {
     q,
     category,
@@ -65,14 +68,23 @@ const getLeads = asyncHandler(async (req, res) => {
 
   // Paid access = active paid subscription OR an admin/super_admin role.
   // Admins bypass quotas; regular users are checked by the requireQuota middleware.
+  const visibilityStartTime = Date.now();
   const [visibility, quotaStatus] = await Promise.all([
     resolveVisibility(req.user),
     quotaService.getQuotaStatus(req.user.id),
   ]);
+  const visibilityTime = Date.now() - visibilityStartTime;
+  console.log(`[PERF] Visibility check: ${visibilityTime}ms`);
+  
   const is_paid = visibility.is_paid;
 
-  const result = await leadService.getLeads({
-    q,
+  const limitValue = Math.min(Math.max(toInt(limit) || 20, 1), 200);
+  const offsetValue = toInt(offset) || 0;
+  const currentPage = Math.floor(offsetValue / limitValue) + 1;
+
+  // Build filters object for cache key
+  const filters = {
+    q: q || null,
     category: category || null,
     country_id: toInt(country_id),
     region_id: toInt(region_id),
@@ -83,16 +95,103 @@ const getLeads = asyncHandler(async (req, res) => {
     city: city || null,
     industry: industry || null,
     verified: toBool(verified),
-    cursor: toInt(cursor),
-    limit: Math.min(Math.max(toInt(limit) || 20, 1), 200),
-    offset: toInt(offset) || 0,
     sort: sort || "recent",
     lat: lat ? parseFloat(lat) : null,
     lon: lon ? parseFloat(lon) : null,
     radius: radius ? parseFloat(radius) : 50000,
-    is_paid,
-    visibility,
-  });
+  };
+
+  // Check cache for authenticated users
+  let result;
+  let cacheHit = false;
+  
+  if (req.user?.id) {
+    const cacheCheckStartTime = Date.now();
+    
+    // For page 1 with no filters, check default leads cache
+    const isDefaultRequest = currentPage === 1 && 
+                            !filters.q && 
+                            !filters.category && 
+                            !filters.industry &&
+                            !filters.country_id &&
+                            !filters.region_id &&
+                            !filters.city_id &&
+                            !filters.lat &&
+                            !filters.lon;
+
+    if (isDefaultRequest) {
+      const cachedDefault = await leadsCacheService.getCachedDefaultLeads(req.user.id);
+      if (cachedDefault) {
+        result = cachedDefault;
+        cacheHit = true;
+      }
+    }
+
+    // Check paginated cache
+    if (!result) {
+      const cachedPaginated = await leadsCacheService.getCachedPaginatedLeads(req.user.id, currentPage, filters);
+      if (cachedPaginated) {
+        result = cachedPaginated;
+        cacheHit = true;
+      }
+    }
+    
+    const cacheCheckTime = Date.now() - cacheCheckStartTime;
+    console.log(`[PERF] Cache check: ${cacheCheckTime}ms, Hit: ${cacheHit}`);
+  }
+
+  // Cache miss or unauthenticated user: query database
+  if (!result) {
+    const dbStartTime = Date.now();
+    result = await leadService.getLeads({
+      ...filters,
+      cursor: toInt(cursor),
+      limit: limitValue,
+      offset: offsetValue,
+      is_paid,
+      visibility,
+    });
+    const dbTime = Date.now() - dbStartTime;
+    console.log(`[PERF] Database query: ${dbTime}ms`);
+
+    // Cache the result for authenticated users
+    if (req.user?.id) {
+      const cacheWriteStartTime = Date.now();
+      
+      const isDefaultRequest = currentPage === 1 && 
+                              !filters.q && 
+                              !filters.category && 
+                              !filters.industry &&
+                              !filters.country_id &&
+                              !filters.region_id &&
+                              !filters.city_id &&
+                              !filters.lat &&
+                              !filters.lon;
+
+      if (isDefaultRequest) {
+        // Cache default leads (24h TTL)
+        await leadsCacheService.cacheDefaultLeads(req.user.id, result);
+      } else {
+        // Cache paginated leads with pre-fetch (10min TTL)
+        const fetchLeadsFn = async (page, pageFilters) => {
+          return await leadService.getLeads({
+            ...pageFilters,
+            limit: limitValue,
+            offset: (page - 1) * limitValue,
+            is_paid,
+            visibility,
+          });
+        };
+        await leadsCacheService.cachePaginatedLeads(req.user.id, currentPage, result, filters, fetchLeadsFn);
+      }
+      
+      const cacheWriteTime = Date.now() - cacheWriteStartTime;
+      console.log(`[PERF] Cache write: ${cacheWriteTime}ms`);
+    }
+  }
+
+  const totalTime = Date.now() - requestStartTime;
+  console.log(`[PERF] Total API time: ${totalTime}ms (Cache hit: ${cacheHit})`);
 
   res.json({
     status: "success",

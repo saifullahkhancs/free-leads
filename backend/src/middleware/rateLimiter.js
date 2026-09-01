@@ -1,6 +1,6 @@
 const rateLimit = require("express-rate-limit");
 const { RedisStore } = require("rate-limit-redis");
-const redis = require("../config/redis");
+const { redis } = require("../config/redis");
 const env = require("../config/env");
 
 function makeLimiter({ windowSeconds, max, keyPrefix }) {

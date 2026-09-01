@@ -21,6 +21,10 @@
   background: transparent;
 }
 
+body.modal-open .site-main {
+  overflow: hidden;
+}
+
 /* ---------- Footer ---------- */
 .site-footer {
   width: 100%;

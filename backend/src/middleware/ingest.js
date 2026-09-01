@@ -1,6 +1,6 @@
 const crypto = require("crypto");
 const env = require("../config/env");
-const redis = require("../config/redis");
+const { redis } = require("../config/redis");
 const ApiError = require("../utils/ApiError");
 
 /**

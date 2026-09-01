@@ -1,7 +1,7 @@
 const app = require("./app");
 const env = require("./config/env");
 const { pool } = require("./config/db");
-const redis = require("./config/redis");
+const { redis } = require("./config/redis");
 const { runMigrations } = require("./db/migrate");
 
 function sleep(ms) {

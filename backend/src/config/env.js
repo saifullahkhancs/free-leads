@@ -31,6 +31,7 @@ const env = {
 
   DATABASE_URL: required("DATABASE_URL"),
   REDIS_URL: process.env.REDIS_URL || "redis://localhost:6379",
+  REDIS_CACHE_URL: process.env.REDIS_CACHE_URL || process.env.REDIS_URL || "redis://localhost:6379",
 
   JWT_ACCESS_SECRET: required("JWT_ACCESS_SECRET", "dev-access-secret-change-me"),
   JWT_REFRESH_SECRET: required("JWT_REFRESH_SECRET", "dev-refresh-secret-change-me"),

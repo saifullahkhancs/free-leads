@@ -45,7 +45,35 @@ export default function LeadDetailModal({
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+
+    // Add class to body to trigger CSS scroll prevention
+    document.body.classList.add('modal-open');
+    document.documentElement.classList.add('modal-open');
+
+    // Find the scrollable container and disable its scroll
+    const scrollableContainer = document.querySelector('.app-results-col') || 
+                                document.querySelector('.app-search-layout') ||
+                                document.querySelector('.site-main') ||
+                                document.body;
+
+    if (scrollableContainer) {
+      scrollableContainer.style.overflow = 'hidden';
+      scrollableContainer.style.overflowY = 'hidden';
+      scrollableContainer.style.overflowX = 'hidden';
+    }
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      
+      document.body.classList.remove('modal-open');
+      document.documentElement.classList.remove('modal-open');
+      
+      if (scrollableContainer) {
+        scrollableContainer.style.overflow = '';
+        scrollableContainer.style.overflowY = '';
+        scrollableContainer.style.overflowX = '';
+      }
+    };
   }, [onClose]);
 
   if (!lead) return null;

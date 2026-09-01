@@ -1562,7 +1562,8 @@ export default function DirectoryPage() {
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
               >
-                <option value="recent">Recently Added</option>
+                <option value="recent">Oldest First</option>
+                <option value="newest">Recently Added</option>
                 <option value="name">Name (A–Z)</option>
                 <option value="company">Company (A–Z)</option>
                 <option value="verified">Verified First</option>

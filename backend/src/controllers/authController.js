@@ -1,6 +1,9 @@
 const asyncHandler = require("../utils/asyncHandler");
 const authService = require("../services/authService");
 const googleService = require("../services/googleService");
+const leadsCacheService = require("../services/leadsCacheService");
+const leadService = require("../services/leadService");
+const quotaService = require("../services/quotaService");
 const env = require("../config/env");
 const ApiError = require("../utils/ApiError");
 
@@ -42,6 +45,43 @@ const resendVerification = asyncHandler(async (req, res) => {
 const login = asyncHandler(async (req, res) => {
   const { user, accessToken, refreshToken } = await authService.login(req.body, requestMeta(req));
   setRefreshCookie(res, refreshToken);
+  
+  // Cache default leads for the user after successful login (fire and forget)
+  if (user?.id) {
+    (async () => {
+      try {
+        const [hasPaid, plan] = await Promise.all([
+          quotaService.hasActivePaidPlan(user.id),
+          quotaService.getActivePlan(user.id),
+        ]);
+        
+        const visibility = {
+          show_email: plan?.show_email !== undefined ? Boolean(plan.show_email) : Boolean(plan?.can_view_contact),
+          show_phone: plan?.show_phone !== undefined ? Boolean(plan.show_phone) : Boolean(plan?.can_view_contact),
+          show_linkedin: plan?.show_linkedin !== undefined ? Boolean(plan.show_linkedin) : Boolean(plan?.can_view_contact),
+          show_twitter: plan?.show_twitter !== undefined ? Boolean(plan.show_twitter) : Boolean(plan?.can_view_contact),
+          show_website: plan?.show_website !== undefined ? Boolean(plan.show_website) : Boolean(plan?.can_view_contact),
+          show_about: plan?.show_about !== undefined ? Boolean(plan.show_about) : Boolean(plan?.can_view_contact),
+          can_view_contact: Boolean(plan?.can_view_contact),
+          is_paid: !!hasPaid || Boolean(plan?.can_view_contact),
+          has_full_access: false,
+        };
+        
+        const leadsData = await leadService.getLeads({
+          limit: 20,
+          offset: 0,
+          sort: "recent",
+          is_paid: visibility.is_paid,
+          visibility,
+        });
+        
+        await leadsCacheService.cacheDefaultLeads(user.id, leadsData);
+      } catch (err) {
+        console.error('Error caching default leads on login:', err);
+      }
+    })();
+  }
+  
   res.status(200).json({ access_token: accessToken, token_type: "bearer", user });
 });
 
@@ -57,6 +97,12 @@ const refresh = asyncHandler(async (req, res) => {
 const logout = asyncHandler(async (req, res) => {
   const token = req.cookies?.[env.REFRESH_COOKIE_NAME] || req.body?.refreshToken;
   await authService.logout({ refreshToken: token });
+  
+  // Clear user's leads cache on logout
+  if (req.user?.id) {
+    await leadsCacheService.clearUserCache(req.user.id);
+  }
+  
   clearRefreshCookie(res);
   res.status(200).json({ message: "Logged out successfully" });
 });
@@ -101,6 +147,43 @@ const googleCallback = asyncHandler(async (req, res) => {
   );
 
   setRefreshCookie(res, refreshToken);
+  
+  // Cache default leads for the user after successful Google login (fire and forget)
+  if (user?.id) {
+    (async () => {
+      try {
+        const [hasPaid, plan] = await Promise.all([
+          quotaService.hasActivePaidPlan(user.id),
+          quotaService.getActivePlan(user.id),
+        ]);
+        
+        const visibility = {
+          show_email: plan?.show_email !== undefined ? Boolean(plan.show_email) : Boolean(plan?.can_view_contact),
+          show_phone: plan?.show_phone !== undefined ? Boolean(plan.show_phone) : Boolean(plan?.can_view_contact),
+          show_linkedin: plan?.show_linkedin !== undefined ? Boolean(plan.show_linkedin) : Boolean(plan?.can_view_contact),
+          show_twitter: plan?.show_twitter !== undefined ? Boolean(plan.show_twitter) : Boolean(plan?.can_view_contact),
+          show_website: plan?.show_website !== undefined ? Boolean(plan.show_website) : Boolean(plan?.can_view_contact),
+          show_about: plan?.show_about !== undefined ? Boolean(plan.show_about) : Boolean(plan?.can_view_contact),
+          can_view_contact: Boolean(plan?.can_view_contact),
+          is_paid: !!hasPaid || Boolean(plan?.can_view_contact),
+          has_full_access: false,
+        };
+        
+        const leadsData = await leadService.getLeads({
+          limit: 20,
+          offset: 0,
+          sort: "recent",
+          is_paid: visibility.is_paid,
+          visibility,
+        });
+        
+        await leadsCacheService.cacheDefaultLeads(user.id, leadsData);
+      } catch (err) {
+        console.error('Error caching default leads on Google login:', err);
+      }
+    })();
+  }
+  
   res.status(200).json({ access_token: accessToken, token_type: "bearer", user });
 });
 
