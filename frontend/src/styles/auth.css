@@ -299,3 +299,149 @@
   color: var(--success-dark);
   border-color: #a7f3d0;
 }
+
+/* ---------------------------------------------------------------------------
+   Session-expired popup card (components/SessionExpiredModal.jsx)
+   --------------------------------------------------------------------------- */
+.session-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 18, 30, 0.62);
+  backdrop-filter: blur(4px);
+  animation: sessionModalFade 0.18s ease-out;
+}
+
+@keyframes sessionModalFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.session-modal-card {
+  width: 100%;
+  max-width: 420px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px 26px 22px;
+  box-shadow: 0 24px 64px rgba(10, 14, 30, 0.35);
+  text-align: center;
+  animation: sessionModalPop 0.2s ease-out;
+}
+
+@keyframes sessionModalPop {
+  from { transform: translateY(10px) scale(0.98); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.session-modal-icon {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 14px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.session-modal-card h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.session-modal-sub {
+  margin: 0 0 16px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #6b7280;
+}
+
+.session-modal-error {
+  margin: 0 0 12px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 13px;
+  text-align: left;
+}
+
+.session-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+
+.session-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.session-modal-field span {
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.session-modal-field input {
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.session-modal-field input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.session-modal-submit {
+  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 16px;
+  border: none;
+  border-radius: 10px;
+  background: #4f46e5;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.session-modal-submit:hover:not(:disabled) { background: #4338ca; }
+.session-modal-submit:disabled { opacity: 0.65; cursor: not-allowed; }
+
+.session-modal-alt {
+  margin-top: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 4px;
+  font-size: 12px;
+  color: #6b7280;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.session-modal-alt:hover { color: #374151; }

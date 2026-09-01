@@ -45,7 +45,7 @@ function createRefreshToken(payload, jti) {
     env.JWT_REFRESH_SECRET,
     {
       algorithm: env.JWT_ALGORITHM,
-      expiresIn: `${env.REFRESH_TOKEN_EXPIRE_DAYS}d`,
+      expiresIn: `${env.REFRESH_TOKEN_EXPIRE_MINUTES}m`,
     }
   );
 }

@@ -37,7 +37,17 @@ const env = {
   JWT_REFRESH_SECRET: required("JWT_REFRESH_SECRET", "dev-refresh-secret-change-me"),
   JWT_ALGORITHM: process.env.JWT_ALGORITHM || "HS256",
   ACCESS_TOKEN_EXPIRE_MINUTES: int("ACCESS_TOKEN_EXPIRE_MINUTES", 15),
-  REFRESH_TOKEN_EXPIRE_DAYS: int("REFRESH_TOKEN_EXPIRE_DAYS", 7),
+  // Session timeout. The refresh token (httpOnly cookie) defines how long a
+  // login session lasts; it rotates on every silent refresh, so this is a
+  // *sliding* window of inactivity. Default: 60 minutes.
+  // (REFRESH_TOKEN_EXPIRE_DAYS is still honored for backward compatibility
+  // when REFRESH_TOKEN_EXPIRE_MINUTES is not set.)
+  REFRESH_TOKEN_EXPIRE_MINUTES:
+    process.env.REFRESH_TOKEN_EXPIRE_MINUTES !== undefined
+      ? int("REFRESH_TOKEN_EXPIRE_MINUTES", 60)
+      : process.env.REFRESH_TOKEN_EXPIRE_DAYS !== undefined
+        ? int("REFRESH_TOKEN_EXPIRE_DAYS", 0) * 24 * 60
+        : 60,
 
   PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int("PASSWORD_RESET_TOKEN_EXPIRE_MINUTES", 30),
   PASSWORD_RESET_URL:
@@ -123,6 +133,20 @@ const env = {
   LOCKOUT_WINDOW_SECONDS: int("LOCKOUT_WINDOW_SECONDS", 900),
   SEARCH_THROTTLE_PER_MINUTE: int("SEARCH_THROTTLE_PER_MINUTE", 30),
   EXPORT_THROTTLE_PER_MINUTE: int("EXPORT_THROTTLE_PER_MINUTE", 10),
+
+  // ---- CSV import jobs (Redis / BullMQ background queue) ----
+  // Files with more data rows than IMPORT_SYNC_MAX_ROWS (or JSON-body imports
+  // above that size) are processed by the background worker instead of the
+  // HTTP request, so big imports can never hit the reverse-proxy timeout.
+  IMPORT_SYNC_MAX_ROWS: int("IMPORT_SYNC_MAX_ROWS", 2000),
+  // Where uploaded CSVs are staged while a job is queued/processing.
+  IMPORT_UPLOAD_DIR: process.env.IMPORT_UPLOAD_DIR || require("path").join(require("os").tmpdir(), "freeleads-imports"),
+  // Run the BullMQ worker inside the API process (true) — simplest deploy.
+  // Set to false and run `npm run worker` separately to scale it out.
+  IMPORT_WORKER_ENABLED: bool("IMPORT_WORKER_ENABLED", true),
+  IMPORT_JOB_CONCURRENCY: int("IMPORT_JOB_CONCURRENCY", 1),
+  // How many row-level errors to keep on the job record (details view).
+  IMPORT_JOB_MAX_ERRORS: int("IMPORT_JOB_MAX_ERRORS", 200),
 };
 
 // Fail fast in production if secrets were left at their insecure defaults —

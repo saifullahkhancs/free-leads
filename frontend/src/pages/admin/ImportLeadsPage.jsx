@@ -1,9 +1,17 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { CheckCircle2, Download, FileSpreadsheet, Loader2, ShieldAlert, UploadCloud, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, Download, FileSpreadsheet, Loader2, ShieldAlert, StopCircle, UploadCloud, XCircle } from "lucide-react";
 import * as api from "../../api/client";
 import { useAuth } from "../../context/AuthContext";
 import CsvFieldMapping from "../../components/CsvFieldMapping";
+
+// Imports up to this many data rows run synchronously (instant result).
+// Anything bigger is uploaded once and processed by the server's Redis
+// (BullMQ) background worker, so the request can never hit a gateway timeout.
+const SYNC_MAX_ROWS = 2000;
+// Files above this size skip the client-side row count and always queue.
+const SYNC_MAX_FILE_BYTES = 4 * 1024 * 1024;
+const JOB_POLL_INTERVAL_MS = 2000;
 
 const CSV_TEMPLATE = [
   "full_name,headline,about,email,linkedin_url,twitter_url,facebook_url,website_url,country,country_code,region,city,industry,company_name,job_title,num_employees",
@@ -57,13 +65,22 @@ function splitCsvRecords(text) {
 }
 
 /** Build import windows of `chunkSize` data rows, each re-including the header. */
-function buildCsvChunks(header, dataRows, chunkSize) {
-  const chunks = [];
-  for (let i = 0; i < dataRows.length; i += chunkSize) {
-    chunks.push([header, ...dataRows.slice(i, i + chunkSize)].join("\n") + "\n");
+function formatJobTime(value) {
+  if (!value) return "";
+  try {
+    return new Date(value).toLocaleString();
+  } catch {
+    return String(value);
   }
-  return chunks;
 }
+
+const JOB_STATUS_LABELS = {
+  queued: "Queued",
+  processing: "Importing…",
+  completed: "Completed",
+  failed: "Failed",
+  cancelled: "Cancelled",
+};
 
 export default function ImportLeadsPage() {
   const { user } = useAuth();
@@ -80,8 +97,91 @@ export default function ImportLeadsPage() {
   const [startRow, setStartRow] = useState(0);
   const [endRow, setEndRow] = useState("");
   const [useRowRange, setUseRowRange] = useState(false);
-  // Live import progress: { processed, total, imported, skipped, failed, remaining }
-  const [importProgress, setImportProgress] = useState(null);
+  // Background import job currently being tracked (Redis/BullMQ on the server).
+  const [job, setJob] = useState(null);
+  // Client-side guess of how many rows the job will process (drives the bar
+  // before the server has counted the file).
+  const [jobTotalHint, setJobTotalHint] = useState(null);
+  const [recentJobs, setRecentJobs] = useState([]);
+  const [cancelling, setCancelling] = useState(false);
+  const pollTimerRef = useRef(null);
+
+  // Stop polling if the page unmounts (the job itself keeps running server-side).
+  useEffect(() => () => {
+    if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
+  }, []);
+
+  const refreshRecentJobs = async () => {
+    try {
+      const res = await api.listImportJobs(5);
+      setRecentJobs(res?.data?.jobs || []);
+    } catch {
+      // non-critical panel — ignore
+    }
+  };
+
+  // On load: show recent jobs and resume tracking one that is still running.
+  useEffect(() => {
+    if (!canManage) return;
+    (async () => {
+      try {
+        const res = await api.listImportJobs(5);
+        const jobs = res?.data?.jobs || [];
+        setRecentJobs(jobs);
+        const active = jobs.find((j) => ["queued", "processing"].includes(j.status));
+        if (active) {
+          setJob(active);
+          pollJob(active.id);
+        }
+      } catch {
+        // ignore
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canManage]);
+
+  const pollJob = async (jobId) => {
+    try {
+      const res = await api.getImportJob(jobId);
+      const j = res?.data?.job;
+      if (j) {
+        setJob(j);
+        if (["completed", "failed", "cancelled"].includes(j.status)) {
+          setImporting(false);
+          setCancelling(false);
+          if (j.status === "completed") {
+            setResult({
+              imported: j.imported || 0,
+              skipped: j.skipped || 0,
+              failed: j.failed || 0,
+              total: j.total_rows ?? j.processed ?? 0,
+              errors: j.errors || [],
+            });
+            setFile(null);
+          } else if (j.status === "failed") {
+            setError(j.error_message || "Import failed on the server.");
+          }
+          refreshRecentJobs();
+          return;
+        }
+      }
+    } catch {
+      // transient poll error (network blip, token refresh) — keep polling
+    }
+    pollTimerRef.current = setTimeout(() => pollJob(jobId), JOB_POLL_INTERVAL_MS);
+  };
+
+  const handleCancelJob = async () => {
+    if (!job) return;
+    setCancelling(true);
+    try {
+      const res = await api.cancelImportJob(job.id);
+      if (res?.data?.job) setJob(res.data.job);
+    } catch (err) {
+      setError(err.message || "Could not cancel the import job.");
+      setCancelling(false);
+    }
+  };
 
   const acceptFile = (f) => {
     setError(null);
@@ -145,62 +245,77 @@ export default function ImportLeadsPage() {
     setImporting(true);
     setError(null);
     setResult(null);
-    setImportProgress({ processed: 0, total: 0, imported: 0, skipped: 0, failed: 0, remaining: 0 });
+    setJob(null);
 
-    const CHUNK_SIZE = 2000;
-    let accumulated = { imported: 0, skipped: 0, failed: 0, errors: [] };
+    // Resolve the requested row window: an explicit range wins over "max rows".
+    const start = useRowRange ? parseInt(startRow) || 0 : 0;
+    const end = useRowRange && endRow ? parseInt(endRow) : null;
+    const offset = start > 0 ? start : undefined;
+    const limit = end != null ? Math.max(end - start, 0) : parsedLimit;
 
     try {
-      // Read the whole file once so we can count rows and import in windows,
-      // reporting live progress ("X uploaded, Y remaining") as we go.
-      const fullText = await file.text();
-      const records = splitCsvRecords(fullText);
-      if (records.length === 0) throw new Error("The CSV file has no rows to import.");
+      // Small files import synchronously for an instant result; anything
+      // bigger is queued as a Redis background job so no request can ever hit
+      // the reverse-proxy timeout (the old 503 on large files).
+      if (file.size <= SYNC_MAX_FILE_BYTES) {
+        const fullText = await file.text();
+        const records = splitCsvRecords(fullText);
+        const dataRowCount = Math.max(records.length - 1, 0);
+        if (dataRowCount === 0) throw new Error("The CSV file has no rows to import.");
+        const windowRows = Math.max(dataRowCount - (offset || 0), 0);
+        const effectiveRows = limit != null ? Math.min(limit, windowRows) : windowRows;
 
-      const header = records[0];
-      let dataRows = records.slice(1);
-      if (parsedLimit && dataRows.length > parsedLimit) {
-        dataRows = dataRows.slice(0, parsedLimit);
+        if (effectiveRows <= SYNC_MAX_ROWS) {
+          const res = await api.importLeadsCsv(fullText, "csv_upload", { fieldMapping: mapping, limit, offset });
+          const d = res?.data || {};
+          if (d.queued && d.job) {
+            // Server decided to queue it anyway — track the job.
+            startTrackingJob(d.job, effectiveRows);
+            return;
+          }
+          setResult({
+            imported: d.imported || 0,
+            skipped: d.skipped || 0,
+            failed: d.failed || 0,
+            total: d.total ?? effectiveRows,
+            errors: d.errors || [],
+          });
+          setShowMapping(false);
+          setCsvData(null);
+          setFile(null);
+          setImporting(false);
+          refreshRecentJobs();
+          return;
+        }
+
+        // Big row count in a small-ish file: upload once, import in background.
+        const res = await api.importLeadsFile(file, { fieldMapping: mapping, limit, offset });
+        startTrackingJob(res?.data?.job, effectiveRows);
+        return;
       }
-      const total = dataRows.length;
-      setImportProgress((p) => ({ ...p, total }));
 
-      const chunks = buildCsvChunks(header, dataRows, CHUNK_SIZE);
-
-      for (let i = 0; i < chunks.length; i++) {
-        const res = await api.importLeadsCsv(chunks[i], "csv_upload", { fieldMapping: mapping });
-        const d = res?.data || {};
-        accumulated.imported += d.imported || 0;
-        accumulated.skipped += d.skipped || 0;
-        accumulated.failed += d.failed || 0;
-        if (Array.isArray(d.errors)) accumulated.errors = accumulated.errors.concat(d.errors);
-
-        const processed = Math.min((i + 1) * CHUNK_SIZE, total);
-        setImportProgress({
-          processed,
-          total,
-          imported: accumulated.imported,
-          skipped: accumulated.skipped,
-          failed: accumulated.failed,
-          remaining: total - processed,
-        });
-      }
-
-      setResult({
-        imported: accumulated.imported,
-        skipped: accumulated.skipped,
-        failed: accumulated.failed,
-        total,
-        errors: accumulated.errors,
-      });
-      setShowMapping(false);
-      setCsvData(null);
+      // Large file: single multipart upload, then the worker takes over.
+      const res = await api.importLeadsFile(file, { fieldMapping: mapping, limit, offset });
+      startTrackingJob(res?.data?.job, limit ?? null);
     } catch (err) {
       setError(err.message || "Import failed.");
-    } finally {
       setImporting(false);
-      setImportProgress(null);
     }
+  };
+
+  /** Close the mapping modal and start polling a queued background job. */
+  const startTrackingJob = (queuedJob, totalHint) => {
+    setShowMapping(false);
+    setCsvData(null);
+    if (!queuedJob) {
+      setError("The import job could not be started. Please try again.");
+      setImporting(false);
+      return;
+    }
+    setJob(queuedJob);
+    setJobTotalHint(totalHint || null);
+    refreshRecentJobs();
+    pollTimerRef.current = setTimeout(() => pollJob(queuedJob.id), JOB_POLL_INTERVAL_MS);
   };
 
   const handleMappingCancel = () => {
@@ -234,6 +349,62 @@ export default function ImportLeadsPage() {
       )}
 
       {canManage && error && <div className="dash-alert dash-alert-error">⚠ {error}</div>}
+
+      {canManage && job && ["queued", "processing"].includes(job.status) && (
+        <div className="dash-card" style={{ marginBottom: 20 }}>
+          <div className="dash-card-head">
+            <h2 style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Loader2 className="spin" size={16} /> Import in progress
+            </h2>
+          </div>
+          <div className="dash-card-body">
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
+              <span className="dash-badge badge-gray">{JOB_STATUS_LABELS[job.status] || job.status}</span>
+              <span style={{ fontSize: 13, color: "var(--dash-muted)" }}>
+                {job.filename || "CSV file"} · started {formatJobTime(job.started_at || job.created_at)}
+              </span>
+              <button
+                className="dash-btn dash-btn-ghost dash-btn-sm"
+                style={{ marginLeft: "auto" }}
+                onClick={handleCancelJob}
+                disabled={cancelling}
+              >
+                <StopCircle size={14} /> {cancelling ? "Cancelling…" : "Cancel import"}
+              </button>
+            </div>
+            {(() => {
+              const total = job.total_rows || jobTotalHint || null;
+              const processed = job.processed || 0;
+              const pct = total ? Math.min(100, Math.round((processed / total) * 100)) : null;
+              return (
+                <>
+                  <div style={{ height: 10, borderRadius: 6, background: "var(--dash-border, #e4e4e7)", overflow: "hidden", marginBottom: 8 }}>
+                    <div
+                      style={{
+                        height: "100%",
+                        width: pct != null ? `${pct}%` : "35%",
+                        background: "var(--dash-green, #16a34a)",
+                        borderRadius: 6,
+                        transition: "width 0.5s ease",
+                        ...(pct == null ? { animation: "importJobPulse 1.4s ease-in-out infinite alternate" } : {}),
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 13 }}>
+                    <span><strong>{processed.toLocaleString()}</strong>{total ? ` of ${total.toLocaleString()}` : ""} rows processed{pct != null ? ` (${pct}%)` : ""}</span>
+                    <span style={{ color: "var(--dash-green)" }}>Imported {(job.imported || 0).toLocaleString()}</span>
+                    <span style={{ color: "var(--dash-muted)" }}>Skipped {(job.skipped || 0).toLocaleString()}</span>
+                    <span style={{ color: "var(--dash-danger)" }}>Failed {(job.failed || 0).toLocaleString()}</span>
+                  </div>
+                  <p style={{ margin: "10px 0 0", fontSize: 12, color: "var(--dash-muted)" }}>
+                    The import runs on the server — you can safely leave this page and come back; progress continues in the background.
+                  </p>
+                </>
+              );
+            })()}
+          </div>
+        </div>
+      )}
 
       {canManage && result && (
         <div className="dash-alert dash-alert-success" style={{ display: "block" }}>
@@ -385,6 +556,30 @@ export default function ImportLeadsPage() {
         </div>
       )}
 
+      {canManage && recentJobs.length > 0 && (
+        <div className="dash-card" style={{ marginTop: "20px" }}>
+          <div className="dash-card-head">
+            <h2>Recent imports</h2>
+          </div>
+          <div className="dash-card-body" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {recentJobs.map((j) => (
+              <div key={j.id} style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", fontSize: 13, padding: "8px 10px", borderRadius: 10, background: "var(--dash-bg, #fafafa)", border: "1px solid var(--dash-border, #ececef)" }}>
+                {j.status === "completed" && <CheckCircle2 size={15} style={{ color: "var(--dash-green)", flex: "none" }} />}
+                {j.status === "failed" && <XCircle size={15} style={{ color: "var(--dash-danger)", flex: "none" }} />}
+                {j.status === "cancelled" && <StopCircle size={15} style={{ color: "var(--dash-muted)", flex: "none" }} />}
+                {["queued", "processing"].includes(j.status) && <Clock size={15} style={{ color: "var(--dash-muted)", flex: "none" }} />}
+                <strong style={{ maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{j.filename || "CSV import"}</strong>
+                <span className="dash-badge badge-gray">{JOB_STATUS_LABELS[j.status] || j.status}</span>
+                <span style={{ color: "var(--dash-muted)" }}>
+                  {(j.imported || 0).toLocaleString()} imported · {(j.skipped || 0).toLocaleString()} skipped · {(j.failed || 0).toLocaleString()} failed
+                </span>
+                <span style={{ marginLeft: "auto", color: "var(--dash-muted)", fontSize: 12 }}>{formatJobTime(j.created_at)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {canManage && <div className="dash-card" style={{ marginTop: "20px" }}>
         <div className="dash-card-head">
           <h2>CSV format</h2>
@@ -419,7 +614,6 @@ export default function ImportLeadsPage() {
           onCancel={handleMappingCancel}
           submitting={importing}
           error={error}
-          progress={importProgress}
         />
       )}
     </>
