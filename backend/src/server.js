@@ -53,6 +53,10 @@ async function start() {
     console.log(`Auth API listening on http://localhost:${env.PORT} [${env.NODE_ENV}]`);
   });
 
+  // Increase timeout for large CSV imports (default is 2 minutes)
+  server.timeout = 10 * 60 * 1000; // 10 minutes
+  server.keepAliveTimeout = 10 * 60 * 1000; // 10 minutes
+
   const shutdown = async (signal) => {
     // eslint-disable-next-line no-console
     console.log(`${signal} received, shutting down...`);

@@ -23,9 +23,9 @@ import "./styles/site-header.css";
 import "./styles/app-theme.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
+  <>
     <App />
     <Analytics />
     <SpeedInsights />
-  </React.StrictMode>
+  </>
 );
